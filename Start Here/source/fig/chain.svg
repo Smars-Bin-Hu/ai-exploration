@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400">
+  <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
+.m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
+.box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
+.litf{fill:#e8590c}.inkf{fill:#141414}.ln{stroke:#141414;stroke-width:1.5;fill:none}.lna{stroke:#e8590c;stroke-width:2;fill:none}
+.lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
+  <rect class="box" x="10" y="40" width="172" height="96" rx="8"/>
+  <text class="" x="96.0" y="82.5" text-anchor="middle" style="font-size:17px">Read the</text>
+  <text class="" x="96.0" y="105.5" text-anchor="middle" style="font-size:17px">requirement</text>
+  <rect class="inkf" x="130" y="28" width="44" height="24" rx="12"/>
+  <text class="inv" x="152" y="45" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="box" x="198" y="40" width="172" height="96" rx="8"/>
+  <text class="" x="284.0" y="82.5" text-anchor="middle" style="font-size:17px">Find the</text>
+  <text class="" x="284.0" y="105.5" text-anchor="middle" style="font-size:17px">code</text>
+  <rect class="inkf" x="318" y="28" width="44" height="24" rx="12"/>
+  <text class="inv" x="340" y="45" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="lit" x="386" y="40" width="172" height="96" rx="8"/>
+  <text class="a" x="472.0" y="82.5" text-anchor="middle" style="font-size:17px">Write the</text>
+  <text class="a" x="472.0" y="105.5" text-anchor="middle" style="font-size:17px">code</text>
+  <rect class="litf" x="506" y="28" width="44" height="24" rx="12"/>
+  <text class="inv" x="528" y="45" text-anchor="middle" style="font-size:14px">AI</text>
+  <rect class="box" x="574" y="40" width="172" height="96" rx="8"/>
+  <text class="" x="660.0" y="82.5" text-anchor="middle" style="font-size:17px">Run tests</text>
+  <text class="" x="660.0" y="105.5" text-anchor="middle" style="font-size:17px">on DEV</text>
+  <rect class="inkf" x="694" y="28" width="44" height="24" rx="12"/>
+  <text class="inv" x="716" y="45" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="box" x="10" y="200" width="172" height="96" rx="8"/>
+  <text class="" x="96.0" y="242.4" text-anchor="middle" style="font-size:17px">Check the</text>
+  <text class="" x="96.0" y="265.4" text-anchor="middle" style="font-size:17px">data</text>
+  <rect class="inkf" x="130" y="188" width="44" height="24" rx="12"/>
+  <text class="inv" x="152" y="205" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="box" x="198" y="200" width="172" height="96" rx="8"/>
+  <text class="" x="284.0" y="242.4" text-anchor="middle" style="font-size:17px">Update the</text>
+  <text class="" x="284.0" y="265.4" text-anchor="middle" style="font-size:17px">ticket</text>
+  <rect class="inkf" x="318" y="188" width="44" height="24" rx="12"/>
+  <text class="inv" x="340" y="205" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="box" x="386" y="200" width="172" height="96" rx="8"/>
+  <text class="" x="472.0" y="242.4" text-anchor="middle" style="font-size:17px">Check the</text>
+  <text class="" x="472.0" y="265.4" text-anchor="middle" style="font-size:17px">pipeline</text>
+  <rect class="inkf" x="506" y="188" width="44" height="24" rx="12"/>
+  <text class="inv" x="528" y="205" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="box" x="574" y="200" width="172" height="96" rx="8"/>
+  <text class="" x="660.0" y="242.4" text-anchor="middle" style="font-size:17px">Review every</text>
+  <text class="" x="660.0" y="265.4" text-anchor="middle" style="font-size:17px">line</text>
+  <rect class="inkf" x="694" y="188" width="44" height="24" rx="12"/>
+  <text class="inv" x="716" y="205" text-anchor="middle" style="font-size:14px">You</text>
+  <rect class="soft" x="10" y="326" width="740" height="60" rx="10"/>
+  <text class="" x="380" y="362" text-anchor="middle" style="font-size:18px">Copilot writes the code. Everything else is still yours.</text>
+</svg>

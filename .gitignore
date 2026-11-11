@@ -1,0 +1,12 @@
+.venv/
+.DS_Store
+__pycache__/
+# build scratch
+Start Here/source/_pages/
+Start Here/source/_twin.*
+# company only: added on the company computer, never committed
+Showcase/Real Tasks/*
+!Showcase/Real Tasks/README.md
+Harness/*.zip
+Harness/programs/*
+!Harness/programs/README.md
