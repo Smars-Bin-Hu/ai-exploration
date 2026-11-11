@@ -10,3 +10,21 @@
 - 纵向：agent 能干多少活、懂多少。懂我们的 domain 知识，能读懂需求；能更新工单、查 pipeline 报错；能去 DEV、IST 跑测试、查数据；能做 RCA。
 - 横向：让人用起来安心和舒服：审批、独立检查、围栏、可观测性和可审计，以及不用写长 prompt。
 - 人说“现在重新写文稿”：第 1、2 条一起改（2026-11-11）。
+
+# 英文版：人的意见（2026-11-11，先记，最后统一改）
+
+## 3. 图和对照表里的词太压缩，第一次读的人看不懂
+- 第 5 页的图（Vertical / Horizontal 两列框）和第 6 页的对照表，用的是压缩过的名词：Two approvals、our domain knowledge、board and reports、auditability。
+- 人的方向：写成读者一读就懂的话。Two approvals 写成"你来批准 agent 的计划和结果"这一类；our domain 写成"agent 懂我们的系统"这一类。要有谁、做什么。
+- 来源：第 5 页的图中文稿里没有，是做英文 slides 时加的，框里的词来自我的 memory 速记。第 6 页的对照表在中文稿里就是把功能页标题拼起来、砍掉后半句（"两次批准：计划和写回"→"两次批准"）。
+
+## 冷读找到的（一个没看过写作过程的 agent，只给 18 页图片和读者设定）
+- 第 6 页第 5 行"A long prompt for every task"不在第 3 页的四个原因里（中文稿就是 4 个原因、5 行）。
+- "agent"和"chat AI"差在哪，全篇没说（第 4 页起就在用）。
+- 功能页一路用没解释的词：task、board、tool pack、skill、paired、promote、hook、fork、tier、write-back。"task"在读者知道它是什么之前就一直在用。
+- 第 10 页的占位框和第 17 页的"[Second skill: to be added]"：读者说这两处会让它怀疑全篇。发出去之前要补上或拿掉。
+- 第 7、14 页截图在手机上太小、太暗。
+- 全篇没说怎么开始用、文件夹在哪、找谁。
+- 第 17 页"Behind it"那段是写给 harness 作者的，不是写给读者的。
+- 第 13 页绿卡"Approved / Tell the agent to run it"：读者不懂为什么批准之后还要再告诉 agent。
+- 它读完的三句话总结是对的：主线传到了，问题在细处的词。
