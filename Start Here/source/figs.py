@@ -108,6 +108,42 @@ def envs():
     f.text(450,299,'Every command and what it returned is kept in the task.',fs=17)
     f.save('envs')
 
+def what():
+    # what the harness is, physically
+    f=Fig(450, 760)
+    f.box(10,20,130,60,['You'],tcls='a',fs=18)
+    f.arrow(140,50,300,50); f.text(220,38,'start tasks · approve','m',fs=14)
+    f.box(300,20,450,60,['The board: a page in your browser'],fs=17)
+    f.raw('<rect class="lit" x="10" y="120" width="740" height="150" rx="10"/>')
+    f.text(380,150,'Harness: a folder on your computer','a',fs=18)
+    for i,(a,b) in enumerate([('Rules','Copilot reads'),('Checks before and after','every step'),('One folder','per task')]):
+        f.box(30+i*240,168,220,82,[a,b],fs=16)
+    f.arrow(640,120,640,82,acc=True); f.text(652,106,'shows each task','m','start',14)
+    f.arrow(160,270,160,312,acc=True); f.text(172,296,'rules and checks','m','start',14)
+    f.box(10,312,300,70,['Copilot agent','in VS Code'],tcls=['a',''],fs=17)
+    f.arrow(310,347,470,347); f.text(390,326,'reads and writes,','m',fs=14); f.text(390,370,'through the checks','m',fs=14)
+    f.box(470,312,280,70,['Azure DevOps · DEV and IST','your code'],fs=16)
+    f.raw('<rect class="soft" x="10" y="400" width="740" height="40" rx="10"/>')
+    f.text(380,426,'No server. It needs only Python.',fs=17)
+    f.save('what')
+
+def reviews():
+    # the two reviews behind the report
+    f=Fig(440, 760)
+    f.box(10,14,740,58,['One task’s records: every action, what the gate said, the thinking before each step'],fs=16)
+    f.arrow(160,72,160,110); f.arrow(540,72,540,110,acc=True)
+    f.raw('<rect class="box" x="10" y="110" width="300" height="220" rx="8"/>')
+    f.text(160,146,'/harness-task-report','a',fs=17)
+    for i,t in enumerate(['reads the numbers, and says','where the time and usage','went, and why']): f.text(160,190+i*26,t,fs=16)
+    f.raw('<rect class="lit" x="330" y="110" width="420" height="220" rx="8"/>')
+    f.text(540,146,'Agent Performance Review','a',fs=17)
+    for i,t in enumerate(['1. A program marks spots that look like detours.','2. An agent judges each one with evidence:','    harness limit · agent mistake · environment ·','    missing knowledge · guardrails working','3. It names the file to change.']):
+        f.text(350,182+i*28,t,'m' if t.startswith('    ') else '','start',15.5)
+    f.raw('<rect class="soft" x="10" y="352" width="740" height="72" rx="10"/>')
+    f.text(380,382,'Only you can start either one. Neither changes the task it reviews.',fs=16)
+    f.text(380,406,'A cause in the harness goes to the person who maintains it.','m',fs=15)
+    f.save('reviews')
+
 def tree():
     f=Fig(420, 820)
     rows=[(0,'AI Exploration/','a',''),(1,'Start Here','','you are here'),(1,'Harness Engineering 101/','','short courses: Basic, Advanced, Mindset'),
@@ -132,7 +168,7 @@ CSS = '''text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 
 def main():
     names=[]
-    for fn in (chain, axes, outside, mapping, envs, tree): fn(); names.append(fn.__name__)
+    for fn in (chain, axes, outside, what, mapping, envs, reviews, tree): fn(); names.append(fn.__name__)
     # inline the CSS so each SVG stands alone, then render PNGs with Chrome
     for n in names:
         p=f'{OUT}/{n}.svg'; s=open(p).read()

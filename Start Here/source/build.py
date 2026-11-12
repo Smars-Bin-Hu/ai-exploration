@@ -67,8 +67,9 @@ for st in S.STORY:
         els.append(T(0.75, 1.72, 11.8, 0.8, st['paras'], 14, C['ink'], SERIF))
         els.append(P(img(st['fig']), 0.75, 2.75, 11.8, 4.0))
     else:
-        els.append(T(0.75, 1.75, 5.55, 5.0, st['paras'], 14, C['ink'], SERIF, space=9))
-        els.append(P(img(st['fig']), 6.65, 1.75, 5.95, 5.0))
+        tw = st.get('textw', 5.55); fx = 0.75 + tw + 0.35
+        els.append(T(0.75, 1.75, tw, 5.0, st['paras'], 14, C['ink'], SERIF, space=9))
+        els.append(P(img(st['fig']), fx, 1.75, 12.6 - fx, 5.0))
     page(els)
 
 for f in S.FEATURES:
@@ -77,12 +78,13 @@ for f in S.FEATURES:
     paras = []
     for i, t in enumerate(texts):
         paras.append([('lab', S.L[i])]); paras.append([t])
-    if shot and (lambda wh: wh[0] / wh[1])(Image.open(img(shot)).size) > 3.5:
+    if shot and (shot in S.WIDE or (lambda wh: wh[0] / wh[1])(Image.open(img(shot)).size) > 3.5):
         # a very wide screenshot: text in two columns on top, the screenshot across the page below it
         half = len(paras) // 2
-        els.append(T(0.75, 1.72, 5.75, 2.9, paras[:half], 12, C['light'], SERIF, space=5))
-        els.append(T(6.85, 1.72, 5.75, 2.9, paras[half:], 12, C['light'], SERIF, space=5))
-        els.append(P(img(shot), 0.75, 4.75, 11.85, 2.05, border=True))
+        sh = S.WIDE.get(shot, 1.85)  # height of the screenshot; the text gets the rest
+        els.append(T(0.75, 1.72, 5.75, 5.0 - sh, paras[:half], 12, C['light'], SERIF, space=5))
+        els.append(T(6.85, 1.72, 5.75, 5.0 - sh, paras[half:], 12, C['light'], SERIF, space=5))
+        els.append(P(img(shot), 0.75, 6.85 - sh, 11.85, sh, border=True))
         page(els, dark=True); continue
     els.append(T(0.75, 1.72, 5.6, 5.15, paras, 12, C['light'], SERIF, space=5))
     if shot:
@@ -91,6 +93,14 @@ for f in S.FEATURES:
     else:
         els += [R(6.7, 1.75, 5.9, 5.0, line='9A9A96', dash=True),
                 T(7.0, 3.85, 5.3, 0.9, [['Screenshot to add on the company computer:'], ['a test run on DEV, as the task records it']], 13, '9A9A96', SERIF, align='c')]
+    page(els, dark=True)
+
+for bh in S.BEHIND:
+    # the 'Behind it' of a feature, when it needs a page of its own
+    els = head(f"{bh['side']} ability · In the harness", bh['title'], dark=True)
+    paras = [[('lab', S.L[4])]] + bh['paras']
+    els.append(T(0.75, 1.72, 5.6, 5.15, paras, 12, C['light'], SERIF, space=7))
+    els.append(P(img(bh['fig']), 6.7, 1.75, 5.9, 5.1, border=True))
     page(els, dark=True)
 
 ix = S.INDEX

@@ -19,3 +19,4 @@ python3 -m venv .venv && .venv/bin/pip install python-pptx pillow
 - The text is in `Start Here/source/slides.py` (English, retold from `zh-Hans.md`). Figures: `figs.py` writes `fig/*.svg` and `fig/*.png`. Screenshots: `img/`.
 - `build.py` writes the PowerPoint and an HTML twin of it, prints the twin to the PDF, and reports text that does not fit its box. It needs Google Chrome and `playwright-core` from `~/Developer/smarshu.com`.
 - After you edit the PowerPoint by hand on the company computer, that file is the newer one: do not rebuild over it.
+- Phone review pages: `review_html.py <out.html>` (the Chinese draft with its figures and screenshots, and the cold-read record from `review-notes.md`); `preview_html.py <out.html>` (the English slides, page by page, after `build.py`).

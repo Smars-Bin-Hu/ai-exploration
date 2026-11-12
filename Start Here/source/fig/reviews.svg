@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" width="760" height="440">
+  <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
+.m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
+.box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
+.litf{fill:#e8590c}.inkf{fill:#141414}.ln{stroke:#141414;stroke-width:1.5;fill:none}.lna{stroke:#e8590c;stroke-width:2;fill:none}
+.lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
+  <rect class="box" x="10" y="14" width="740" height="58" rx="8"/>
+  <text class="" x="380.0" y="48.6" text-anchor="middle" style="font-size:16px">One task’s records: every action, what the gate said, the thinking before each step</text>
+  <path class="ln" d="M160 72 L160.0 98.0"/>
+  <path d="M160 110 L154.0 98.0 L166.0 98.0Z" fill="#141414"/>
+  <path class="lna" d="M540 72 L540.0 98.0"/>
+  <path d="M540 110 L534.0 98.0 L546.0 98.0Z" fill="#e8590c"/>
+  <rect class="box" x="10" y="110" width="300" height="220" rx="8"/>
+  <text class="a" x="160" y="146" text-anchor="middle" style="font-size:17px">/harness-task-report</text>
+  <text class="" x="160" y="190" text-anchor="middle" style="font-size:16px">reads the numbers, and says</text>
+  <text class="" x="160" y="216" text-anchor="middle" style="font-size:16px">where the time and usage</text>
+  <text class="" x="160" y="242" text-anchor="middle" style="font-size:16px">went, and why</text>
+  <rect class="lit" x="330" y="110" width="420" height="220" rx="8"/>
+  <text class="a" x="540" y="146" text-anchor="middle" style="font-size:17px">Agent Performance Review</text>
+  <text class="" x="350" y="182" text-anchor="start" style="font-size:15.5px">1. A program marks spots that look like detours.</text>
+  <text class="" x="350" y="210" text-anchor="start" style="font-size:15.5px">2. An agent judges each one with evidence:</text>
+  <text class="m" x="350" y="238" text-anchor="start" style="font-size:15.5px">    harness limit · agent mistake · environment ·</text>
+  <text class="m" x="350" y="266" text-anchor="start" style="font-size:15.5px">    missing knowledge · guardrails working</text>
+  <text class="" x="350" y="294" text-anchor="start" style="font-size:15.5px">3. It names the file to change.</text>
+  <rect class="soft" x="10" y="352" width="740" height="72" rx="10"/>
+  <text class="" x="380" y="382" text-anchor="middle" style="font-size:16px">Only you can start either one. Neither changes the task it reviews.</text>
+  <text class="m" x="380" y="406" text-anchor="middle" style="font-size:15px">A cause in the harness goes to the person who maintains it.</text>
+</svg>

@@ -2,9 +2,9 @@
 # plus the cold-read record from review-notes.md. Run: python3 review_html.py <out.html>. Needs macOS sips (screenshots to JPEG).
 import base64, html, os, re, subprocess, sys, tempfile
 H = os.path.dirname(os.path.abspath(__file__))
-ASSET = {2: 'fig/chain.svg', 4: 'fig/axes.svg', 5: 'fig/outside.svg', 6: 'fig/mapping.svg', 7: 'img/kb-overview.png', 8: 'img/reach.png',
-         9: 'img/rca.png', 10: 'fig/envs.svg', 11: 'img/new-task.png', 12: 'img/approve-plan.png', 13: 'img/held-both.png',
-         14: 'img/refusals.png', 15: 'img/task-review.png', 16: 'img/board-list.png', 17: 'img/report.png', 18: 'fig/tree.svg'}
+ASSET = {2: 'fig/chain.svg', 4: 'fig/axes.svg', 5: 'fig/outside.svg', 6: 'fig/what.svg', 7: 'fig/mapping.svg', 8: 'img/kb-cards.png', 9: 'img/reach-table.png',
+         10: 'img/rca.png', 11: 'fig/envs.svg', 12: 'img/new-task.png', 13: 'img/approve-plan.png', 14: 'img/held-both.png',
+         15: 'img/refusals-list.png', 16: 'img/task-review-rounds.png', 17: 'img/board-list.png', 18: 'img/report-key.png', 19: 'fig/reviews.svg', 20: 'fig/tree.svg'}
 
 def uri(rel):
     path = os.path.join(H, rel)

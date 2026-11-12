@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 450" width="760" height="450">
+  <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
+.m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
+.box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
+.litf{fill:#e8590c}.inkf{fill:#141414}.ln{stroke:#141414;stroke-width:1.5;fill:none}.lna{stroke:#e8590c;stroke-width:2;fill:none}
+.lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
+  <rect class="box" x="10" y="20" width="130" height="60" rx="8"/>
+  <text class="a" x="75.0" y="56.3" text-anchor="middle" style="font-size:18px">You</text>
+  <path class="ln" d="M140 50 L288.0 50.0"/>
+  <path d="M300 50 L288.0 56.0 L288.0 44.0Z" fill="#141414"/>
+  <text class="m" x="220" y="38" text-anchor="middle" style="font-size:14px">start tasks · approve</text>
+  <rect class="box" x="300" y="20" width="450" height="60" rx="8"/>
+  <text class="" x="525.0" y="56.0" text-anchor="middle" style="font-size:17px">The board: a page in your browser</text>
+  <rect class="lit" x="10" y="120" width="740" height="150" rx="10"/>
+  <text class="a" x="380" y="150" text-anchor="middle" style="font-size:18px">Harness: a folder on your computer</text>
+  <rect class="box" x="30" y="168" width="220" height="82" rx="8"/>
+  <text class="" x="140.0" y="203.6" text-anchor="middle" style="font-size:16px">Rules</text>
+  <text class="" x="140.0" y="225.6" text-anchor="middle" style="font-size:16px">Copilot reads</text>
+  <rect class="box" x="270" y="168" width="220" height="82" rx="8"/>
+  <text class="" x="380.0" y="203.6" text-anchor="middle" style="font-size:16px">Checks before and after</text>
+  <text class="" x="380.0" y="225.6" text-anchor="middle" style="font-size:16px">every step</text>
+  <rect class="box" x="510" y="168" width="220" height="82" rx="8"/>
+  <text class="" x="620.0" y="203.6" text-anchor="middle" style="font-size:16px">One folder</text>
+  <text class="" x="620.0" y="225.6" text-anchor="middle" style="font-size:16px">per task</text>
+  <path class="lna" d="M640 120 L640.0 94.0"/>
+  <path d="M640 82 L646.0 94.0 L634.0 94.0Z" fill="#e8590c"/>
+  <text class="m" x="652" y="106" text-anchor="start" style="font-size:14px">shows each task</text>
+  <path class="lna" d="M160 270 L160.0 300.0"/>
+  <path d="M160 312 L154.0 300.0 L166.0 300.0Z" fill="#e8590c"/>
+  <text class="m" x="172" y="296" text-anchor="start" style="font-size:14px">rules and checks</text>
+  <rect class="box" x="10" y="312" width="300" height="70" rx="8"/>
+  <text class="a" x="160.0" y="341.4" text-anchor="middle" style="font-size:17px">Copilot agent</text>
+  <text class="" x="160.0" y="364.4" text-anchor="middle" style="font-size:17px">in VS Code</text>
+  <path class="ln" d="M310 347 L458.0 347.0"/>
+  <path d="M470 347 L458.0 353.0 L458.0 341.0Z" fill="#141414"/>
+  <text class="m" x="390" y="326" text-anchor="middle" style="font-size:14px">reads and writes,</text>
+  <text class="m" x="390" y="370" text-anchor="middle" style="font-size:14px">through the checks</text>
+  <rect class="box" x="470" y="312" width="280" height="70" rx="8"/>
+  <text class="" x="610.0" y="341.6" text-anchor="middle" style="font-size:16px">Azure DevOps · DEV and IST</text>
+  <text class="" x="610.0" y="363.6" text-anchor="middle" style="font-size:16px">your code</text>
+  <rect class="soft" x="10" y="400" width="740" height="40" rx="10"/>
+  <text class="" x="380" y="426" text-anchor="middle" style="font-size:17px">No server. It needs only Python.</text>
+</svg>
