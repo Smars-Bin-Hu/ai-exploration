@@ -216,12 +216,12 @@
 
 这份文档在 OneDrive 的 AI Exploration 文件夹里。看完以后，按你想做的事走：
 
-- **想自己试一试**：去 `Harness/`。安装包、要装的程序（比如 Python）、安装和使用教程都在里面。
+- **想自己试一试**：去 `Harness/`。安装包、我们团队的知识库、要装的程序（比如 Python）、安装和使用教程都在里面。
 - **想先看我演示**：找我（Smars Hu）约一次 demo，用一个真实的任务从头走到尾。
 - **想在团队里试点**（lead、manager）：找我一起挑几个真实的 intake，交给 harness 从头做到尾，用报告看省了多少时间、花了多少钱。
 - **想先多了解一点**：去 `Harness Engineering 101/` 读 Basic；去 `Showcase/Real Tasks/` 看真实 task 花了多少时间、多少钱、哪里被拦下；`Showcase/Lessons/` 是我一路踩过的坑。
 
-【图：目录树，每个文件夹旁一句它是什么：Start Here (you are here) · Harness Engineering 101/ — short courses: Basic, Advanced, Mindset · Showcase/ — Real Tasks: real task pages, each with a one-page note; Lessons: wrong turns I took · Harness/ — the install package, the programs it needs, and the guides】
+【图：目录树，每个文件夹旁一句它是什么：Start Here (you are here) · Harness Engineering 101/ — short courses: Basic, Advanced, Mindset · Showcase/ — Real Tasks: real task pages, each with a one-page note; Lessons: wrong turns I took · Harness/ — install package, our knowledge base, the programs it needs, and the guides】
 
 ---
 

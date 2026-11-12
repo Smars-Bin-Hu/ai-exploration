@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" width="900" height="330">
+  <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
+.m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
+.box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
+.litf{fill:#e8590c}.inkf{fill:#141414}.ln{stroke:#141414;stroke-width:1.5;fill:none}.lna{stroke:#e8590c;stroke-width:2;fill:none}
+.lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
+  <text class="a" x="450" y="32" text-anchor="middle" style="font-size:19px">What the agent may do on each database</text>
+  <rect class="lit" x="10" y="56" width="420" height="190" rx="8"/>
+  <text class="a" x="220.0" y="97.3" text-anchor="middle" style="font-size:18px">DEV and IST</text>
+  <text class="" x="220.0" y="121.3" text-anchor="middle" style="font-size:18px"></text>
+  <text class="" x="220.0" y="145.3" text-anchor="middle" style="font-size:18px">Reads run.</text>
+  <text class="" x="220.0" y="169.3" text-anchor="middle" style="font-size:18px">Changes wait for your approval,</text>
+  <text class="" x="220.0" y="193.3" text-anchor="middle" style="font-size:18px">or run after you open it</text>
+  <text class="" x="220.0" y="217.3" text-anchor="middle" style="font-size:18px">for this task.</text>
+  <rect class="box" x="450" y="56" width="215" height="190" rx="8"/>
+  <text class="a" x="557.5" y="121.3" text-anchor="middle" style="font-size:18px">QAT</text>
+  <text class="" x="557.5" y="145.3" text-anchor="middle" style="font-size:18px"></text>
+  <text class="" x="557.5" y="169.3" text-anchor="middle" style="font-size:18px">Not opened</text>
+  <text class="" x="557.5" y="193.3" text-anchor="middle" style="font-size:18px">by default.</text>
+  <rect class="box" x="685" y="56" width="205" height="190" rx="8"/>
+  <text class="a" x="787.5" y="109.3" text-anchor="middle" style="font-size:18px">PROD</text>
+  <text class="" x="787.5" y="133.3" text-anchor="middle" style="font-size:18px"></text>
+  <text class="" x="787.5" y="157.3" text-anchor="middle" style="font-size:18px">Read only.</text>
+  <text class="" x="787.5" y="181.3" text-anchor="middle" style="font-size:18px">Never opened</text>
+  <text class="" x="787.5" y="205.3" text-anchor="middle" style="font-size:18px">for changes.</text>
+  <rect class="soft" x="10" y="266" width="880" height="52" rx="10"/>
+  <text class="" x="450" y="299" text-anchor="middle" style="font-size:17px">Every command and what it returned is kept in the task.</text>
+</svg>

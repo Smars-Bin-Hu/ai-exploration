@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 430" width="700" height="430">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420" width="820" height="420">
   <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 .m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
 .box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
@@ -6,22 +6,28 @@
 .lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
   <rect class="litf" x="30" y="25" width="18" height="14" rx="2"/>
   <text class="a" x="58" y="40" text-anchor="start" style="font-size:18px">AI Exploration/</text>
-  <path class="lnm" d="M46 56 V82 H62"/>
-  <rect class="soft" x="70" y="73" width="18" height="14" rx="2"/>
-  <text class="m" x="98" y="88" text-anchor="start" style="font-size:18px">Start Here  (you are here)</text>
-  <path class="lnm" d="M46 104 V130 H62"/>
-  <rect class="litf" x="70" y="121" width="18" height="14" rx="2"/>
-  <text class="" x="98" y="136" text-anchor="start" style="font-size:18px">Harness Engineering 101/</text>
-  <path class="lnm" d="M86 152 V178 H102"/>
-  <text class="m" x="110" y="184" text-anchor="start" style="font-size:18px">Basic/   Advanced/   Mindset/</text>
-  <path class="lnm" d="M46 200 V226 H62"/>
-  <rect class="litf" x="70" y="217" width="18" height="14" rx="2"/>
-  <text class="" x="98" y="232" text-anchor="start" style="font-size:18px">Showcase/</text>
-  <path class="lnm" d="M86 248 V274 H102"/>
-  <text class="m" x="110" y="280" text-anchor="start" style="font-size:18px">Real Tasks/   Lessons/</text>
-  <path class="lnm" d="M46 296 V322 H62"/>
-  <rect class="litf" x="70" y="313" width="18" height="14" rx="2"/>
-  <text class="" x="98" y="328" text-anchor="start" style="font-size:18px">Harness/</text>
-  <path class="lnm" d="M86 344 V370 H102"/>
-  <text class="m" x="110" y="376" text-anchor="start" style="font-size:18px">install package · knowledge base · programs/ · guides</text>
+  <path class="lnm" d="M46 56 V84 H62"/>
+  <rect class="litf" x="70" y="75" width="18" height="14" rx="2"/>
+  <text class="" x="98" y="90" text-anchor="start" style="font-size:18px">Start Here</text>
+  <text class="m" x="330" y="90" text-anchor="start" style="font-size:16px">you are here</text>
+  <path class="lnm" d="M46 106 V134 H62"/>
+  <rect class="litf" x="70" y="125" width="18" height="14" rx="2"/>
+  <text class="" x="98" y="140" text-anchor="start" style="font-size:18px">Harness Engineering 101/</text>
+  <text class="m" x="330" y="140" text-anchor="start" style="font-size:16px">short courses: Basic, Advanced, Mindset</text>
+  <path class="lnm" d="M46 156 V184 H62"/>
+  <rect class="litf" x="70" y="175" width="18" height="14" rx="2"/>
+  <text class="" x="98" y="190" text-anchor="start" style="font-size:18px">Showcase/</text>
+  <path class="lnm" d="M86 206 V234 H102"/>
+  <rect class="soft" x="110" y="225" width="18" height="14" rx="2"/>
+  <text class="" x="138" y="240" text-anchor="start" style="font-size:18px">Real Tasks/</text>
+  <text class="m" x="330" y="240" text-anchor="start" style="font-size:16px">real task pages, each with a one-page note</text>
+  <path class="lnm" d="M86 256 V284 H102"/>
+  <rect class="soft" x="110" y="275" width="18" height="14" rx="2"/>
+  <text class="" x="138" y="290" text-anchor="start" style="font-size:18px">Lessons/</text>
+  <text class="m" x="330" y="290" text-anchor="start" style="font-size:16px">wrong turns I took on the way</text>
+  <path class="lnm" d="M46 306 V334 H62"/>
+  <rect class="litf" x="70" y="325" width="18" height="14" rx="2"/>
+  <text class="" x="98" y="340" text-anchor="start" style="font-size:18px">Harness/</text>
+  <text class="m" x="330" y="340" text-anchor="start" style="font-size:16px">install package, our knowledge base,</text>
+  <text class="m" x="330" y="390" text-anchor="start" style="font-size:16px">the programs it needs, and the guides</text>
 </svg>

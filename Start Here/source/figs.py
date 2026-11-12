@@ -28,7 +28,7 @@ class Fig:
 
 def chain():
     f=Fig(400, 760)
-    steps=['Read the requirement','Find the code','Write the code','Run tests on DEV','Check the data','Update the ticket','Check the pipeline','Review every line']
+    steps=['Read the requirement','Find the code','Write the code','Run tests on DEV','Check the data','Check the pipeline','Update the ticket','Review every line']
     for i,s in enumerate(steps):
         x=10+(i%4)*188; y=40 if i<4 else 200
         ai = (i==2)
@@ -41,57 +41,87 @@ def chain():
     f.save('chain')
 
 def axes():
-    f=Fig(470, 720)
-    f.arrow(150,420,150,20); f.arrow(150,420,710,420)
+    f=Fig(470, 740)
+    f.arrow(150,420,150,20); f.arrow(150,420,730,420)
     f.text(138,40,'Vertical','a','end',18); f.text(138,64,'what it can do','m','end',15); f.text(138,84,'and knows','m','end',15)
-    f.text(710,452,'Horizontal: how safe and easy it is to use','a','end',18)
-    f.box(170,330,230,70,['Chat AI','writes code you paste in'],fs=16,tcls=['a',''])
-    f.box(170,150,240,96,['An agent alone','does more, but you','watch every step'],fs=16,tcls=['a','',''])
-    f.box(460,36,240,96,['Agent + harness','takes the whole task,','and you can trust it'],cls='lit',tcls=['a','',''],fs=16)
-    f.arrow(285,330,288,250,dash=True); f.arrow(410,170,460,110,acc=True)
+    f.text(730,452,'Horizontal: how safe and easy it is to use','a','end',18)
+    f.box(170,318,250,86,['Chat','answers you;','you do the rest'],fs=16,tcls=['a','',''])
+    f.box(170,150,250,96,['Agent alone','does more by itself, but','you watch every step'],fs=16,tcls=['a','',''])
+    f.box(470,36,250,96,['Agent + harness','takes the whole task,','and you can trust it'],cls='lit',tcls=['a','',''],fs=16)
+    f.arrow(295,318,295,250,dash=True); f.arrow(420,170,470,110,acc=True)
     f.save('axes')
 
 def outside():
-    f=Fig(470, 720)
-    f.box(10,150,170,120,['Model','Opus, Sonnet,','GPT ...'],tcls=['a','m','m'])
-    f.text(205,218,'+','a',fs=34)
-    f.raw('<rect class="lit" x="230" y="20" width="480" height="380" rx="14"/>')
-    f.text(470,50,'Harness: the layer around the model','a',fs=18)
-    f.text(350,84,'Vertical','a',fs=17); f.text(350,104,'what it can reach and know','m',fs=14)
-    for i,t in enumerate(['our domain knowledge','tickets and pipelines','DEV and IST databases','finding the cause']):
-        f.box(250,120+i*62,200,48,[t],fs=15)
-    f.text(590,84,'Horizontal','a',fs=17); f.text(590,104,'what controls and checks it','m',fs=14)
-    for i,t in enumerate(['short task forms','approvals','guardrails','independent review','board and reports']):
-        f.box(490,118+i*54,200,42,[t],fs=15)
-    f.text(360,448,'A bigger model changes only the left box. The bill goes up; the problems stay.','m',fs=15)
+    # Agent = Model + Harness, as three boxes
+    f=Fig(400, 760)
+    f.box(10,40,180,250,['Model','','thinks and writes','','Opus, Sonnet,','GPT …'],tcls=['a','','','','m','m'],fs=17)
+    f.text(212,176,'+','a',fs=34)
+    f.raw('<rect class="lit" x="236" y="40" width="300" height="250" rx="10"/>')
+    f.text(386,74,'Harness','a',fs=18)
+    f.text(386,112,'Vertical:','a',fs=16); f.text(386,136,'what the agent can','',fs=16); f.text(386,158,'reach and know','',fs=16)
+    f.text(386,204,'Horizontal:','a',fs=16); f.text(386,228,'what keeps it','',fs=16); f.text(386,250,'safe and easy to use','',fs=16)
+    f.text(560,176,'=','a',fs=34)
+    f.box(584,40,166,250,['An agent','you can hand','a whole task to'],tcls=['a','',''],fs=17)
+    f.raw('<rect class="soft" x="10" y="318" width="740" height="66" rx="10"/>')
+    f.text(380,346,'A bigger model changes only the first box.',fs=17)
+    f.text(380,370,'The bill goes up; the problems stay.','m',fs=16)
     f.save('outside')
 
 def mapping():
-    f=Fig(430, 1200)
-    f.text(140,24,'The problem','m',fs=16); f.text(430,24,'The ability','m',fs=16); f.text(860,24,'In my harness','m',fs=16)
-    rows=[('AI only writes code','Vertical','Tickets and pipelines · finding the cause · tests on DEV and IST'),
-          ('It does not know our domain','Vertical','Our domain and the requirement'),
-          ('A long prompt for every task','Horizontal','Start a task from a form'),
-          ('I do not dare to let go','Horizontal','Two approvals · approval before outside writes · guardrails · independent review'),
-          ('The boss gets no answers','Horizontal','The board · auditability')]
-    for i,(a,b,c) in enumerate(rows):
-        y=44+i*76
-        f.box(10,y,260,58,[a],fs=16)
-        f.arrow(270,y+29,330,y+29)
-        f.box(330,y,200,58,[b],cls='lit',tcls='a',fs=17)
-        f.arrow(530,y+29,590,y+29,acc=True)
-        f.box(590,y,600,58,[c],fs=16)
+    W=1100; FS=18; LH=28
+    rows=[('1. AI only writes code',[('Vertical',['It reads and updates tickets','It finds why a pipeline failed','It runs tests on DEV and IST'])]),
+          ('2. It does not know our systems',[('Vertical',['It learns our systems once and keeps what it learned']),
+                                              ('Horizontal',['You start a task from a short form, not a long prompt'])]),
+          ('3. I do not dare to let go',[('Horizontal',['You approve the plan and the result','You approve every write to a ticket or a database','Code blocks dangerous actions','A second agent checks the work'])]),
+          ('4. The boss gets no answers',[('Horizontal',['One page shows every task','Reports show where the time and money went'])])]
+    y=56; parts=[]
+    for prob,subs in rows:
+        y0=y
+        for ab,items in subs:
+            h=max(56, 22+len(items)*LH)
+            parts.append(('sub',y,h,ab,items)); y+=h+10
+        parts.append(('prob',y0,y-10-y0,prob)); y+=14
+    f=Fig(y, W)
+    f.text(150,30,'The problem','m',fs=16); f.text(410,30,'The ability','m',fs=16); f.text(790,30,'In my harness','m',fs=16)
+    for p in parts:
+        if p[0]=='prob':
+            _,y0,h,prob=p; f.box(10,y0,290,h,[prob],fs=FS)
+        else:
+            _,ys,h,ab,items=p
+            f.arrow(300,ys+h/2,340,ys+h/2)
+            f.box(340,ys,140,h,[ab],cls='lit',tcls='a',fs=FS)
+            f.arrow(480,ys+h/2,520,ys+h/2,acc=True)
+            f.raw(f'<rect class="box" x="520" y="{ys}" width="{W-530}" height="{h}" rx="8"/>')
+            t0=ys+h/2-(len(items)-1)*LH/2+FS*0.35
+            for i,it in enumerate(items):
+                f.raw(f'<circle class="litf" cx="544" cy="{t0+i*LH-FS*0.33:.1f}" r="4"/>')
+                f.text(558,f'{t0+i*LH:.1f}',it,'','start',FS)
     f.save('mapping')
 
+def envs():
+    f=Fig(330, 900)
+    f.text(450,32,'What the agent may do on each database','a',fs=19)
+    f.box(10,56,420,190,['DEV and IST','','Reads run.','Changes wait for your approval,','or run after you open it','for this task.'],cls='lit',tcls=['a','','','','',''],fs=18)
+    f.box(450,56,215,190,['QAT','','Not opened','by default.'],tcls=['a','','',''],fs=18)
+    f.box(685,56,205,190,['PROD','','Read only.','Never opened','for changes.'],tcls=['a','','','',''],fs=18)
+    f.raw('<rect class="soft" x="10" y="266" width="880" height="52" rx="10"/>')
+    f.text(450,299,'Every command and what it returned is kept in the task.',fs=17)
+    f.save('envs')
+
 def tree():
-    f=Fig(430, 700)
-    rows=[(0,'AI Exploration/','a'),(1,'Start Here  (you are here)','m'),(1,'Harness Engineering 101/',''),(2,'Basic/   Advanced/   Mindset/','m'),
-          (1,'Showcase/',''),(2,'Real Tasks/   Lessons/','m'),(1,'Harness/',''),(2,'install package · knowledge base · programs/ · guides','m')]
-    for i,(d,t,c) in enumerate(rows):
-        y=40+i*48; x=30+d*40
-        if d: f.raw(f'<path class="lnm" d="M{x-24} {y-32} V{y-6} H{x-8}"/>')
-        if d<2: f.raw(f'<rect class="{"litf" if c=="" or d==0 else "soft"}" x="{x}" y="{y-15}" width="18" height="14" rx="2"/>')
-        f.text(x+(28 if d<2 else 0),y,t,c,'start',18)
+    f=Fig(420, 820)
+    rows=[(0,'AI Exploration/','a',''),(1,'Start Here','','you are here'),(1,'Harness Engineering 101/','','short courses: Basic, Advanced, Mindset'),
+          (1,'Showcase/','',''),(2,'Real Tasks/','','real task pages, each with a one-page note'),(2,'Lessons/','','wrong turns I took on the way'),
+          (1,'Harness/','','install package, our knowledge base,'),(2,'','','the programs it needs, and the guides')]
+    for i,(d,t,c,note) in enumerate(rows):
+        y=40+i*50; x=30+d*40
+        if d and t: f.raw(f'<path class="lnm" d="M{x-24} {y-34} V{y-6} H{x-8}"/>')
+        if t: f.raw(f'<rect class="{"litf" if d<2 else "soft"}" x="{x}" y="{y-15}" width="18" height="14" rx="2"/>')
+        tx=x+28
+        if t: f.text(tx,y,t,c or ('' if d<2 else ''),'start',18)
+        if note:
+            nx = 330 if t else 330
+            f.text(nx,y,note,'m','start',16)
     f.save('tree')
 
 CSS = '''text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
@@ -102,7 +132,7 @@ CSS = '''text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 
 def main():
     names=[]
-    for fn in (chain, axes, outside, mapping, tree): fn(); names.append(fn.__name__)
+    for fn in (chain, axes, outside, mapping, envs, tree): fn(); names.append(fn.__name__)
     # inline the CSS so each SVG stands alone, then render PNGs with Chrome
     for n in names:
         p=f'{OUT}/{n}.svg'; s=open(p).read()

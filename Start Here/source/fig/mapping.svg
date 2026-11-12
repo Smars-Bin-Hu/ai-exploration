@@ -1,60 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" width="1200" height="430">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 592" width="1100" height="592">
   <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 .m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
 .box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
 .litf{fill:#e8590c}.inkf{fill:#141414}.ln{stroke:#141414;stroke-width:1.5;fill:none}.lna{stroke:#e8590c;stroke-width:2;fill:none}
 .lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
-  <text class="m" x="140" y="24" text-anchor="middle" style="font-size:16px">The problem</text>
-  <text class="m" x="430" y="24" text-anchor="middle" style="font-size:16px">The ability</text>
-  <text class="m" x="860" y="24" text-anchor="middle" style="font-size:16px">In my harness</text>
-  <rect class="box" x="10" y="44" width="260" height="58" rx="8"/>
-  <text class="" x="140.0" y="78.6" text-anchor="middle" style="font-size:16px">AI only writes code</text>
-  <path class="ln" d="M270 73 L318.0 73.0"/>
-  <path d="M330 73 L318.0 79.0 L318.0 67.0Z" fill="#141414"/>
-  <rect class="lit" x="330" y="44" width="200" height="58" rx="8"/>
-  <text class="a" x="430.0" y="79.0" text-anchor="middle" style="font-size:17px">Vertical</text>
-  <path class="lna" d="M530 73 L578.0 73.0"/>
-  <path d="M590 73 L578.0 79.0 L578.0 67.0Z" fill="#e8590c"/>
-  <rect class="box" x="590" y="44" width="600" height="58" rx="8"/>
-  <text class="" x="890.0" y="78.6" text-anchor="middle" style="font-size:16px">Tickets and pipelines · finding the cause · tests on DEV and IST</text>
-  <rect class="box" x="10" y="120" width="260" height="58" rx="8"/>
-  <text class="" x="140.0" y="154.6" text-anchor="middle" style="font-size:16px">It does not know our domain</text>
-  <path class="ln" d="M270 149 L318.0 149.0"/>
-  <path d="M330 149 L318.0 155.0 L318.0 143.0Z" fill="#141414"/>
-  <rect class="lit" x="330" y="120" width="200" height="58" rx="8"/>
-  <text class="a" x="430.0" y="154.9" text-anchor="middle" style="font-size:17px">Vertical</text>
-  <path class="lna" d="M530 149 L578.0 149.0"/>
-  <path d="M590 149 L578.0 155.0 L578.0 143.0Z" fill="#e8590c"/>
-  <rect class="box" x="590" y="120" width="600" height="58" rx="8"/>
-  <text class="" x="890.0" y="154.6" text-anchor="middle" style="font-size:16px">Our domain and the requirement</text>
-  <rect class="box" x="10" y="196" width="260" height="58" rx="8"/>
-  <text class="" x="140.0" y="230.6" text-anchor="middle" style="font-size:16px">A long prompt for every task</text>
-  <path class="ln" d="M270 225 L318.0 225.0"/>
-  <path d="M330 225 L318.0 231.0 L318.0 219.0Z" fill="#141414"/>
-  <rect class="lit" x="330" y="196" width="200" height="58" rx="8"/>
-  <text class="a" x="430.0" y="230.9" text-anchor="middle" style="font-size:17px">Horizontal</text>
-  <path class="lna" d="M530 225 L578.0 225.0"/>
-  <path d="M590 225 L578.0 231.0 L578.0 219.0Z" fill="#e8590c"/>
-  <rect class="box" x="590" y="196" width="600" height="58" rx="8"/>
-  <text class="" x="890.0" y="230.6" text-anchor="middle" style="font-size:16px">Start a task from a form</text>
-  <rect class="box" x="10" y="272" width="260" height="58" rx="8"/>
-  <text class="" x="140.0" y="306.6" text-anchor="middle" style="font-size:16px">I do not dare to let go</text>
-  <path class="ln" d="M270 301 L318.0 301.0"/>
-  <path d="M330 301 L318.0 307.0 L318.0 295.0Z" fill="#141414"/>
-  <rect class="lit" x="330" y="272" width="200" height="58" rx="8"/>
-  <text class="a" x="430.0" y="306.9" text-anchor="middle" style="font-size:17px">Horizontal</text>
-  <path class="lna" d="M530 301 L578.0 301.0"/>
-  <path d="M590 301 L578.0 307.0 L578.0 295.0Z" fill="#e8590c"/>
-  <rect class="box" x="590" y="272" width="600" height="58" rx="8"/>
-  <text class="" x="890.0" y="306.6" text-anchor="middle" style="font-size:16px">Two approvals · approval before outside writes · guardrails · independent review</text>
-  <rect class="box" x="10" y="348" width="260" height="58" rx="8"/>
-  <text class="" x="140.0" y="382.6" text-anchor="middle" style="font-size:16px">The boss gets no answers</text>
-  <path class="ln" d="M270 377 L318.0 377.0"/>
-  <path d="M330 377 L318.0 383.0 L318.0 371.0Z" fill="#141414"/>
-  <rect class="lit" x="330" y="348" width="200" height="58" rx="8"/>
-  <text class="a" x="430.0" y="382.9" text-anchor="middle" style="font-size:17px">Horizontal</text>
-  <path class="lna" d="M530 377 L578.0 377.0"/>
-  <path d="M590 377 L578.0 383.0 L578.0 371.0Z" fill="#e8590c"/>
-  <rect class="box" x="590" y="348" width="600" height="58" rx="8"/>
-  <text class="" x="890.0" y="382.6" text-anchor="middle" style="font-size:16px">The board · auditability</text>
+  <text class="m" x="150" y="30" text-anchor="middle" style="font-size:16px">The problem</text>
+  <text class="m" x="410" y="30" text-anchor="middle" style="font-size:16px">The ability</text>
+  <text class="m" x="790" y="30" text-anchor="middle" style="font-size:16px">In my harness</text>
+  <path class="ln" d="M300 109.0 L328.0 109.0"/>
+  <path d="M340 109.0 L328.0 115.0 L328.0 103.0Z" fill="#141414"/>
+  <rect class="lit" x="340" y="56" width="140" height="106" rx="8"/>
+  <text class="a" x="410.0" y="115.3" text-anchor="middle" style="font-size:18px">Vertical</text>
+  <path class="lna" d="M480 109.0 L508.0 109.0"/>
+  <path d="M520 109.0 L508.0 115.0 L508.0 103.0Z" fill="#e8590c"/>
+  <rect class="box" x="520" y="56" width="570" height="106" rx="8"/>
+  <circle class="litf" cx="544" cy="81.4" r="4"/>
+  <text class="" x="558" y="87.3" text-anchor="start" style="font-size:18px">It reads and updates tickets</text>
+  <circle class="litf" cx="544" cy="109.4" r="4"/>
+  <text class="" x="558" y="115.3" text-anchor="start" style="font-size:18px">It finds why a pipeline failed</text>
+  <circle class="litf" cx="544" cy="137.4" r="4"/>
+  <text class="" x="558" y="143.3" text-anchor="start" style="font-size:18px">It runs tests on DEV and IST</text>
+  <rect class="box" x="10" y="56" width="290" height="106" rx="8"/>
+  <text class="" x="155.0" y="115.3" text-anchor="middle" style="font-size:18px">1. AI only writes code</text>
+  <path class="ln" d="M300 214.0 L328.0 214.0"/>
+  <path d="M340 214.0 L328.0 220.0 L328.0 208.0Z" fill="#141414"/>
+  <rect class="lit" x="340" y="186" width="140" height="56" rx="8"/>
+  <text class="a" x="410.0" y="220.3" text-anchor="middle" style="font-size:18px">Vertical</text>
+  <path class="lna" d="M480 214.0 L508.0 214.0"/>
+  <path d="M520 214.0 L508.0 220.0 L508.0 208.0Z" fill="#e8590c"/>
+  <rect class="box" x="520" y="186" width="570" height="56" rx="8"/>
+  <circle class="litf" cx="544" cy="214.4" r="4"/>
+  <text class="" x="558" y="220.3" text-anchor="start" style="font-size:18px">It learns our systems once and keeps what it learned</text>
+  <path class="ln" d="M300 280.0 L328.0 280.0"/>
+  <path d="M340 280.0 L328.0 286.0 L328.0 274.0Z" fill="#141414"/>
+  <rect class="lit" x="340" y="252" width="140" height="56" rx="8"/>
+  <text class="a" x="410.0" y="286.3" text-anchor="middle" style="font-size:18px">Horizontal</text>
+  <path class="lna" d="M480 280.0 L508.0 280.0"/>
+  <path d="M520 280.0 L508.0 286.0 L508.0 274.0Z" fill="#e8590c"/>
+  <rect class="box" x="520" y="252" width="570" height="56" rx="8"/>
+  <circle class="litf" cx="544" cy="280.4" r="4"/>
+  <text class="" x="558" y="286.3" text-anchor="start" style="font-size:18px">You start a task from a short form, not a long prompt</text>
+  <rect class="box" x="10" y="186" width="290" height="122" rx="8"/>
+  <text class="" x="155.0" y="253.3" text-anchor="middle" style="font-size:18px">2. It does not know our systems</text>
+  <path class="ln" d="M300 399.0 L328.0 399.0"/>
+  <path d="M340 399.0 L328.0 405.0 L328.0 393.0Z" fill="#141414"/>
+  <rect class="lit" x="340" y="332" width="140" height="134" rx="8"/>
+  <text class="a" x="410.0" y="405.3" text-anchor="middle" style="font-size:18px">Horizontal</text>
+  <path class="lna" d="M480 399.0 L508.0 399.0"/>
+  <path d="M520 399.0 L508.0 405.0 L508.0 393.0Z" fill="#e8590c"/>
+  <rect class="box" x="520" y="332" width="570" height="134" rx="8"/>
+  <circle class="litf" cx="544" cy="357.4" r="4"/>
+  <text class="" x="558" y="363.3" text-anchor="start" style="font-size:18px">You approve the plan and the result</text>
+  <circle class="litf" cx="544" cy="385.4" r="4"/>
+  <text class="" x="558" y="391.3" text-anchor="start" style="font-size:18px">You approve every write to a ticket or a database</text>
+  <circle class="litf" cx="544" cy="413.4" r="4"/>
+  <text class="" x="558" y="419.3" text-anchor="start" style="font-size:18px">Code blocks dangerous actions</text>
+  <circle class="litf" cx="544" cy="441.4" r="4"/>
+  <text class="" x="558" y="447.3" text-anchor="start" style="font-size:18px">A second agent checks the work</text>
+  <rect class="box" x="10" y="332" width="290" height="134" rx="8"/>
+  <text class="" x="155.0" y="405.3" text-anchor="middle" style="font-size:18px">3. I do not dare to let go</text>
+  <path class="ln" d="M300 529.0 L328.0 529.0"/>
+  <path d="M340 529.0 L328.0 535.0 L328.0 523.0Z" fill="#141414"/>
+  <rect class="lit" x="340" y="490" width="140" height="78" rx="8"/>
+  <text class="a" x="410.0" y="535.3" text-anchor="middle" style="font-size:18px">Horizontal</text>
+  <path class="lna" d="M480 529.0 L508.0 529.0"/>
+  <path d="M520 529.0 L508.0 535.0 L508.0 523.0Z" fill="#e8590c"/>
+  <rect class="box" x="520" y="490" width="570" height="78" rx="8"/>
+  <circle class="litf" cx="544" cy="515.4" r="4"/>
+  <text class="" x="558" y="521.3" text-anchor="start" style="font-size:18px">One page shows every task</text>
+  <circle class="litf" cx="544" cy="543.4" r="4"/>
+  <text class="" x="558" y="549.3" text-anchor="start" style="font-size:18px">Reports show where the time and money went</text>
+  <rect class="box" x="10" y="490" width="290" height="78" rx="8"/>
+  <text class="" x="155.0" y="535.3" text-anchor="middle" style="font-size:18px">4. The boss gets no answers</text>
 </svg>

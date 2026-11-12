@@ -30,13 +30,13 @@
   <rect class="inkf" x="130" y="188" width="44" height="24" rx="12"/>
   <text class="inv" x="152" y="205" text-anchor="middle" style="font-size:14px">You</text>
   <rect class="box" x="198" y="200" width="172" height="96" rx="8"/>
-  <text class="" x="284.0" y="242.4" text-anchor="middle" style="font-size:17px">Update the</text>
-  <text class="" x="284.0" y="265.4" text-anchor="middle" style="font-size:17px">ticket</text>
+  <text class="" x="284.0" y="242.4" text-anchor="middle" style="font-size:17px">Check the</text>
+  <text class="" x="284.0" y="265.4" text-anchor="middle" style="font-size:17px">pipeline</text>
   <rect class="inkf" x="318" y="188" width="44" height="24" rx="12"/>
   <text class="inv" x="340" y="205" text-anchor="middle" style="font-size:14px">You</text>
   <rect class="box" x="386" y="200" width="172" height="96" rx="8"/>
-  <text class="" x="472.0" y="242.4" text-anchor="middle" style="font-size:17px">Check the</text>
-  <text class="" x="472.0" y="265.4" text-anchor="middle" style="font-size:17px">pipeline</text>
+  <text class="" x="472.0" y="242.4" text-anchor="middle" style="font-size:17px">Update the</text>
+  <text class="" x="472.0" y="265.4" text-anchor="middle" style="font-size:17px">ticket</text>
   <rect class="inkf" x="506" y="188" width="44" height="24" rx="12"/>
   <text class="inv" x="528" y="205" text-anchor="middle" style="font-size:14px">You</text>
   <rect class="box" x="574" y="200" width="172" height="96" rx="8"/>

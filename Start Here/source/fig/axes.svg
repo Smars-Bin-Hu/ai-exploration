@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" width="720" height="470">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 470" width="740" height="470">
   <style>text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 .m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
 .box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
@@ -6,25 +6,26 @@
 .lnm{stroke:#cfcfca;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 5}</style>
   <path class="ln" d="M150 420 L150.0 32.0"/>
   <path d="M150 20 L156.0 32.0 L144.0 32.0Z" fill="#141414"/>
-  <path class="ln" d="M150 420 L698.0 420.0"/>
-  <path d="M710 420 L698.0 426.0 L698.0 414.0Z" fill="#141414"/>
+  <path class="ln" d="M150 420 L718.0 420.0"/>
+  <path d="M730 420 L718.0 426.0 L718.0 414.0Z" fill="#141414"/>
   <text class="a" x="138" y="40" text-anchor="end" style="font-size:18px">Vertical</text>
   <text class="m" x="138" y="64" text-anchor="end" style="font-size:15px">what it can do</text>
   <text class="m" x="138" y="84" text-anchor="end" style="font-size:15px">and knows</text>
-  <text class="a" x="710" y="452" text-anchor="end" style="font-size:18px">Horizontal: how safe and easy it is to use</text>
-  <rect class="box" x="170" y="330" width="230" height="70" rx="8"/>
-  <text class="a" x="285.0" y="359.6" text-anchor="middle" style="font-size:16px">Chat AI</text>
-  <text class="" x="285.0" y="381.6" text-anchor="middle" style="font-size:16px">writes code you paste in</text>
-  <rect class="box" x="170" y="150" width="240" height="96" rx="8"/>
-  <text class="a" x="290.0" y="181.6" text-anchor="middle" style="font-size:16px">An agent alone</text>
-  <text class="" x="290.0" y="203.6" text-anchor="middle" style="font-size:16px">does more, but you</text>
-  <text class="" x="290.0" y="225.6" text-anchor="middle" style="font-size:16px">watch every step</text>
-  <rect class="lit" x="460" y="36" width="240" height="96" rx="8"/>
-  <text class="a" x="580.0" y="67.6" text-anchor="middle" style="font-size:16px">Agent + harness</text>
-  <text class="" x="580.0" y="89.6" text-anchor="middle" style="font-size:16px">takes the whole task,</text>
-  <text class="" x="580.0" y="111.6" text-anchor="middle" style="font-size:16px">and you can trust it</text>
-  <path class="ln dash" d="M285 330 L287.6 262.0"/>
-  <path d="M288 250 L293.5 262.2 L281.6 261.8Z" fill="#141414"/>
-  <path class="lna" d="M410 170 L452.3 119.2"/>
-  <path d="M460 110 L456.9 123.1 L447.7 115.4Z" fill="#e8590c"/>
+  <text class="a" x="730" y="452" text-anchor="end" style="font-size:18px">Horizontal: how safe and easy it is to use</text>
+  <rect class="box" x="170" y="318" width="250" height="86" rx="8"/>
+  <text class="a" x="295.0" y="344.6" text-anchor="middle" style="font-size:16px">Chat</text>
+  <text class="" x="295.0" y="366.6" text-anchor="middle" style="font-size:16px">answers you;</text>
+  <text class="" x="295.0" y="388.6" text-anchor="middle" style="font-size:16px">you do the rest</text>
+  <rect class="box" x="170" y="150" width="250" height="96" rx="8"/>
+  <text class="a" x="295.0" y="181.6" text-anchor="middle" style="font-size:16px">Agent alone</text>
+  <text class="" x="295.0" y="203.6" text-anchor="middle" style="font-size:16px">does more by itself, but</text>
+  <text class="" x="295.0" y="225.6" text-anchor="middle" style="font-size:16px">you watch every step</text>
+  <rect class="lit" x="470" y="36" width="250" height="96" rx="8"/>
+  <text class="a" x="595.0" y="67.6" text-anchor="middle" style="font-size:16px">Agent + harness</text>
+  <text class="" x="595.0" y="89.6" text-anchor="middle" style="font-size:16px">takes the whole task,</text>
+  <text class="" x="595.0" y="111.6" text-anchor="middle" style="font-size:16px">and you can trust it</text>
+  <path class="ln dash" d="M295 318 L295.0 262.0"/>
+  <path d="M295 250 L301.0 262.0 L289.0 262.0Z" fill="#141414"/>
+  <path class="lna" d="M420 170 L462.3 119.2"/>
+  <path d="M470 110 L466.9 123.1 L457.7 115.4Z" fill="#e8590c"/>
 </svg>
