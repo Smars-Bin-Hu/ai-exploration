@@ -7,6 +7,9 @@ Start Here/source/_twin.*
 # company only: added on the company computer, never committed
 Showcase/Real Tasks/*
 !Showcase/Real Tasks/README.md
+!Showcase/Real Tasks/_template/
 Harness/*.zip
 Harness/programs/*
 !Harness/programs/README.md
+Showcase/source/_pages/
+Showcase/source/_twin-*
