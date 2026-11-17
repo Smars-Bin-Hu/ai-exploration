@@ -64,15 +64,16 @@ PAGES = [
 
  dict(kicker='Step 2 · Let it check', title='When the work is written, the reviewer is called',
   text=[
-   ('steps', ['The agent runs `harness task review start`: the harness saves this version and writes what the reviewer gets.',
-              'The agent calls the reviewer with one sentence, no reasoning.',
-              'The harness saves the answer as `REVIEW/round-001/verdict.md`.']),
-   'Meanwhile the task shows **working**; the **Live** tab shows the reviewer’s steps.',
+   ('steps', ['The agent runs `harness task review start`: this version is saved.',
+              'It calls the reviewer, with no reasoning.',
+              'The answer is saved in `REVIEW/`.']),
+   'Meanwhile **Live** shows the reviewer’s steps.',
+   'If `REQ.md` asks for a run you do first, the task **waits for your run**: do it and send the result in the chat. No check starts before.',
   ],
   shot='The Live tab of a task while a check runs: the reviewer call, with its latest steps under it',
   notes='Sources: messages.en.json review.start.next (one sentence, no reasoning), review.call.no_round; taskreview.py L6-8; '
         'docs/02-features.md L266 (Live shows a subagent’s steps), L338 (working while a subagent runs), L314 (Review tab says which round is out); '
-        'not_ready L320-329 (no check used while the person’s run is not back).'),
+        'not_ready L320-329, mark_run L338-356 (no check used while the person’s run is not back); messages.en.json review.runs_missing, review.runs_marked, task.waiting.run; docs/02-features.md L102.'),
 
  dict(kicker='How they count', title='Passes count in a row, on the work as it is now',
   text=[
