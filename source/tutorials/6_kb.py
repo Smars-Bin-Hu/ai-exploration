@@ -50,7 +50,7 @@ PAGES = [
 
  dict(steps=[
    dict(pic=(B + 'kb-company.png', (36, 216, 2364, 800)),
-        text='**Company**: the tool packs, skills and standards the knowledge base brings.'),
+        text='**Company**: what your agent has (tools, skills, standards) and where each comes from.'),
    dict(pic=(B + 'kb-domains.png', (36, 204, 2364, 420)),
         text='**Domains**: every domain, its state, and **Learn** or **Refresh cards**.'),
   ],
@@ -75,8 +75,8 @@ PAGES = [
         'SKILL.md harness-rookie-new-knowledgebase (Prerequisites; "continue the knowledge base"); road.md (about an hour of your time, once).'),
 
  dict(steps=[
-   dict(pic=(B + 'kb-lookup.png', (36, 300, 1300, 690)),
-        text='**Toolkit**: give 5 to 10 uses you know, like “job Shop_Orders calls usp_load_orders”.'),
+   dict(shot='VS Code: the toolkit-design chat in which the agent asks for 5 to 10 uses the person knows', aspect=16/10,
+        text='**Toolkit**: in the chat, the agent asks for 5 to 10 uses you know (“job X runs Y”).'),
    dict(shot='VS Code: a new Copilot chat with /generic-kb-toolkit-build typed in the chat box, not sent', aspect=16/10,
         text='After its design, open a new chat and type `/generic-kb-toolkit-build`: only you may start it.'),
   ],
@@ -95,7 +95,9 @@ PAGES = [
 
  dict(steps=[
    dict(pic=(B + 'kb-overview.png', (36, 330, 2364, 486)),
-        text='Press **Learn**. Give the entry points (where work starts) and the scope.'),
+        text='Press **Learn**: the **New task** window opens, filled in (Kind **knowledge base update**).'),
+   dict(pic=(B + 'new-task.png', (43, 1447, 1058, 1728)),
+        text='Add the entry points (where work starts) and the scope, then press **Create and send**.'),
    dict(pic=(B + 'plan.png', (78, 300, 2148, 533)),
         text='On the task page, read the plan and its batches; press **Approve plan** once.'),
   ],
@@ -110,7 +112,7 @@ PAGES = [
         text='No batch left: no button. Say `continue learn-<domain>` in a new chat; it writes the architecture.'),
   ],
   notes='Sources: dock.js learn() (generic-kb-learn-plan, kind kb, task learn-<domain>), goOn() (generic-kb-learn-batch), nextCard() '
-        '(dock.kb.next.finish has no button); messages dock.kb.next.plan/approve/batch/finish, dock.kb.go.chat; generic-kb-learn-plan step 7 (approve once); '
+        '(dock.kb.next.finish has no button); dock.js taskChat → CHAT.create (Learn and Refresh cards fill the New task window; board.new.go = "Create and send", dock.task.note); messages dock.kb.next.plan/approve/batch/finish, dock.kb.go.chat; generic-kb-learn-plan step 7 (approve once); '
         'generic-kb-learn-batch SKILL.md step 6 ("continue learn-<d>"; a new chat every two or three batches); kbstatus.next.task_architecture. '
         'Plan picture: a development task, for the Approve plan card. Go on in a chat: docs/images/kb-overview.png (1.7.45 docs, dark theme).'),
 
@@ -126,20 +128,22 @@ PAGES = [
  # ---- Keep it true ------------------------------------------------------------------------------------------
  dict(group='Keep it true', steps=[
    dict(pic=(B + 'kb-health.png', (36, 480, 2364, 696)),
-        text='Code changed? **Health** lists stale cards. **Refresh cards** opens a chat for a fix task.'),
+        text='Code changed? **Health** lists stale cards. **Refresh cards** fills **New task**: press **Create and send**.'),
    dict(pic=(B + 'tour-reply.png', (40, 345, 1185, 480)),
         text='A task taught something? Under **Say something**, press **Capture what was learned**.'),
    dict(pic=(B + 'tour-reply.png', (30, 950, 1195, 1050)),
-        text='That only fills the box: press **Send**. It drafts `KB-DRAFT.md`; nothing is written in yet.'),
+        text='That only fills the box. Press **Send** when the chat is idle; here it waits for an answer.'),
   ],
   notes='Sources: messages fetch.kb.stale (a fetched card that is older is history), dock.kb.health.stale/changed, dock.kb.refresh.cards; '
         'dock.js refresh() (generic-kb-refresh, kind kb, task refresh-<domain>); task.step.close (the agent may offer it at the end, never unasked); '
-        'web/reply.js L60-69 (a chip puts the slash command in the box; the person presses Send); generic-capture-knowledge SKILL.md '
+        'web/reply.js L170-186 (Send only when the chat is idle; Steer while busy; off while it waits for an answer); web/reply.js L60-69 (a chip puts the slash command in the box; the person presses Send); generic-capture-knowledge SKILL.md '
         '(writes KB-DRAFT.md only; putting it in is a kb task).'),
 
  dict(steps=[
+   dict(pic=(B + 'new-task.png', (43, 119, 1058, 243)),
+        text='It drafts `KB-DRAFT.md` only. To write it in: **New task**, Kind **knowledge base update**; point at the draft.'),
    dict(pic=(B + 'kb-changes-promote.png', (33, 22, 2198, 111)),
-        text='A task of kind **knowledge base update** writes it: requirement and plan, as on any task.'),
+        text='That task has a requirement and a plan to approve, as on any task.'),
    dict(pic=(B + 'kb-changes-promote.png', (78, 733, 2142, 1232)),
         text='In **Changes**, read each card’s diff: is its source cited? Any secrets or customer data?'),
   ],
@@ -162,7 +166,7 @@ PAGES = [
    dict(pic=(B + 'new-task.png', (43, 513, 1058, 670)),
         text='In **New task**, tick the domains under **Knowledge base**, or **None**. Here none exist yet.'),
    dict(shot='VS Code: the Copilot chat of a demo task, showing the agent reading knowledge-base/README.md and the domain’s architecture.md', aspect=16/10,
-        text='The agent reads `README.md`, the domain’s `architecture.md`, one index line, one card, then that code.'),
+        text='It reads `README.md` and the domain’s `architecture.md`; an index line, a card, the code only if needed.'),
   ],
   notes='Sources: messages board.new.kb = "Knowledge base", board.new.kb.none = "None", board.new.kb.hint, board.new.kb.empty; web/chat.js L284-319; '
         '.github/instructions/knowledgebase.instructions.md "Reading, for a task" 1-6 (a LOG.md line per step deeper; a wrong card noted and raised at the next stop); '
