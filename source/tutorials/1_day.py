@@ -90,6 +90,18 @@ PAGES = [
   notes='Sources: docs/01-quickstart.md step 5 points 5-6; gate/handler.py L38-88 (edit tools: DEV/ after the plan, never a target working tree); '
         'messages.en.json board.action.send, task.waiting.go-plan, desk.hint.steer, desk.reply.pill.'),
 
+ dict(kicker='Sometimes · Your run', title='Do the run it hands you',
+  text=[
+   'Some “done when” items need a run you do, such as on DEV, before the write-back. The board says **waits for your run**; the card says what.',
+   'Run it. Under **Give the results here**, paste the **Output**, add screenshots, press **Save and send to the agent**. Until then, checks and the write-back wait.',
+   ('small', 'Or give the result in the chat.'),
+  ],
+  shot='A task page that says waits for your run: the card with what to run, and the Give the results here form below it',
+  notes='Sources: messages.en.json task.waiting.run, desk.wait.run(.form), desk.inbox.* (Give the results here, Output, What you ran, Add pictures, '
+        'Save and send to the agent / Save to the task when no chat is linked), review.runs_marked, task.handoff.next.run; '
+        'docs/02-features.md L102-103 ([R...] items); taskreview.py L320-373 (no check starts until the run is back; the harness marks the handoff itself); '
+        'web/desk.js L905-915, L960-990 (the form on the card, INBOX/<env>/).'),
+
  dict(kicker='Step 8 · Read the checks', title='Read the check results',
   text=[
    'Only when you asked: press **Independent review** on the task page and pick 1, or write `[review]=1`. A separate reviewer checks the work.',
