@@ -1,6 +1,8 @@
-# AI Exploration：从这里开始
+# 为什么 AI 辅助开发在我们团队一直没有落地，缺的是什么
 
 > 简中原稿第 4 版（2026-11-12；同日补上 Agent Performance Review，第 6 页和第 18 页各拆成两页，共 20 页）。三拍：共鸣 → 结论和根因 → 我的 harness 是解决方案（截图是证据）→ 下一步。按读者卡写（studio `skills/write-team-post/读者卡.md`）：读者是同组同事和 lead、manager，只用过 Copilot chat；harness 自己的词只留 harness、task、board、知识库，第一次出现讲清，其余换成大白话。图里的字只用英文，直接写在图位里。
+>
+> 2026-11-17：改名，原来的名字（从这里开始）不说它讲什么。新名字站在团队和 leader 的高度：为什么 AI 辅助开发在团队里一直没有落地。封面标题跟着改，副标题只留“harness 怎么补上”。末页去掉目录图：`AI Exploration/0 MUST READ.pdf` 是唯一的地图，末页只用一句话指向它，“找谁”的两条留着。
 >
 > 这一版改了什么：
 > - 第 2 页不再用“假如……我猜……第一步”的框架，按这一页的用处重写：让读者认出自己每天的样子（意见 4）。
@@ -15,9 +17,9 @@
 
 ## 第 1 页 · 封面
 
-**AI Exploration：从这里开始**
+**为什么 AI 辅助开发在我们团队一直没有落地，缺的是什么**
 
-为什么 AI 在我们团队的实际工作里用不起来，缺的是什么，我给 Copilot 加的那一层（harness）怎么补上。
+以及我给 Copilot 加的那一层（harness）怎么补上。
 
 ---
 
@@ -232,14 +234,12 @@
 
 ## 第 20 页 · 下一步 · 看完以后：去哪里，找谁
 
-这份文档在 OneDrive 的 AI Exploration 文件夹里。看完以后，按你想做的事走：
+这份文档在 OneDrive 的 AI Exploration 文件夹里。看完以后去哪里，打开同一个文件夹里排在第一个的 `0 MUST READ.pdf`：它列出四个文件夹，各给谁看。
 
-- **想自己试一试**：去 `Harness/`。安装包、我们团队的知识库、要装的程序（比如 Python）、安装和使用教程都在里面。
 - **想先看我演示**：找我（Smars Hu）约一次 demo，用一个真实的任务从头走到尾。
 - **想在团队里试点**（lead、manager）：找我一起挑几个真实的 intake，交给 harness 从头做到尾，用报告看省了多少时间、花了多少钱。
-- **想先多了解一点**：去 `Harness Engineering 101/` 读 Basic；去 `Showcase/Real Tasks/` 看真实 task 花了多少时间、多少钱、哪里被拦下；`Showcase/Lessons/` 是我一路踩过的坑。
 
-【图：目录树，每个文件夹旁一句它是什么：Start Here (you are here) · Harness Engineering 101/ — short courses: Basic, Advanced, Mindset · Showcase/ — Real Tasks: real task pages, each with a one-page note; Lessons: wrong turns I took · Harness/ — install package, our knowledge base, the programs it needs, and the guides】
+（这一页不放图：文件夹的地图只在 `0 MUST READ.pdf` 里。）
 
 ---
 

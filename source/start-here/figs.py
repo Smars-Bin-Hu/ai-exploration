@@ -1,4 +1,4 @@
-# Figures for Start Here: SVG in fig/, then PNG (3x) for the PowerPoint. Run: ../../.venv/bin/python figs.py (needs Chrome).
+# Figures for the leader deck (Why AI-assisted development has not taken off): SVG in fig/, then PNG (3x) for the PowerPoint. Run: ../../.venv/bin/python figs.py (needs Chrome).
 import math, os, subprocess, json
 H = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(H, 'fig')
@@ -144,22 +144,6 @@ def reviews():
     f.text(380,406,'A cause in the harness goes to the person who maintains it.','m',fs=15)
     f.save('reviews')
 
-def tree():
-    f=Fig(420, 820)
-    rows=[(0,'AI Exploration/','a',''),(1,'Start Here','','you are here'),(1,'Harness Engineering 101/','','short courses: Basic, Advanced, Mindset'),
-          (1,'Showcase/','',''),(2,'Real Tasks/','','real task pages, each with a one-page note'),(2,'Lessons/','','wrong turns I took on the way'),
-          (1,'Harness/','','install package, our knowledge base,'),(2,'','','the programs it needs, and the guides')]
-    for i,(d,t,c,note) in enumerate(rows):
-        y=40+i*50; x=30+d*40
-        if d and t: f.raw(f'<path class="lnm" d="M{x-24} {y-34} V{y-6} H{x-8}"/>')
-        if t: f.raw(f'<rect class="{"litf" if d<2 else "soft"}" x="{x}" y="{y-15}" width="18" height="14" rx="2"/>')
-        tx=x+28
-        if t: f.text(tx,y,t,c or ('' if d<2 else ''),'start',18)
-        if note:
-            nx = 330 if t else 330
-            f.text(nx,y,note,'m','start',16)
-    f.save('tree')
-
 CSS = '''text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 .m{fill:#6b6b6b;font-style:italic}.a{fill:#e8590c;font-weight:bold}.inv{fill:#fff;font-family:Arial,sans-serif;font-weight:bold}
 .box{fill:#fff;stroke:#141414;stroke-width:1.5}.soft{fill:#f2f1ec}.lit{fill:#fff;stroke:#e8590c;stroke-width:2.2}
@@ -168,7 +152,7 @@ CSS = '''text{font-family:Georgia,"Times New Roman",serif;fill:#141414}
 
 def main():
     names=[]
-    for fn in (chain, axes, outside, what, mapping, envs, reviews, tree): fn(); names.append(fn.__name__)
+    for fn in (chain, axes, outside, what, mapping, envs, reviews): fn(); names.append(fn.__name__)
     # inline the CSS so each SVG stands alone, then render PNGs with Chrome
     for n in names:
         p=f'{OUT}/{n}.svg'; s=open(p).read()

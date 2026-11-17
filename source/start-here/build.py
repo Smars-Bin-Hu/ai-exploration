@@ -1,4 +1,5 @@
-# Start Here: one layout, two outputs. source/start-here/Start Here.pptx (editable text boxes) and an HTML twin printed to AI Exploration/1 Showcase/Start Here.pdf.
+# Why AI-assisted development has not taken off (the leader deck; this folder keeps its old name, start-here): one layout, two outputs.
+# source/start-here/<NAME>.pptx (editable text boxes) and an HTML twin printed to AI Exploration/1 Showcase/<NAME>.pdf.
 # Once the PowerPoint is edited by hand it is the newer one: do not rebuild over it; export its PDF from PowerPoint instead.
 # Run from the repo root: .venv/bin/python source/start-here/build.py   (needs Chrome, and playwright-core from ~/Developer/smarshu.com)
 import os, sys
@@ -14,13 +15,14 @@ def img(name):
         if os.path.exists(p): return p
     raise FileNotFoundError(name)
 
-D = Deck('AI Exploration · Start Here')
+NAME = 'Why AI-assisted development has not taken off'
+D = Deck('AI Exploration · ' + NAME)
 page, head = D.page, Deck.head
 
 # cover
-page([T(0.9, 2.3, 10, 0.4, [[S.COVER['kicker']]], 13, C['accent'], SANS, bold=True, caps=True, spacing=2),
-      T(0.9, 2.8, 11, 1.2, [[S.COVER['title']]], 60, C['ink'], SERIF, ls=1.0),
-      T(0.9, 4.2, 8.6, 1.2, [[S.COVER['sub']]], 20, C['muted'], SERIF)], footer=False)
+page([T(0.9, 1.9, 10, 0.4, [[S.COVER['kicker']]], 13, C['accent'], SANS, bold=True, caps=True, spacing=2),
+      T(0.9, 2.4, 11.2, 2.4, [[S.COVER['title']]], 44, C['ink'], SERIF, ls=1.0),
+      T(0.9, 5.0, 8.6, 1.0, [[S.COVER['sub']]], 20, C['muted'], SERIF)], footer=False)
 
 for st in S.STORY:
     els = head(st['kicker'], st['title'])
@@ -71,10 +73,13 @@ for bh in S.BEHIND:
     els.append(P(img(bh['fig']), 6.7, 1.75, 5.9, 5.1, border=True))
     page(els, dark=True)
 
+# the last page: no folder map of its own; one card points to 0 MUST READ.pdf, then who to ask
 ix = S.INDEX
-page(head(ix['kicker'], ix['title']) + [T(0.75, 1.75, 5.55, 5.0, ix['paras'], 14, C['ink'], SERIF, space=12), P(img(ix['fig']), 6.65, 1.75, 5.95, 5.0)])
+page(head(ix['kicker'], ix['title']) + [R(0.75, 1.8, 11.8, 1.05, fill=C['wash']), R(0.75, 1.8, 0.06, 1.05, fill=C['accent'], radius=False),
+     T(1.05, 1.98, 11.2, 0.75, [ix['map']], 16, C['ink'], SERIF),
+     T(0.75, 3.25, 11.8, 3.4, ix['paras'], 16, C['ink'], SERIF, space=14)])
 
-pptx_path = f'{H}/Start Here.pptx'
+pptx_path = f'{H}/{NAME}.pptx'
 D.save_pptx(pptx_path)
-D.save_pdf(H, f'{H}/_twin.html', f'{ROOT}/AI Exploration/1 Showcase/Start Here.pdf', f'{H}/_pages')
+D.save_pdf(H, f'{H}/_twin.html', f'{ROOT}/AI Exploration/1 Showcase/{NAME}.pdf', f'{H}/_pages')
 print(len(D.pages), 'slides ->', pptx_path)

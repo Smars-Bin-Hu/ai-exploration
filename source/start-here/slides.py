@@ -1,8 +1,8 @@
-# The English text of Start Here, retold by meaning from zh-Hans.md (v4, 2026-11-12). build.py lays it out.
+# The English text of the leader deck (Why AI-assisted development has not taken off), retold by meaning from zh-Hans.md (v4, 2026-11-12). build.py lays it out.
 # A paragraph is a list of runs: plain strings, or ('b', text) for bold, ('i', text) for italic, ('a', text) for the accent colour.
 
-COVER = dict(kicker='AI Exploration', title='Start here',
-    sub='Why AI is not yet part of our team’s real work, what is missing, and how the layer I added around Copilot, a harness, fills the gap.')
+COVER = dict(kicker='AI Exploration', title='Why AI-assisted development has not taken off in our team, and what is missing',
+    sub='And how the layer I added around Copilot, a harness, fills the gap.')
 
 STORY = [
  dict(kicker='The problem', title='How we hand a task to AI today', fig='chain', paras=[
@@ -115,10 +115,9 @@ BEHIND = [
  ]),
 ]
 
-INDEX = dict(kicker='Where to go next', title='After reading: where to go, who to ask', fig='tree', paras=[
-  ['This document is in the AI Exploration folder on OneDrive. After reading, go where you want to go:'],
-  [('b','Try it yourself. '),'Go to ',('a','Harness/'),': the install package, our team’s knowledge base, the programs it needs (such as Python), and the install and user guides.'],
+INDEX = dict(kicker='Where to go next', title='After reading: where to go, who to ask',
+ map=['This document is in the AI Exploration folder on OneDrive. For where to go next, open ',('a','0 MUST READ.pdf'),', the first file in that folder. It lists the four folders and who each one is for.'],
+ paras=[
   [('b','See a demo first. '),'Ask me (Smars Hu) for a demo: one real task, from start to finish.'],
   [('b','Try it in the team '),'(leads and managers). Ask me to pick a few real intakes together, hand them to the harness from start to finish, and use the reports to see how much time it saved and what it cost.'],
-  [('b','Learn more first. '),'Read Basic in ',('a','Harness Engineering 101/'),'. In ',('a','Showcase/Real Tasks/'),', see how much time and money real tasks took and where they were stopped. ',('a','Showcase/Lessons/'),' holds the wrong turns I took on the way.'],
 ])

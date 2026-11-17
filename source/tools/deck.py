@@ -1,4 +1,4 @@
-# The slide engine shared by Start Here and the Showcase templates: one page model, two outputs.
+# The slide engine shared by the leader deck (Why AI-assisted development has not taken off), the Showcase templates and the tutorials: one page model, two outputs.
 # A .pptx with editable text boxes, and an HTML twin printed to PDF by Chrome (playwright-core from ~/Developer/smarshu.com),
 # which also reports text that does not fit its box.
 import os, html, subprocess
