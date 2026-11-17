@@ -13,9 +13,9 @@ COVER = dict(
 PAGES = [
  dict(kicker='Step 1 · Open the board', title='Open the board',
   text=[
-   'Double-click **Start Harness** and keep its black window open. When every line at the bottom left is green, press **Enter**.',
-   'The **board** is the harness’s page in your browser: every task, its state, and what waits for you. '
-   '**Lobby** shows each task as a robot, **List** as a table. Tasks that wait for you come first.',
+   'Double-click **Start Harness** and keep its black window open. When every line under **Harness & Local** is green, press **Enter**. **From the company** may stay yellow.',
+   'The **board** is the harness’s page in your browser: every task and what waits for you. '
+   '**Lobby** shows tasks as robots, **List** as a table.',
   ],
   pic=A + 'board-list.png',
   caption='The List view. The Do column has the button for your next move.',
@@ -61,9 +61,9 @@ PAGES = [
 
  dict(kicker='Step 5 · Confirm the requirement', title='Check that it understood you',
   text=[
-   'The agent writes the **requirement**, `REQ.md`: what to do, what not to do, when it is done, and what is not clear yet.',
-   'Open **Requirement**. Is every item what you meant, with nothing added? Wrong: tell the agent. Right: press **Confirm requirement** and type the six-character code.',
-   ('small', 'The board waits for this on development, testing and knowledge base tasks only.'),
+   'The agent writes the **requirement** (`REQ.md`): what to do and not, when it is done, what is unclear.',
+   'Open **Requirement**: is each item what you meant, nothing added? If not, tell the agent. If so, press **Confirm requirement** and type the code.',
+   ('small', 'Needed on development, testing and knowledge base tasks, and on tasks raised to change a repository.'),
   ],
   shot='A development task page, tab Requirement open, with the Confirm requirement button at the top',
   notes='Sources: messages.en.json board.action.confirm-req, desk.hint.confirm-req, req.changed, desk.tab.bang.unfinished; '
@@ -82,22 +82,23 @@ PAGES = [
 
  dict(kicker='Step 7 · Let it work', title='Let it work, and follow it',
   text=[
-   'Now the agent copies the files it changes into the task folder (`DEV/`) and works there. Its edit tools cannot write your repository: the write-back puts the files there.',
-   'Follow it on the **TODO** and **Live** tabs. To add a word while it works, press **Say something**.',
-   ('small', 'If the page says the agent was not told, press Send to agent.'),
+   'Now the agent copies the files it changes into the task folder (`DEV/`) and works there. Its edit tools cannot write your repository; the write-back does.',
+   'Follow it on the **TODO** and **Live** tabs. Press **Say something** to add a word.',
+   ('small', 'If the board says “the plan is approved: tell the agent to go on”, press Send to agent.'),
   ],
   pic=(A + 'task-todo.png', (40, 135, 990, 705)),
   caption='The TODO tab: the steps the agent ticks off.',
   notes='Sources: docs/01-quickstart.md step 5 points 5-6; gate/handler.py L38-88 (edit tools: DEV/ after the plan, never a target working tree); '
         'messages.en.json board.action.send, task.waiting.go-plan, desk.hint.steer, desk.reply.pill.'),
 
- dict(kicker='Step 8 · Read the checks', title='Read the check results, if you asked for checks',
+ dict(kicker='Step 8 · Read the checks', title='Read the check results',
   text=[
-   'Only when you asked: press **Independent review** at the top of the task page and pick 1, or write `[review]=1` in a message. A separate reviewer then checks the work.',
-   'The **Review** tab lists each check, PASS or FAIL, and what it found. The agent fixes a FAIL itself. The write-back waits for enough passes.',
+   'Only when you asked: press **Independent review** on the task page and pick 1, or write `[review]=1`. A separate reviewer checks the work.',
+   'The **Review** tab lists each check, PASS or FAIL, and what it found. The agent fixes a FAIL; the write-back waits for enough passes.',
+   ('small', 'Checks used up? You decide: More checks or Waive checks (deck 3).'),
   ],
   pic=(A + 'task-review.png', (40, 300, 990, 1380)),
-  caption='One FAIL, fixed, then two passes.',
+  caption='This task asked for 2: one FAIL, then two passes.',
   notes='Sources: docs/01-quickstart.md step 3 and step 5 point 7; messages.en.json desk.rv.button, desk.rv.hint, desk.tab.review; '
         'task.py L911-928 and taskreview.py L563-568 (dry run needs the passes); SKILL.md (checks on only when the user sets them).'),
 
@@ -113,14 +114,13 @@ PAGES = [
 
  dict(kicker='Step 10 · Commit', title='Commit the branch yourself',
   text=[
-   'The files land on a new branch named after the task, such as `feature/fix_login_timeout`, uncommitted. The board says **promoted: commit the files**.',
-   'Look at the files in your repository. On **Changes**, press **Copy commit message** or **Copy commands**. Commit, push and open the PR yourself.',
-   ('small', 'The board closes the task once the agent has stopped and nothing else waits.'),
+   'The files land on a new branch named after the task, such as `feature/fix_login_timeout`, uncommitted. Once the agent stops, the board closes the task by itself: closed does not mean committed.',
+   'Find it under **Closed**, open **Changes**, and press **Copy commit message** or **Copy commands**. Commit, push and open the PR yourself.',
   ],
-  shot='The Changes tab after the write-back: “Promoted: commit it with this message”, with Copy commit message and Copy commands',
+  shot='A closed development task, tab Changes: “Promoted: commit it with this message”, with Copy commit message and Copy commands',
   notes='Sources: promote_target.py L1-14 (new branch from the base branch, never commits); task.py default_branch L60-72; '
         'messages.en.json task.waiting.commit, promote.done.person, desk.changes.commit, desk.commit.copy, desk.commit.copy_commands; '
-        'accept.py L184-218 (board closes). A knowledge base task is different: one commit on its base branch (deck 5).'),
+        'accept.py L184-218 (board closes; QUIET_WAITS includes commit; boardserve.py SWEEP_EVERY 5 s); docs/02-features.md L249. A knowledge base task is different: one commit on its base branch (deck 5).'),
 
  dict(kicker='Another ending', title='A task that changes no repository: Accept and close',
   text=[
