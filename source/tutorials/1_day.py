@@ -88,24 +88,28 @@ PAGES = [
  # ---- Approve -----------------------------------------------------------------------------------------------
  dict(group='Approve', steps=[
    dict(pic=(B + 'requirement.png', (66, 1050, 1720, 1673)),
-        text='Open **Requirement** (`REQ.md`). Is each item what you meant? If not, tell the agent.'),
-   dict(pic=(B + 'requirement.png', (80, 300, 1000, 520)),
+        text='Open **Requirement** (`REQ.md`). Is each item what you meant? If not, say so in the chat.'),
+   dict(pic=(B + 'requirement.png', (72, 290, 2144, 515)),
         text='Right? Press **Confirm requirement**. Needed on development, testing, knowledge base and repository-changing tasks.'),
+  ],
+  notes='Sources: messages.en.json board.action.confirm-req, desk.hint.confirm-req; taskdesk.py L533-535 (full tier only); templates/task/en/REQ.md.'),
+
+ dict(steps=[
    dict(pic=B + 'approve-code.png',
         text='A window shows the file and a six-character code. Type the code, press **Approve**.'),
+   dict(pic=(B + 'plan.png', (66, 764, 1150, 1884)),
+        text='Open **Plan**: the files that change, the steps, how it is checked, the risks.'),
   ],
   notes='Sources: messages.en.json board.action.confirm-req, desk.hint.confirm-req, req.screen.*, req.question, approval.ask; approval.py CODE_LENGTH 6; '
         'taskdesk.py L533-535 (waits on every full-tier task: dev, test, kb, and a task raised to change a repository); task.py L570-612.'),
 
  dict(steps=[
-   dict(pic=(B + 'plan.png', (66, 764, 1150, 1884)),
-        text='Open **Plan**: the files that change, the steps, how it is checked, the risks.'),
-   dict(pic=(B + 'plan.png', (80, 300, 1000, 520)),
-        text='Agree? Press **Approve plan** and type its code. Not yet? Tell the agent.'),
+   dict(pic=(B + 'plan.png', (72, 290, 1730, 515)),
+        text='Agree? Press **Approve plan**: the same window, its own code, **Approve**. Changes? Say them in the chat.'),
    dict(shot='A task page whose state reads “the plan is approved: tell the agent to go on”, with the Send to agent button', aspect=16/5,
-        text='The board says “the plan is approved: tell the agent to go on”? Press **Send to agent**.'),
+        text='The board usually wakes the agent. If it says “… tell the agent …”, press **Send to agent**.'),
   ],
-  notes='Sources: messages.en.json task.waiting.plan, desk.hint.approve-plan, plan.question, task.waiting.go-plan, board.action.send; '
+  notes='Sources: messages.en.json task.waiting.plan, desk.hint.approve-plan, plan.question, task.waiting.go-req, task.waiting.go-plan, task.waiting.go-promote, board.action.send; tasklife.py L273 GO_MARKS; '
         'task.py L428-475 (--with-req: one code confirms the requirement too); docs/01-quickstart.md step 5 points 4-5.'),
 
  # ---- Follow the work ---------------------------------------------------------------------------------------
@@ -120,11 +124,13 @@ PAGES = [
  dict(steps=[
    dict(pic=(B + 'run.png', (73, 299, 2144, 483)),
         text='**waits for your run**: some checks need a run you do, such as on DEV.'),
-   dict(pic=(B + 'run.png', (73, 1429, 2144, 2425)),
-        text='Run it. Paste the **Output**, add pictures, press **Save and send to the agent** (no chat: **Save to the task**).'),
+   dict(pic=(B + 'run.png', (73, 1420, 2144, 2060)),
+        text='Run it. Paste the **Output**, add pictures, then press **Save and send to the agent**.'),
+   dict(pic=(B + 'run.png', (73, 2050, 520, 2425)),
+        text='No chat linked? **Save to the task** only saves. Then **Copy message** it shows into the chat.'),
   ],
   notes='Sources: messages.en.json task.waiting.run, desk.wait.run.form, desk.inbox.* (Save and send to the agent; Save to the task when no chat is linked, as in the picture); '
-        'docs/02-features.md L102-103; taskreview.py L320-373 (no check or write-back until the run is back).'),
+        'desk.inbox.save, desk.inbox.done (Saved in {folder}/. Now tell the agent:), web/desk.js L945-989 (no bound chat: told false, promptLine); docs/02-features.md L102-103; taskreview.py L320-373 (no check or write-back until the run is back).'),
 
  dict(steps=[
    dict(pic=(B + 'review.png', (1300, 105, 2200, 200)),
@@ -140,9 +146,9 @@ PAGES = [
  # ---- Finish ------------------------------------------------------------------------------------------------
  dict(group='Finish', steps=[
    dict(pic=(B + 'changes-promote.png', (66, 720, 2144, 1518)),
-        text='**the promote (write-back repo) waits**: read every diff on **Changes**. It is exactly what goes in.'),
+        text='“the promote (write-back repo) waits for your approval”: read every diff on **Changes**.'),
    dict(pic=(B + 'changes-promote.png', (72, 299, 2144, 576)),
-        text='Press **Approve promote** and type the code. The files go on a new branch, uncommitted.'),
+        text='That diff is exactly what goes in. Press **Approve promote** and type the code: new branch, uncommitted.'),
   ],
   notes='Sources: messages.en.json task.waiting.promote, desk.hint.approve-promote, promote.question, promote.screen.repo; promote_target.py L1-14; task.py L941-944, L984-1024.'),
 
@@ -178,6 +184,7 @@ PAGES = [
 
 CLOSING = dict(title='That is the day',
   text=[
-   'Every task goes the same way: you say what, the agent asks and writes, and you read before each approval: the requirement, the plan, the write-back.',
-   'When the agent is refused, or a call waits for your approval, read **2 When the agent is stopped**.',
+   'A task that changes a repository always goes this way: you say what, the agent writes, and you read before each approval: requirement, plan, write-back.',
+   'Any other task (a question, an RCA, a design) ends with a summary **to accept**.',
+   'Refused, or a call waits for you? Read **2 When the agent is stopped**.',
   ])
