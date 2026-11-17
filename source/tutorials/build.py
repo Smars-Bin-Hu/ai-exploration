@@ -268,7 +268,7 @@ def make(slug, X, imgs):
         groups.append(group if kind != 'closing' else None)
 
     if cv is not None:
-        how = [f'Harness version {VERSION}.' + (' Follow the numbered steps in order.' if 'steps' in kinds else ' One step per page.'),
+        how = [f'Harness version {VERSION}.' + (' Numbered small steps, a screenshot each.' if slug == '2_tour' else ' Follow the numbered steps in order.' if 'steps' in kinds else ' One step per page.'),
                '**Bold** is what you see on the screen. `Courier` is what you type.'] + list(cv.get('how', []))
         D.page([T(0.9, 1.9, 10, 0.4, [[cv.get('kicker', 'Harness tutorials' + (f' · {num}' if num else ''))]], 13, C['accent'], SANS, bold=True, caps=True, spacing=2),
                 T(0.9, 2.4, 11.5, 1.2, [[cv.get('title', title)]], 54, C['ink'], SERIF, ls=1.0),

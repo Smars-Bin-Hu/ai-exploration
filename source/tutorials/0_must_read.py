@@ -5,22 +5,21 @@
 COVER = None
 PAGES = []
 
-CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture books for working with the harness',
+CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture manuals for the harness',
   text=[
-   'Installed the harness? These picture books, one step per page, start where **Install the harness** ends.',
+   'For after **Install the harness**. Numbered small steps, a screenshot each.',
    ('steps', [
-    '**A day with the harness**: one task, from the board to your commit. Read it first.',
+    '**A day with the harness**: one task, from start to your commit. Read it first.',
     '**A tour of the harness**: every screen of the harness and what you can do there.',
-    '**When the agent is stopped**: why the harness stops it, and what you do. When it happens.',
-    '**Independent checks**: a second agent checks the work. When you want checks.',
-    '**Outside systems and connections**: calls to company systems. When yours are connected.',
-    '**Knowledge base**: pages on your code for the agent. When your team builds or keeps one.',
+    '**When the agent is stopped**: why, and what you do.',
+    '**Independent checks**: a second agent checks the work.',
+    '**Outside systems and connections**: calls to company systems.',
+    '**Knowledge base**: the team knowledge base, built and kept up.',
    ]),
-   'Inside the harness, two courses run in Copilot chat in VS Code. Type:',
+   'After installing, in VS Code Copilot chat:',
    ('list', [
-    '`/harness-rookie-quick-start`: a first lesson that takes a newcomer through one practice task.',
-    '`/harness-rookie-wondering`: how a coding agent and the harness work underneath. The agent reads '
-    'the harness files, so it is the most direct way in, but it spends GitHub Copilot credits.',
+    '`/harness-rookie-quick-start` walks you through a first task.',
+    '`/harness-rookie-wondering` teaches it all from the code (spends Copilot credits).',
    ]),
   ],
   notes='Decks: the cover lines of 1-6 (1.7.45). Courses: .github/skills/harness-rookie-quick-start/SKILL.md (description, '
