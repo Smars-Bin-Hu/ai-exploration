@@ -1,24 +1,34 @@
 # AI Exploration
 
-The source of the company OneDrive folder "AI Exploration". Pull it on the company computer, add the company-only files there, and copy the folder to OneDrive.
+The source of the company OneDrive folder "AI Exploration". Two parts:
 
-| Folder | What is in it | Where it comes from |
+- **`AI Exploration/`** is what people read. Copy this folder, and only this folder, to the team OneDrive. On the company computer, add the company-only files inside it (see below).
+- **`source/`** is how it is built: sources, build scripts, the Guide's questions and rules. Never copied to OneDrive.
+
+## What people find in `AI Exploration/`
+
+| Folder | What is in it | Built from |
 |---|---|---|
-| `Start Here/` | `Start Here.pptx` (edit this one) and `Start Here.pdf` (preview) | built from `Start Here/source/` |
-| `Harness Engineering 101/` | slidedoc PDFs: `Basic/`, `Advanced/`, `Mindset/` | exported from the smarshu.com repository (`npm run export:team`) |
-| `Showcase/` | `Lessons/` (PDFs) and `Real Tasks/` | `Real Tasks/` is company only: added on the company computer, never committed |
-| `Guide/` | The Harness Guide: the knowledge files of an M365 Copilot agent that answers questions about the harness (`Knowledge/`), how to build the agent (`AGENT.md`) and the questions it is tested with (`questions.md`, not a knowledge source) | built from `Guide/source/` (`python3 Guide/source/build.py`, needs pandoc and Chrome) |
-| `Deep Dive/` | One sample topic (Task) of an earlier plan; its facts are reused by the Guide | built from `Deep Dive/source/` |
-| `Harness/` | the harness install package, the knowledge base, `programs/`, the guides | zips and installers are not committed (see `.gitignore`) |
+| `1 Showcase/` | `Start Here.pdf` (the entry for a leader), `Real Tasks/` (one folder per real task: a deck and the task page saved as HTML), `Lessons/` | Start Here: `source/start-here/`. The Real Tasks template: `source/showcase/`. Real tasks are company only, never committed |
+| `2 Ask the Harness Guide/` | `Knowledge/`: the files of the M365 Copilot agent that answers questions about the harness (the agent reads this folder only) | `source/guide/` |
+| `3 Courses/` | slidedoc PDFs: `Basic/`, `Advanced/` | exported from the smarshu.com repository (`npm run export:team`) |
+| `4 Install the harness/` | the harness install package, the knowledge base, `programs/`, the guides | zips and installers are company only, never committed |
+| `_Archive/` | earlier material kept for reference (the Deep Dive Task sample) | `source/deep-dive/` |
 
-## Build Start Here
+## Build
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install python-pptx pillow
-.venv/bin/python "Start Here/source/build.py"
 ```
 
-- The text is in `Start Here/source/slides.py` (English, retold from `zh-Hans.md`). Figures: `figs.py` writes `fig/*.svg` and `fig/*.png`. Screenshots: `img/`.
-- `build.py` writes the PowerPoint and an HTML twin of it, prints the twin to the PDF, and reports text that does not fit its box. It needs Google Chrome and `playwright-core` from `~/Developer/smarshu.com`.
-- After you edit the PowerPoint by hand on the company computer, that file is the newer one: do not rebuild over it.
-- Phone review pages: `review_html.py <out.html>` (the Chinese draft with its figures and screenshots, and the cold-read record from `review-notes.md`); `preview_html.py <out.html>` (the English slides, page by page, after `build.py`).
+Every build needs Google Chrome and `playwright-core` from `~/Developer/smarshu.com`. Run from the repository root.
+
+- **Harness Guide:** `python3 source/guide/build.py` (also needs pandoc). How it is written: `source/guide/RULES.md`. How to build the agent in M365 Copilot: `source/guide/AGENT.md`. The questions it is tested with, with their expected answers: `source/guide/questions.md`; never put this file where the agent can read it.
+- **Start Here:** the PowerPoint `source/start-here/Start Here.pptx` is the one to edit. Once it is edited by hand it is the newer one: export its PDF from PowerPoint to `AI Exploration/1 Showcase/Start Here.pdf`, and do not run `source/start-here/build.py` over it (that script writes both files from `slides.py`).
+- **Real Tasks template:** `.venv/bin/python source/showcase/build.py`.
+- **Deep Dive (archived):** `python3 source/deep-dive/build.py 04-task`.
+
+## Update the OneDrive folder
+
+1. Build what changed and push.
+2. On the company computer: pull, then copy `AI Exploration/` over the OneDrive folder. The company-only files in OneDrive (real tasks, zips, installers) are not in the repository, so a copy does not remove them.

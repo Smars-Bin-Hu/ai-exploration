@@ -1,18 +1,20 @@
 .venv/
 .DS_Store
 __pycache__/
+
 # build scratch
-Start Here/source/_pages/
-Start Here/source/_twin.*
+source/start-here/_pages/
+source/start-here/_twin.*
+source/showcase/_pages/
+source/showcase/_twin-*
+source/deep-dive/topics/*/_pages/
+source/deep-dive/topics/*/_twin.*
+source/deep-dive/topics/*/_draft.pdf
+
 # company only: added on the company computer, never committed
-Showcase/Real Tasks/*
-!Showcase/Real Tasks/README.md
-!Showcase/Real Tasks/_template/
-Harness/*.zip
-Harness/programs/*
-!Harness/programs/README.md
-Showcase/source/_pages/
-Showcase/source/_twin-*
-Deep Dive/source/topics/*/_pages/
-Deep Dive/source/topics/*/_twin.*
-Deep Dive/source/topics/*/_draft.pdf
+AI Exploration/1 Showcase/Real Tasks/*
+!AI Exploration/1 Showcase/Real Tasks/README.md
+!AI Exploration/1 Showcase/Real Tasks/_template/
+AI Exploration/4 Install the harness/*.zip
+AI Exploration/4 Install the harness/programs/*
+!AI Exploration/4 Install the harness/programs/README.md
