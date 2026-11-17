@@ -1,179 +1,160 @@
-# Tutorial 3: When the agent is stopped. Checked against harness 1.7.45 (ref/harness-1.7.45, read only).
+# Harness tutorials · 3 When the agent is stopped: why the gate refuses or holds a call, where you see it,
+# and what you do: approve it, run it yourself, or let it be. One small step per picture.
 # Build: .venv/bin/python source/tutorials/build.py 3_stopped
+# Checked against harness 1.7.45 (.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/, read only); sources in each page's notes.
+# Board pictures: source/tutorials/img/_board/ (1.7.45, made-up data). Two rows come from 1.7.43 screens with the same words
+# (source/start-here/img/refusals-list.png, held-both.png): the 1.7.45 demo has no such refusal or approved card to capture.
+# Placeholders (VS Code, terminal, and two board states that need a live chat) are listed in shots/3_stopped.md.
+# Fact-check fixes kept (review/2_stopped-r1.md): a guardrail edit trips the integrity check (doctor --accept, or admin mode
+# switched on in your own terminal); the VS Code ask is only a reminder. Newcomer-test fixes kept: where the held call's code is;
+# what Allow / Deny do; never paste approval commands into the chat.
 
-H = '.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/'
-DOCIMG = H + 'docs/images/'
+B = 'source/tutorials/img/_board/'
+OLD = 'source/start-here/img/'
 
 COVER = dict(
-    sub='Why the harness stops the agent, where you see it, and what you do next: approve it, run it yourself, or let it be.',
-    how=['Read **A day with the harness** first: this one starts where the agent is stopped.'],
+ sub='Why the harness stops the agent, where you see it, and what you do next: '
+     'approve it, run it yourself, or let it be.',
+ how=['Read **1 A day with the harness** first: this deck starts where the agent is stopped.'],
 )
 
+CONTENTS = True
+
 PAGES = [
- dict(kicker='Step 1 · Know the gate', title='A refusal is the gate at work',
-  text=[
-   'The **gate** is harness code that checks the agent\u2019s file writes and terminal commands before they run. It answers:',
-   ('list', ['**passes**: most work, like reading and tests;',
-             '**refused**: the agent is told why, and what to do instead;',
-             '**waits for you**: you decide.']),
-   ('small', 'A refusal is not a fault. The agent is told not to look for a way round it.'),
+ # ---- Where you see it --------------------------------------------------------------------------------------
+ dict(group='Where you see it', steps=[
+   dict(pic=(B + 'stop-agent-actions.png', (40, 275, 1300, 440)),
+        text='Open the task, then **Records** › **Agent actions**.'),
+   dict(pic=(B + 'stop-agent-actions.png', (86, 570, 2128, 720)),
+        text='The **gate**, harness code, checks each agent call first. **blocked by a hook** counts its refusals.'),
+   dict(pic=(B + 'stop-agent-actions.png', (86, 745, 2128, 1480)),
+        text='Each refused call, with the gate’s reason. Click ▶ to read it whole.'),
   ],
-  notes='Sources (harness 1.7.45): .harness/engine/modules/gate/handler.py lines 1-12 (what the gate guards); '
-        '.harness/policies/gate.json "description"; docs/12-guardrails-and-gate.md "Three answers: pass, refuse, ask". '
-        'Each refusal text ends with "Do not retry" / "do not get around this": core/messages.en.json gate.* keys.'),
+  notes='Sources: messages.en.json desk.group.records = "Records", desk.tab.trace = "Agent actions", desk.trace.stat.blocked = "blocked by a hook", '
+        'desk.trace.problems = "Blocked and failed: {n}", desk.trace.deny = "blocked"; web/desk.js GROUPS (trace is in records); '
+        'modules/gate/handler.py lines 1-12 (what the gate guards); gate.json "description".'),
 
- dict(kicker='Step 2 · Files it will not touch', title='Files the agent is refused',
-  text=[
-   'The agent’s edit tools are refused on:',
-   ('list', ['the harness’s own **guardrail files**: its engine, policies and hooks;',
-             'any `.git` folder;',
-             'a **target repository**, where your team’s code lives: only the write-back, after your approval, writes there;',
-             'files only harness commands write, such as a task’s `.task/`.']),
-   ('small', 'A terminal command that writes to one of these, by name, is refused too.'),
+ dict(steps=[
+   dict(shot='Task page, Live: a command marked “Refused by the gate”, its reason on hover', aspect=16/7,
+        text='**Live** marks a refused command **Refused by the gate**. Point at it for the reason.'),
+   dict(shot='VS Code chat: a refused command, and the agent saying what was refused and why', aspect=16/10,
+        text='In the chat, the agent is told to stop and say what was refused, and why.'),
   ],
-  pic=('source/start-here/img/refusals-list.png', (0, 250, 2410, 600)),
-  caption='Two refusals: a file of a target repository, and a guardrail file (1.7.43).',
-  wide=True,
-  notes='Sources: modules/gate/handler.py check_write (lines 38-61) and check_terminal (lines 96-108); '
-        'policies/gate.json guardrail_paths and cli_owned_paths; messages gate.guardrail.file, gate.git_folder.file, '
-        'gate.target.direct, gate.cli_owned.file. Terminal: only a write that names the path (in full or after a cd in the same line).'),
+  notes='Sources: messages.en.json desk.live.refused = "Refused by the gate"; web/live.js lines 169-225 (the reason is the title on hover); '
+        'gate.* texts end with "stop and tell the user" / "Do not retry".'),
 
- dict(kicker='Step 3 · Inside a task', title='In a task, the agent writes in its folder',
-  text=[
-   'A **task** is one piece of work, kept as a folder. In the chat that holds an open task, its edit tools are also refused:',
-   ('list', ['outside the task folder;',
-             'in `DEV/`, where code goes, until you approve the plan;',
-             'in `REQ/`, `REF/`, `INBOX/`: what you gave.']),
-   ('small', 'A refusal in DEV/ means the plan waits: read it, then press Approve plan.'),
+ # ---- What is refused ---------------------------------------------------------------------------------------
+ dict(group='What is refused', steps=[
+   dict(pic=(B + 'stop-agent-actions.png', (88, 1305, 2128, 1445)),
+        text='A file in your repository: refused. Only the write-back, after your approval, writes there.'),
+   dict(pic=(OLD + 'refusals-list.png', (0, 458, 2410, 600)),
+        text='The harness’s own files (engine, policies, hooks) and any `.git` folder: refused.'),
+   dict(pic=(OLD + 'refusals-list.png', (0, 80, 2410, 250)),
+        text='In a task, edits stay in its folder. `DEV/` opens when you approve the plan.'),
   ],
-  pic=('source/start-here/img/refusals-list.png', (0, 80, 2410, 250)),
-  caption='DEV/ is refused until the plan is approved (1.7.43; same words in 1.7.45).',
-  wide=True,
-  notes='Sources: modules/gate/handler.py check_task_write (lines 64-88): a chat with no open task is not bound; '
-        'messages gate.task.outside, gate.task.plan_first, gate.task.person_files; board.action.approve-plan = "Approve plan".'),
+  notes='Sources: gate/handler.py check_write (lines 38-61), check_task_write (64-88; a chat with no open task is not bound), check_terminal (96-108: '
+        'a terminal write that names the path); gate.json guardrail_paths, cli_owned_paths; messages gate.target.direct, gate.guardrail.file, '
+        'gate.git_folder.file, gate.task.plan_first. The two lower pictures are 1.7.43 rows with the same words as 1.7.45.'),
 
- dict(kicker='Step 4 · Commands it will not run', title='Some commands are refused outright',
-  text=[
-   'In the terminal, the gate refuses:',
-   ('list', ['harmful ones: `sudo`, `rm -rf ~`, a download piped into a shell, `terraform apply`;',
-             'git commands that publish or drop work: `git push`, `git reset --hard`, `git clean`, any force;',
-             'other git writes (`git commit`) until you approve them;',
-             'harness commands only you run.']),
-   ('small', 'The git rules apply once target repositories are set up.'),
+ dict(steps=[
+   dict(pic=(B + 'stop-agent-actions.png', (88, 1145, 2128, 1280)),
+        text='`git push`, `reset --hard`, `clean`, any force, `sudo`, `rm -rf ~`: refused, never approved.'),
+   dict(pic=(B + 'stop-agent-actions.png', (88, 990, 2128, 1125)),
+        text='Other git writes wait for your code, once repositories are set up in **Get ready**; until then, git only asks.'),
+   dict(pic=(B + 'stop-agent-actions.png', (88, 830, 2128, 965)),
+        text='A destroy on an outside system: refused. Outside systems: deck 5.'),
   ],
-  notes='Sources: policies/gate.json terminal.deny (each "why"); modules/gate/gitcmd.py NEVER (push, clean, filter-branch, update-ref, prune, '
-        'reset --hard, branch -D, any force, gh pr); handler.py line 109: the git rules apply only when targets are configured '
-        '(guard_git=found.configured, line 770). Messages gate.terminal.denied, gate.git.never.'),
+  notes='Sources: gate.json terminal.deny (sudo, rm -rf of root/home/current folder, download piped into a shell, mkfs, terraform apply ...); '
+        'gitcmd.py NEVER (push, clean, filter-branch, update-ref, prune, reset --hard, branch -D, any force, gh pr); handler.py line 109 and 770: '
+        'the git rules apply only when target repositories are configured; otherwise only the ask rules of gate.json look at git (line 763): '
+        'push / reset --hard / clean ask, git commit passes. core/systems.py DEFAULT_RULES (destroy: deny); messages gate.git.never, gate.git.needs_approval, gate.external.denied.'),
 
- dict(kicker='Step 5 · Some commands ask you', title='VS Code asks before some commands',
-  text=[
-   'Some commands need your yes: deletes, network calls (`curl`, `ssh`), package installs. VS Code shows each in the chat: read it.',
-   'This is a reminder, not a lock: with **Allow all**, or after **Allow in this Session**, VS Code stops asking. Choose neither.',
-   ('small', 'Before target repositories are set up, git push and reset --hard only ask, and git commit passes.'),
+ # ---- Commands that ask -------------------------------------------------------------------------------------
+ dict(group='Commands that ask', steps=[
+   dict(shot='VS Code chat: a curl command waiting for your confirmation, the Allow menu open', aspect=16/10,
+        text='Deletes, `curl`, installs: the gate has VS Code ask you. A reminder, not a lock: never **Allow in this Session**.'),
+   dict(pic=(B + 'tour-reply.png', (40, 575, 1190, 835)),
+        text='A chat the board made starts with **Permissions** **Allow all**: then nothing asks, they just run.'),
+   dict(shot='Board, List: a task in state “the agent asks to run: …”, Do shows Allow · deny', aspect=16/5,
+        text='When VS Code asks, **State** reads **the agent asks to run: …** and **Do** has **Allow · deny**'),
+   dict(shot='Board: the Allow · deny window, with the command and its buttons', aspect=16/9,
+        text='**Allow · deny** shows the command: **Allow** runs that one call, **Deny** refuses it.'),
   ],
-  shot='The VS Code chat with an agent’s terminal command (for example a curl) waiting for your confirmation, its buttons visible',
-  notes='Sources: policies/gate.json terminal.ask ("it deletes files", "it goes on the network", "it installs packages"); '
-        'handler.py end of check_terminal: permission "ask" with gate.terminal.ask. Board: tasklife.py LIVE_WAITS, '
-        'messages task.waiting.confirm = "the agent asks to run: {what}", board.action.confirm = "Allow · deny". '
-        'Only a reminder: docs/02-features.md line 50 (Allow all shows no box; Allow in this Session is not asked again). '
-        'Without target repositories only the ask rules of gate.json look at git (handler.py lines 763, 770): git commit passes.'),
+  notes='Sources: gate.json terminal.ask (deletes, network, package installs, git history); handler.py end of check_terminal (permission "ask"); '
+        'docs/02-features.md line 50 ("only a reminder, not protection": Allow all shows no box; after Allow in this Session the session is not asked again); '
+        'messages board.new.fixed and create.refused.permission ("A chat made here is always allow all"), desk.set.permission = "Permissions"; chatnew.py PERMISSIONS; '
+        'task.waiting.confirm = "the agent asks to run: {what}", board.action.confirm = "Allow · deny", board.ask.allow, board.ask.deny, board.ask.confirm.hint; '
+        'web/chat.js confirm() (Allow, Deny, Cancel).'),
 
- dict(kicker='Step 6 · Where you see it', title='The chat tells you; the board keeps it',
-  text=[
-   'In the **chat**: the agent gets the gate’s reason, and is told to stop and say what was refused and why.',
-   'On the task page of the **board**: **Live** marks a refused command **Refused by the gate**. **Records** › **Agent actions** counts them (**blocked by a hook**) and lists each one with its reason.',
+ # ---- Approve a held call -----------------------------------------------------------------------------------
+ dict(group='Approve a held call', steps=[
+   dict(pic=(B + 'tour-list.png', (20, 2046, 1700, 2180)),
+        text='**an outside call waits for your approval**: press **Approve a call**.'),
+   dict(pic=(B + 'outside-held-card.png', (75, 300, 2140, 640)),
+        text='The card says what the call does. Press **View** for the whole command.'),
+   dict(pic=(B + 'outside-held-view.png', (0, 230, 1804, 340)),
+        text='In that window, click the code (after **The code**). It fills the card’s box.'),
+   dict(pic=(B + 'outside-held-card.png', (75, 735, 2140, 800)),
+        text='Press **Approve**. Or **Do not approve**, and pick why.'),
   ],
-  pic='source/start-here/img/refusals.png',
-  caption='Records › Agent actions (1.7.43; the same words in 1.7.45).',
-  wide=True,
-  notes='Sources: messages desk.live.refused = "Refused by the gate", desk.tab.trace = "Agent actions", desk.group.records = "Records", '
-        'desk.trace.stat.blocked = "blocked by a hook", desk.trace.problems = "Blocked and failed: {n}", desk.trace.deny = "blocked"; '
-        'modules/task/web/desk.js GROUPS (trace is in records); web/live.js lines 169-225 (the reason shows on hover).'),
+  notes='Sources: messages task.waiting.outbox, board.action.approve-action = "Approve a call", desk.outbox.view = "View", desk.outbox.window, '
+        'desk.outbox.asked (ends "The code:"), desk.outbox.code_tip ("Click: the code is copied and put in the card\'s box"), desk.outbox.approve, '
+        'desk.outbox.dismiss = "Do not approve", desk.outbox.reason.*; web/desk.js line 1296 (the code button); docs/04-reference.md approve-action row.'),
 
- dict(kicker='Step 7 · Waiting for you', title='What “waits for you” asks of you',
-  text=[
-   'On the board, **State** says what is needed; **Do** has the button:',
-   ('list', ['**waits for you**: read its chat, then reply (**Answer...**).',
-             '**the agent asks to run: \u2026**: **Allow \u00b7 deny** shows the command; **Allow** runs that one call, **Deny** refuses it.',
-             '**an outside call waits for your approval**: **Approve a call**.']),
-   ('small', 'A held git write shows as waits for you.'),
+ dict(steps=[
+   dict(pic=(OLD + 'held-both.png', (30, 624, 2448, 955)),
+        text='Shows **Tell the agent to run it**? Press it. It runs once, as written, within 10 minutes.'),
+   dict(pic=(B + 'outside-held-card.png', (75, 680, 2140, 855)),
+        text='**Open … for this task** lets such writes pass without asking. See deck 5 first.'),
   ],
-  pic=(DOCIMG + 'board-list.png', (40, 225, 965, 690)),
-  caption='The board, List view: the button for each wait is under Do.',
-  notes='Sources: modules/task/tasklife.py waiting() (lines 276-336) and LIVE_WAITS (line 346); modules/task/taskboard.py ACTIONS_BY_WAIT '
-        '(line 117) and actions(); messages task.waiting.stopped, task.waiting.confirm, task.waiting.outbox, task.waiting.plan, '
-        'board.action.answer, board.action.confirm, board.action.approve-action, board.action.approve-plan. '
-        'A git approval is not a wait reason: the agent stops, so the Stop hook marks the task "waits for you" (task/handler.py lines 398-411).'),
+  notes='Sources: messages desk.outbox.tell = "Tell the agent to run it", desk.outbox.tell.hint, desk.outbox.same_as; core/approvals.py DEFAULT_MINUTES = 10 '
+        '(gate.json git.approval_minutes); desk.outbox.open.items, desk.outbox.open.tip.items. The upper picture is a 1.7.43 card with the same words as 1.7.45.'),
 
- dict(kicker='Step 8 · Approve a held call', title='A held call waits on its card',
-  text=[
-   ('steps', ['The held call is a card on the task page.',
-              'Press **View** and read the command.',
-              'In that window, click the code after **The code:** to fill the card\u2019s box.',
-              'Press **Approve**, or **Do not approve** and say why.',
-              'If the card shows **Tell the agent to run it**, press it.']),
-   ('small', 'It runs once, exactly as written, within 10 minutes.'),
+ # ---- Approve a git write -----------------------------------------------------------------------------------
+ dict(group='Approve a git write', steps=[
+   dict(pic=B + 'stop-git-code.png',
+        text='A held git write: the agent gives you the whole command and a six-character code.'),
+   dict(pic=(B + 'tour-list.png', (20, 667, 1890, 801)),
+        text='The board shows only **waits for you**: a git write has no button of its own.'),
+   dict(shot='Terminal: harness approve-command listing one git command, asking for the code', aspect=16/7,
+        text='In your own terminal, not the board’s **Terminal**: `harness approve-command`. Read it, type the code.'),
+   dict(pic=(B + 'tour-reply.png', (40, 40, 1190, 345)),
+        text='Then tell the agent to run the same command again, within 10 minutes.'),
   ],
-  pic=DOCIMG + 'held-write.png',
-  caption='A write to a database, held on the task page.',
-  notes='Sources: messages desk.outbox.view = "View", desk.outbox.code_tip, desk.outbox.approve = "Approve", desk.outbox.dismiss = "Do not approve", '
-        'desk.outbox.reason.*, desk.outbox.tell = "Tell the agent to run it", desk.outbox.tell.hint, desk.outbox.same_as; '
-        'docs/04-reference.md approve-action row; core/approvals.py DEFAULT_MINUTES = 10 (gate.json git.approval_minutes). '
-        'The card’s "Open <connection> for this task" button is tutorial 5.'),
+  notes='Sources: messages gate.git.needs_approval, gate.approve.header, gate.approve.prompt, gate.approve.next, desk.trace.rule.git-approval; '
+        'modules/gate/commands.py approve() (terminal only; reads the code with input(): the board\'s Terminal window gives no keyboard input, docs/04-reference.md line 9); '
+        'core/approvals.py _code (6 characters); tasklife.py waiting() (a git approval is no wait reason: the Stop mark shows "waits for you").'),
 
- dict(kicker='Step 9 · Approve a git write', title='A git write: approve it in your terminal',
-  text=[
-   'The agent’s chat shows the whole git command and a six-character code.',
-   ('steps', ['Open your own terminal (not the board’s **Terminal** window).',
-              'Run the command below. It lists the git commands that wait.',
-              'Read the command, then type its code.',
-              'Tell the agent to run the same command again, within 10 minutes.']),
-   ('code', 'harness approve-command'),
+ # ---- When there is no approval -----------------------------------------------------------------------------
+ dict(group='When there is no approval', steps=[
+   dict(pic=(B + 'stop-agent-actions.png', (88, 1145, 2128, 1280)),
+        text='`git push` or a harmful command really needed? Ask what it is for, read it, run it yourself.'),
+   dict(shot='Terminal: harness doctor --accept, listing the guardrail files it takes in', aspect=16/7,
+        text='Edited a guardrail file yourself? The agent is refused every command until `harness doctor --accept`.'),
+   dict(shot='VS Code: a new chat with /harness-admin typed in the box, not sent', aspect=16/10,
+        text='Or admin mode: `/harness-admin` in a chat with no task gives a `harness admin on` command for your terminal.'),
   ],
-  shot='A terminal after harness approve-command: one waiting git command listed, and the line that asks for the code',
-  notes='Sources: messages gate.git.needs_approval, gate.approve.header, gate.approve.prompt, gate.approve.next; '
-        'modules/gate/commands.py approve() (terminal only, reads the code with input()); core/approval.py lines 58-63: '
-        'the board’s Terminal window gives no keyboard input; docs/04-reference.md line 9. Code: core/approvals.py _code (6 characters, capitals). '
-        'Time: gate.json git.approval_minutes = 10.'),
+  notes='Sources: messages gate.git.never, gate.terminal.denied ("the user runs it in their own terminal"); the gate is a hook on the agent\'s tool calls only. '
+        'integrity.py lines 1-8 (a changed guardrail file: the hook refuses commands and writes) and 23-27 (*.override.json is not checked); '
+        'docs/12-guardrails-and-gate.md "The guardrail files are checked" (doctor --accept, or put the files back); messages gate.guardrail.file ("harness admin on"), '
+        'gate.admin.has_task; .github/skills/harness-admin/SKILL.md lines 11 and 23 (the person runs harness admin on --session-id <id> in their terminal); '
+        'commands.py admin_switch_off (ending admin mode accepts the files).'),
 
- dict(kicker='Step 10 · When it is really needed', title='Run it yourself, in your own terminal',
-  text=[
-   '`git push` and dangerous commands have no approval.',
-   'If one is really needed, ask the agent what it is for, read it, and run it yourself in your own terminal. The gate stops the agent, not you.',
-   ('small', 'Do not ask the agent to find another way round: it is told not to.'),
+ # ---- Only you ----------------------------------------------------------------------------------------------
+ dict(group='Only you', steps=[
+   dict(pic=(B + 'tour-list.png', (420, 527, 1880, 1212)),
+        text='Approvals are yours: press the board’s button, or run the command in your own terminal.'),
+   dict(pic=(B + 'stop-git-code.png', (420, 255, 2000, 355)),
+        text='Never paste an approval command into the agent’s chat: the gate refuses it there.'),
   ],
-  notes='Sources: messages gate.git.never ("the user runs it in their own terminal"), gate.terminal.denied ("the user runs it"). '
-        'The gate is a hook on the agent\u2019s tool calls only (.github/hooks/harness.json), so a command you type yourself is not judged by it. '
-        'Guardrail files are the next page.'),
-
- dict(kicker='Step 11 · Guardrail files', title='A guardrail file needs one more step',
-  text=[
-   'Settings go in `*.override.json` files: those are not checked.',
-   'After you edit a guardrail file, the agent is refused every command and write until you run `harness doctor --accept` in your terminal, or undo it.',
-   'Or admin mode: `/harness-admin`, in a chat with no task, gives you a `harness admin on` command for your terminal. Ending it accepts the files.',
-  ],
-  notes='Sources: .harness/engine/integrity.py lines 1-8 (what is listed; the hook refuses commands and writes) and lines 23-27 '
-        '(*.override.json and *.company.json are skipped); docs/12-guardrails-and-gate.md "The guardrail files are checked" '
-        '(a hand edit: harness doctor --accept in your terminal, or put the files back); messages gate.guardrail.file '
-        '("switches admin mode on for a session (harness admin on)"), gate.admin.has_task (admin mode needs a chat with no task); '
-        '.github/skills/harness-admin/SKILL.md lines 11 and 23 (the person runs harness admin on --session-id <id>; not in a chat with a task); docs/01-quickstart.md Common cases; modules/gate/commands.py admin_switch_off '
-        '(the end of an admin session accepts the files).'),
-
- dict(kicker='Step 12 · Commands only you run', title='Never paste an approval command into the chat',
-  text=[
-   'These `harness` commands are yours: `task approve-plan`, `task confirm-req`, `task approve-promote`, `task recover`, `approve-command`, `approve-action`, `task close`, `admin on`, `doctor --accept`, and more.',
-   'The gate refuses them when the agent runs them, so pasting one into its chat only gets a refusal. Press its button on the board, if it has one, or run it in your own terminal.',
-  ],
-  notes='Sources: policies/gate.json terminal.deny, the two rules for person-only harness commands and task close (the full list is in their "why"); '
-        'modules/gate/harnesscmd.py (read as the shell reads them); core/approval.py require_person (a terminal with keyboard and screen, '
-        'or the board’s Terminal window for commands that ask no code). approve-command and approve-action ask for a typed code: '
-        'your own terminal or the board’s button (docs/04-reference.md line 9).'),
+  notes='Sources: gate.json terminal.deny (the person-only harness commands: task approve-plan, confirm-req, approve-promote, recover, review ..., '
+        'approve-command, approve-action, admin on, doctor --accept; and task close); harnesscmd.py (read as the shell reads them); core/approval.py require_person.'),
 ]
 
 CLOSING = dict(title='When the agent is stopped',
   text=[
    ('list', ['Read the reason first: it says why, and what to do next.',
              'Held outside call: approve it on its card. Git write: `harness approve-command` in your own terminal.',
-             'No approval possible, and really needed: run it yourself. A guardrail file you change: `harness doctor --accept`.',
+             'No approval, and really needed: run it yourself. A guardrail file you changed: `harness doctor --accept`.',
              'Never hand an approval command to the agent.']),
   ])
