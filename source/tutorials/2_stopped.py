@@ -92,12 +92,11 @@ PAGES = [
 
  dict(kicker='Step 7 · Waiting for you', title='What “waits for you” asks of you',
   text=[
-   'The state says what the task needs:',
-   ('list', ['**waits for you**: the agent stopped. Read its chat and reply (**Answer...**).',
-             '**the agent asks to run: …**: press **Allow · deny**.',
-             '**an outside call waits for your approval**: press **Approve a call**.',
-             '**the plan waits for your approval**: press **Approve plan**.']),
-   ('small', 'A git write to approve shows only as waits for you.'),
+   'On the board, **State** says what is needed; **Do** has the button:',
+   ('list', ['**waits for you**: read its chat, then reply (**Answer...**).',
+             '**the agent asks to run: \u2026**: **Allow \u00b7 deny** shows the command; **Allow** runs that one call, **Deny** refuses it.',
+             '**an outside call waits for your approval**: **Approve a call**.']),
+   ('small', 'A held git write shows as waits for you.'),
   ],
   pic=(DOCIMG + 'board-list.png', (40, 225, 965, 690)),
   caption='The board, List view: the button for each wait is under Do.',
@@ -108,9 +107,9 @@ PAGES = [
 
  dict(kicker='Step 8 · Approve a held call', title='A held call waits on its card',
   text=[
-   ('steps', ['On the task page, the held call is a card at the top.',
+   ('steps', ['The held call is a card on the task page.',
               'Press **View** and read the command.',
-              'Click the code there: it fills the card\u2019s box.',
+              'In that window, click the code after **The code:** to fill the card\u2019s box.',
               'Press **Approve**, or **Do not approve** and say why.',
               'If the card shows **Tell the agent to run it**, press it.']),
    ('small', 'It runs once, exactly as written, within 10 minutes.'),
