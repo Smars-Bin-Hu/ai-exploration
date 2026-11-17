@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 740">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:24px;font-weight:bold}
+.n{font-size:20px}
+.k{font-size:19px;fill:#6b6b6b}
+.p{font-size:20px;font-weight:bold}
+.h{font-size:18px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.pill{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.pp{fill:#ffffff;stroke:#141414;stroke-width:2.5}
+.ctl{stroke:#141414;stroke-width:2;fill:none;stroke-dasharray:9 7}
+.dat{stroke:#141414;stroke-width:2.2;fill:none}
+.tr{stroke:#141414;stroke-width:2;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<text x="20" y="28" class="h">THE PARTS</text>
+
+<rect x="30" y="110" width="270" height="140" rx="6" class="box"/>
+<text x="48" y="146" class="t">Task hook</text>
+<text x="48" y="178" class="n">at every prompt, tells</text>
+<text x="48" y="202" class="n">the agent where its</text>
+<text x="48" y="226" class="n">task stands</text>
+
+<rect x="360" y="110" width="270" height="140" rx="6" class="box"/>
+<text x="378" y="146" class="t">Agent</text>
+<text x="378" y="178" class="n">a chat in VS Code;</text>
+<text x="378" y="202" class="n">holds one task</text>
+<text x="378" y="226" class="n">at a time</text>
+
+<rect x="690" y="110" width="270" height="140" rx="6" class="box"/>
+<text x="708" y="146" class="t">Gate</text>
+<text x="708" y="178" class="n">keeps the edit tools</text>
+<text x="708" y="202" class="n">of a session that holds</text>
+<text x="708" y="226" class="n">a task inside its folder</text>
+
+<rect x="1020" y="110" width="270" height="140" rx="6" class="focus"/>
+<text x="1038" y="146" class="t">Task</text>
+<text x="1038" y="178" class="n">a folder: handover note,</text>
+<text x="1038" y="202" class="n">requirement, plan,</text>
+<text x="1038" y="226" class="n">code, state</text>
+
+<rect x="1350" y="110" width="270" height="140" rx="6" class="box"/>
+<text x="1368" y="146" class="t">Task commands</text>
+<text x="1368" y="178" class="n">open, approve, write</text>
+<text x="1368" y="202" class="n">back, close; check</text>
+<text x="1368" y="226" class="n">each move first</text>
+
+<rect x="1650" y="40" width="130" height="60" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.5"/>
+<text x="1715" y="78" class="p" text-anchor="middle">Person</text>
+
+<path d="M300,180 H358" class="ctl" marker-end="url(#a)"/>
+<path d="M630,180 H688" class="ctl" marker-end="url(#a)"/>
+<path d="M960,180 H1018" class="dat" marker-end="url(#a)"/>
+<path d="M1350,180 H1292" class="dat" marker-end="url(#a)"/>
+<path d="M1715,100 V180 H1622" class="ctl" marker-end="url(#a)"/>
+<text x="1700" y="216" class="k" text-anchor="middle">approves,</text>
+<text x="1700" y="238" class="k" text-anchor="middle">accepts</text>
+<path d="M1650,60 H495 V108" class="ctl" marker-end="url(#a)"/>
+<text x="1070" y="52" class="k" text-anchor="middle">asks</text>
+<path d="M495,250 V295 H1485 V252" class="ctl" marker-end="url(#a)"/>
+<text x="990" y="320" class="k" text-anchor="middle">opens, delivers, writes back</text>
+<text x="1130" y="280" class="k" text-anchor="middle">its state: written by harness code; the agent's edit tools cannot</text>
+
+<!-- lifecycle -->
+<line x1="20" y1="350" x2="1780" y2="350" stroke="#d6d6d2" stroke-width="1.5"/>
+<text x="20" y="388" class="h">THE LIFECYCLE · bold border: a move the person makes (a write-back task is closed by the board)</text>
+
+<rect x="30" y="430" width="190" height="64" rx="32" class="pill"/>
+<text x="125" y="469" class="n" text-anchor="middle">Opened</text>
+<rect x="270" y="430" width="230" height="64" rx="32" class="pp"/>
+<text x="385" y="458" class="n" text-anchor="middle">Requirement</text>
+<text x="385" y="482" class="n" text-anchor="middle">confirmed *</text>
+<rect x="550" y="430" width="200" height="64" rx="32" class="pp"/>
+<text x="650" y="469" class="n" text-anchor="middle">Plan approved</text>
+<rect x="800" y="430" width="200" height="64" rx="32" class="pill"/>
+<text x="900" y="469" class="n" text-anchor="middle">Code written</text>
+<rect x="1050" y="430" width="230" height="64" rx="32" class="pp"/>
+<text x="1165" y="458" class="n" text-anchor="middle">Write-back</text>
+<text x="1165" y="482" class="n" text-anchor="middle">approved</text>
+<rect x="1330" y="430" width="190" height="64" rx="32" class="pill"/>
+<text x="1425" y="469" class="n" text-anchor="middle">Written back</text>
+<rect x="1590" y="430" width="190" height="64" rx="32" class="pp"/>
+<text x="1685" y="469" class="n" text-anchor="middle">Closed</text>
+
+<path d="M220,462 H268" class="tr" marker-end="url(#a)"/>
+<path d="M500,462 H548" class="tr" marker-end="url(#a)"/>
+<path d="M750,462 H798" class="tr" marker-end="url(#a)"/>
+<path d="M1000,462 H1048" class="tr" marker-end="url(#a)"/>
+<path d="M1280,462 H1328" class="tr" marker-end="url(#a)"/>
+<path d="M1520,462 H1588" class="tr" marker-end="url(#a)"/>
+<text x="1555" y="420" class="k" text-anchor="middle">the board</text>
+<text x="900" y="528" class="k" text-anchor="middle">tasks that change a repository</text>
+
+<rect x="800" y="580" width="200" height="64" rx="32" class="pill"/>
+<text x="900" y="619" class="n" text-anchor="middle">Result written</text>
+<rect x="1180" y="580" width="230" height="64" rx="32" class="pill"/>
+<text x="1295" y="608" class="n" text-anchor="middle">Delivered with</text>
+<text x="1295" y="632" class="n" text-anchor="middle">a summary</text>
+<path d="M385,494 V612 H798" class="tr" marker-end="url(#a)"/>
+<path d="M1000,612 H1178" class="tr" marker-end="url(#a)"/>
+<path d="M1410,612 H1685 V496" class="tr" marker-end="url(#a)"/>
+<text x="1430" y="602" class="k">the person accepts</text>
+<text x="900" y="676" class="k" text-anchor="middle">tasks whose result stays in the folder: analysis, design, test</text>
+
+<path d="M1780,462 H1790 V720 H125 V496" class="tr" stroke-dasharray="6 5" marker-end="url(#a)"/>
+<text x="140" y="712" class="k">any later chat may open it again</text>
+<text x="560" y="712" class="k">* the confirmation line in REQ.md is also plain text the agent can write (see Limits)</text>
+</svg>

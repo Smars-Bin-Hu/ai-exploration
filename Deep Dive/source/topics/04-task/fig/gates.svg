@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.n{font-size:18px}
+.k{font-size:16px;fill:#6b6b6b}
+.e{font-family:Menlo,Consolas,monospace;font-size:16px;fill:#141414}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.h{font-size:16px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+</style>
+<text x="20" y="24" class="h">MOVE</text><text x="250" y="24" class="h">WHO</text><text x="370" y="24" class="h">CHECKED BEFORE IT HAPPENS</text><text x="820" y="24" class="h">CODE</text>
+<line x1="20" y1="34" x2="1030" y2="34" stroke="#141414" stroke-width="1.5"/>
+<rect x="20" y="35" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="61" class="e">confirm-req</text>
+<text x="250" y="61" class="n" font-weight="bold">person</text>
+<text x="370" y="61" class="n">REQ.md written, not yet confirmed;</text>
+<text x="370" y="82" class="n">the file unchanged after the typing</text>
+<text x="820" y="61" class="c">confirm_req</text>
+<line x1="20" y1="96" x2="1030" y2="96" stroke="#d6d6d2" stroke-width="1.2"/>
+<rect x="20" y="97" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="123" class="e">approve-plan</text>
+<text x="250" y="123" class="n" font-weight="bold">person</text>
+<text x="370" y="123" class="n">PLAN.md not empty; REQ.md not the bare</text>
+<text x="370" y="144" class="n">template; an open one confirmed by the code</text>
+<text x="820" y="123" class="c">approve_plan</text>
+<line x1="20" y1="158" x2="1030" y2="158" stroke="#d6d6d2" stroke-width="1.2"/>
+<text x="30" y="185" class="e">write in DEV/</text>
+<text x="250" y="185" class="n">agent</text>
+<text x="370" y="185" class="n">sha256 of PLAN.md is the approved one;</text>
+<text x="370" y="206" class="n">REQ.md digest is the one approved with</text>
+<text x="820" y="185" class="c">check_task_write</text>
+<line x1="20" y1="220" x2="1030" y2="220" stroke="#d6d6d2" stroke-width="1.2"/>
+<text x="30" y="247" class="e">fetch, delete</text>
+<text x="250" y="247" class="n">agent</text>
+<text x="370" y="247" class="n">task open, plan approved; fetch: not</text>
+<text x="370" y="268" class="n">written back yet; delete: a fetched file</text>
+<text x="820" y="247" class="c">fetch · delete</text>
+<line x1="20" y1="282" x2="1030" y2="282" stroke="#d6d6d2" stroke-width="1.2"/>
+<text x="30" y="309" class="e">promote --dry-run</text>
+<text x="250" y="309" class="n">agent</text>
+<text x="370" y="309" class="n">plan approved; checks passed or waived;</text>
+<text x="370" y="330" class="n">no write-back done or half done</text>
+<text x="820" y="309" class="c">run_promote</text>
+<line x1="20" y1="344" x2="1030" y2="344" stroke="#d6d6d2" stroke-width="1.2"/>
+<rect x="20" y="345" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="371" class="e">approve-promote</text>
+<text x="250" y="371" class="n" font-weight="bold">person</text>
+<text x="370" y="371" class="n">a dry run exists; the plan made again</text>
+<text x="370" y="392" class="n">has the dry run's digest</text>
+<text x="820" y="371" class="c">approve_promote</text>
+<line x1="20" y1="406" x2="1030" y2="406" stroke="#d6d6d2" stroke-width="1.2"/>
+<text x="30" y="433" class="e">promote</text>
+<text x="250" y="433" class="n">agent</text>
+<text x="370" y="433" class="n">the dry run and the approval both</text>
+<text x="370" y="454" class="n">match the plan made now</text>
+<text x="820" y="433" class="c">run_promote</text>
+<line x1="20" y1="468" x2="1030" y2="468" stroke="#d6d6d2" stroke-width="1.2"/>
+<rect x="20" y="469" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="495" class="e">recover</text>
+<text x="250" y="495" class="n" font-weight="bold">person</text>
+<text x="370" y="495" class="n">promote.state is partial and the</text>
+<text x="370" y="516" class="n">record holds its recovery steps</text>
+<text x="820" y="495" class="c">recover</text>
+<line x1="20" y1="530" x2="1030" y2="530" stroke="#d6d6d2" stroke-width="1.2"/>
+<text x="30" y="557" class="e">deliver</text>
+<text x="250" y="557" class="n">agent</text>
+<text x="370" y="557" class="n">a summary; TODO.md ticked or a reason;</text>
+<text x="370" y="578" class="n">not a dev or kb task written back</text>
+<text x="820" y="557" class="c">accept.deliver</text>
+<line x1="20" y1="592" x2="1030" y2="592" stroke="#d6d6d2" stroke-width="1.2"/>
+<rect x="20" y="593" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="619" class="e">Accept</text>
+<text x="250" y="619" class="n" font-weight="bold">person</text>
+<text x="370" y="619" class="n">the task waits to be accepted; held</text>
+<text x="370" y="640" class="n">calls listed and voided on a yes</text>
+<text x="820" y="619" class="c">accept.accept</text>
+<line x1="20" y1="654" x2="1030" y2="654" stroke="#d6d6d2" stroke-width="1.2"/>
+<rect x="20" y="655" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="681" class="e">close</text>
+<text x="250" y="681" class="n" font-weight="bold">person</text>
+<text x="370" y="681" class="n">no half-done promote; held calls voided;</text>
+<text x="370" y="702" class="n">terminal only: TODO.md ticked or a reason</text>
+<text x="820" y="681" class="c">task.close</text>
+<line x1="20" y1="716" x2="1030" y2="716" stroke="#d6d6d2" stroke-width="1.2"/>
+<rect x="20" y="717" width="1010" height="60" fill="#f2f1ec"/>
+<text x="30" y="743" class="e">pause</text>
+<text x="250" y="743" class="n" font-weight="bold">person</text>
+<text x="370" y="743" class="n">the agent is not in a turn,</text>
+<text x="370" y="764" class="n">unless --force</text>
+<text x="820" y="743" class="c">tasklife.pause</text>
+<line x1="20" y1="778" x2="1030" y2="778" stroke="#d6d6d2" stroke-width="1.2"/>
+<text x="20" y="804" class="k">Shaded: a person at a terminal with a keyboard, or on the board page (paired, but for pause). An approval asks</text>
+<text x="20" y="825" class="k">for the first six characters of the sha256 of what is approved. Code in modules/task/ and modules/gate/.</text>
+</svg>

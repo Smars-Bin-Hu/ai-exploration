@@ -1,5 +1,5 @@
-# Showcase deck for one real task: a summary page, then one dark page per screenshot (tall or wide), with a small heading
-# and a conclusion. Builds the template to copy and a sample filled with fake data.
+# Showcase deck for one real task: a white summary page, then one dark page per screenshot (tall or wide); the screenshot
+# is the page and a few sentences explain it, with no headings. Builds the template to copy and a sample filled with fake data.
 # Run from the repo root: .venv/bin/python Showcase/source/build.py   (needs Chrome, and playwright-core from ~/Developer/smarshu.com)
 import os, sys
 H = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(os.path.dirname(H))
@@ -9,7 +9,7 @@ import text as X
 
 OUT = os.path.join(ROOT, 'Showcase', 'Real Tasks', '_template')
 NOTE = ('One deck for one task. Replace every grey hint. For each screenshot, copy the page with the right shape (tall or wide), '
-        'paste the picture over the dashed box and delete the box. ') + X.SHOTS
+        'paste the picture over the dashed box and delete the box. The text explains the picture: what it shows and why it matters. ') + X.SHOTS
 
 def shot(els, pic, x, y, w, h, shape):
     if pic:
@@ -21,26 +21,21 @@ def shot(els, pic, x, y, w, h, shape):
 def build(V):
     D = Deck(V['footer'])
     s = V['summary']
-    els = Deck.head(f"{V['task_kicker']} · {s['kind']}", s['title'])
-    els.append(T(0.75, 1.72, 11.8, 0.35, [s['facts']], 11, C['muted'], SANS))
-    cw, ch = 5.8, 1.8
-    for i, (lab, body) in enumerate(s['cards']):
-        x = 0.75 + (i % 2) * (cw + 0.23); y = 2.2 + (i // 2) * (ch + 0.2)
-        els += [R(x, y, cw, ch, fill=C['wash']), R(x, y, 0.06, ch, fill=C['accent'], radius=False),
-                T(x + 0.28, y + 0.18, cw - 0.5, ch - 0.3, [[('lab', lab)], body], 12.5, C['ink'], SERIF, space=4)]
-    els.append(T(0.75, 6.12, 11.8, 0.8, [[('b', 'Result: ')] + s['result'], [('b', 'Not so good: ')] + s['notgood']], 12, C['ink'], SERIF, space=3))
+    # page 1, white: the task in one line, then what happened, in a few paragraphs
+    els = Deck.head(V['task_kicker'], s['title'])
+    els.append(T(0.75, 1.75, 11.8, 0.35, [s['facts']], 11, C['muted'], SANS))
+    els.append(T(0.75, 2.35, 11.8, 4.4, s['body'], 15, C['ink'], SERIF, space=12))
     D.page(els, notes=NOTE)
 
-    for shape, pic, heading, paras in V['pages']:
+    # then one dark page per screenshot: the picture is the page, the text explains it; no headings
+    for shape, pic, paras in V['pages']:
         els = []
-        if shape == 'tall':  # the picture on the left, as tall as the page allows; heading and conclusion on the right
-            shot(els, pic, 0.75, 0.55, 6.6, 6.2, 'tall')
-            els.append(T(7.75, 1.0, 4.85, 0.9, [heading], 22, C['white'], SERIF, ls=1.05))
-            els.append(T(7.75, 2.05, 4.85, 4.6, paras, 14, C['light'], SERIF, space=10))
-        else:  # the picture across the page; heading above, conclusion under it
-            els.append(T(0.75, 0.5, 11.8, 0.55, [heading], 22, C['white'], SERIF, ls=1.05))
-            shot(els, pic, 0.75, 1.25, 11.83, 4.4, 'wide')
-            els.append(T(0.75, 5.9, 11.8, 0.95, paras, 14, C['light'], SERIF, space=6))
+        if shape == 'tall':  # the picture on the left, as tall as the page allows; the text on the right
+            shot(els, pic, 0.75, 0.55, 7.4, 6.2, 'tall')
+            els.append(T(8.5, 0.75, 4.1, 5.9, paras, 14, C['light'], SERIF, space=10))
+        else:  # the picture across the page; the text under it
+            shot(els, pic, 0.75, 0.55, 11.83, 5.1, 'wide')
+            els.append(T(0.75, 5.85, 11.8, 1.0, paras, 14, C['light'], SERIF, space=6))
         D.page(els, dark=True, notes=NOTE)
 
     os.makedirs(OUT, exist_ok=True)

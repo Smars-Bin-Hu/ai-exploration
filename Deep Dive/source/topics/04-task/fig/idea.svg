@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:26px;font-weight:bold}
+.n{font-size:22px}
+.k{font-size:21px;fill:#6b6b6b}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.ctl{stroke:#141414;stroke-width:2;fill:none;stroke-dasharray:9 7}
+.dat{stroke:#141414;stroke-width:2.2;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<rect x="375" y="20" width="300" height="70" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.5"/>
+<text x="525" y="64" class="t" text-anchor="middle">Person</text>
+
+<rect x="30" y="200" width="430" height="190" rx="6" class="box"/>
+<text x="54" y="244" class="t">Chat 1</text>
+<text x="54" y="286" class="n">fills up and is compacted, then</text>
+<text x="54" y="316" class="n">ends; Copilot keeps its record,</text>
+<text x="54" y="346" class="n">the task saves its rounds at close</text>
+
+<rect x="590" y="200" width="430" height="190" rx="6" class="box"/>
+<text x="614" y="244" class="t">Chat 2, days later</text>
+<text x="614" y="286" class="n">starts with nothing</text>
+<text x="614" y="316" class="n">of chat 1 in its context</text>
+
+
+<rect x="30" y="540" width="990" height="250" rx="6" class="focus"/>
+<text x="54" y="586" class="t">Task: the work's own home</text>
+<text x="54" y="628" class="n">one folder per piece of work, on disk in the workspace:</text>
+<text x="80" y="664" class="n">· a handover note that the next chat reads first</text>
+<text x="80" y="696" class="n">· the requirement, the plan, the results, the code</text>
+<text x="80" y="728" class="n">· a state that records approvals and where the work stands</text>
+<text x="54" y="768" class="k">open until the person accepts it</text>
+
+<path d="M245,390 V538" class="dat" marker-end="url(#a)" marker-start="url(#a)"/>
+<path d="M805,390 V538" class="dat" marker-end="url(#a)" marker-start="url(#a)"/>
+<text x="260" y="470" class="k">reads, writes</text>
+<text x="820" y="470" class="k">reads, picks up</text>
+
+<path d="M375,55 H140 V198" class="ctl" marker-end="url(#a)"/>
+<path d="M675,55 H910 V198" class="ctl" marker-end="url(#a)"/>
+<text x="250" y="45" class="k" text-anchor="middle">asks</text>
+<text x="800" y="45" class="k" text-anchor="middle">asks</text>
+<path d="M525,90 V538" class="ctl" marker-end="url(#a)"/>
+<text x="540" y="470" class="k">approves, accepts</text>
+
+<line x1="30" y1="850" x2="90" y2="850" class="dat"/>
+<text x="100" y="857" class="k">data</text>
+<line x1="190" y1="850" x2="250" y2="850" class="ctl"/>
+<text x="260" y="857" class="k">control</text>
+</svg>

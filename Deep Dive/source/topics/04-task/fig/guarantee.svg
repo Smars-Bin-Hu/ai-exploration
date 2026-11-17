@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:25px;font-weight:bold}
+.n{font-size:22px}
+.k{font-size:21px;fill:#6b6b6b}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.ctl{stroke:#141414;stroke-width:2;fill:none;stroke-dasharray:9 7}
+.dat{stroke:#141414;stroke-width:2.2;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<rect x="30" y="20" width="640" height="120" rx="6" class="box"/>
+<text x="54" y="62" class="t">Agent</text>
+<text x="54" y="100" class="n">writes the requirement and the plan</text>
+<text x="54" y="128" class="n">into the task folder</text>
+
+<rect x="30" y="200" width="640" height="150" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.5"/>
+<text x="54" y="242" class="t">Person</text>
+<text x="54" y="280" class="n">reads them, then types a short code made</text>
+<text x="54" y="310" class="n">from this exact version of the files</text>
+<text x="54" y="338" class="k">at a keyboard, or on the board page paired to it</text>
+
+<rect x="30" y="410" width="640" height="150" rx="6" class="box"/>
+<text x="54" y="452" class="t">Task commands</text>
+<text x="54" y="490" class="n">check the code, check the files once more,</text>
+<text x="54" y="520" class="n">then record which version was approved</text>
+
+<rect x="30" y="620" width="640" height="150" rx="6" class="focus"/>
+<text x="54" y="662" class="t">Gate</text>
+<text x="54" y="700" class="n">lets the edit tools of the session that holds</text>
+<text x="54" y="730" class="n">the task write code only while the files are</text>
+<text x="54" y="756" class="n">the approved version</text>
+
+<path d="M350,140 V198" class="dat" marker-end="url(#a)"/>
+<path d="M350,350 V408" class="ctl" marker-end="url(#a)"/>
+<path d="M350,560 V618" class="dat" marker-end="url(#a)"/>
+
+<rect x="740" y="410" width="290" height="360" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="760" y="452" class="t">Changed later?</text>
+<text x="760" y="492" class="n">the plan or what</text>
+<text x="760" y="520" class="n">the requirement asks</text>
+<text x="760" y="548" class="n">changes: the approval</text>
+<text x="760" y="576" class="n">no longer matches,</text>
+<text x="760" y="604" class="n">the code folder closes</text>
+<text x="760" y="632" class="n">again and the person</text>
+<text x="760" y="660" class="n">is asked once more</text>
+<path d="M670,695 H738" class="ctl" marker-end="url(#a)"/>
+<path d="M885,410 V80 H672" class="ctl" marker-end="url(#a)"/>
+
+<text x="30" y="830" class="n">The write-back to a repository (task promote) has its own approval,</text>
+<text x="30" y="862" class="n">bound to the digest of every file it writes, checked again when it runs.</text>
+</svg>

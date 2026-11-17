@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.n{font-size:17px}
+.v{font-size:19px;font-weight:bold}
+.h{font-size:16px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+</style>
+<text x="118" y="24" class="h">BEFORE</text><text x="590" y="24" class="h">AFTER</text>
+<line x1="80" y1="40" x2="80" y2="890" stroke="#d6d6d2" stroke-width="3"/>
+<circle cx="80" cy="70" r="9" fill="#e8590c"/>
+<rect x="100" y="48" width="930" height="130" rx="6" fill="#f2f1ec" stroke="#141414" stroke-width="1.2"/>
+<text x="118" y="78" class="v">1.1.0</text>
+<text x="118" y="108" class="n" style="fill:#6b6b6b">Three Levels; the top one ran an orchestrator,</text>
+<text x="118" y="130" class="n" style="fill:#6b6b6b">a builder and a reviewer agent; a task mode</text>
+<text x="118" y="152" class="n" style="fill:#6b6b6b">beside it</text>
+<text x="562" y="124" class="n">→</text>
+<text x="590" y="108" class="n">One task module, one agent; the reviewer only</text>
+<text x="590" y="130" class="n">checks; the commit that dropped them changed</text>
+<text x="590" y="152" class="n">110 files and removed 9,892 lines</text>
+<circle cx="80" cy="212" r="9" fill="#e8590c"/>
+<rect x="100" y="190" width="930" height="130" rx="6" fill="#f2f1ec" stroke="#141414" stroke-width="1.2"/>
+<text x="118" y="220" class="v">1.1.0</text>
+<text x="118" y="250" class="n" style="fill:#6b6b6b">A session had to close its task before it</text>
+<text x="118" y="272" class="n" style="fill:#6b6b6b">could start another</text>
+<text x="562" y="266" class="n">→</text>
+<text x="590" y="250" class="n">Opening another task leaves the first open;</text>
+<text x="590" y="272" class="n">any session may pick a task up again</text>
+<circle cx="80" cy="354" r="9" fill="#e8590c"/>
+<rect x="100" y="332" width="930" height="130" rx="6" fill="#f2f1ec" stroke="#141414" stroke-width="1.2"/>
+<text x="118" y="362" class="v">1.1.0</text>
+<text x="118" y="392" class="n" style="fill:#6b6b6b">The hook saved the user's prompts as the</text>
+<text x="118" y="414" class="n" style="fill:#6b6b6b">requirement (never released)</text>
+<text x="562" y="408" class="n">→</text>
+<text x="590" y="392" class="n">The agent writes REQ.md, the person confirms</text>
+<text x="590" y="414" class="n">it; the hook keeps no prompt</text>
+<circle cx="80" cy="496" r="9" fill="#e8590c"/>
+<rect x="100" y="474" width="930" height="130" rx="6" fill="#f2f1ec" stroke="#141414" stroke-width="1.2"/>
+<text x="118" y="504" class="v">1.4.30</text>
+<text x="118" y="534" class="n" style="fill:#6b6b6b">A plan stayed approved when the requirement</text>
+<text x="118" y="556" class="n" style="fill:#6b6b6b">changed under it</text>
+<text x="562" y="550" class="n">→</text>
+<text x="590" y="534" class="n">The approval holds the REQ.md digest: a new</text>
+<text x="590" y="556" class="n">requirement closes DEV/ again</text>
+<circle cx="80" cy="638" r="9" fill="#e8590c"/>
+<rect x="100" y="616" width="930" height="130" rx="6" fill="#f2f1ec" stroke="#141414" stroke-width="1.2"/>
+<text x="118" y="646" class="v">1.5.16</text>
+<text x="118" y="676" class="n" style="fill:#6b6b6b">A task no session held any more showed as</text>
+<text x="118" y="698" class="n" style="fill:#6b6b6b">"not waiting for you"</text>
+<text x="562" y="692" class="n">→</text>
+<text x="590" y="676" class="n">Seven derived states; "no session" (unheld)</text>
+<text x="590" y="698" class="n">is one of them</text>
+<circle cx="80" cy="780" r="9" fill="#e8590c"/>
+<rect x="100" y="758" width="930" height="130" rx="6" fill="#f2f1ec" stroke="#141414" stroke-width="1.2"/>
+<text x="118" y="788" class="v">1.7.38</text>
+<text x="118" y="818" class="n" style="fill:#6b6b6b">The agent closed tasks, Q&amp;A tasks included</text>
+<text x="562" y="834" class="n">→</text>
+<text x="590" y="818" class="n">Closing is the person's acceptance; the gate</text>
+<text x="590" y="840" class="n">refuses an agent's task close</text>
+</svg>

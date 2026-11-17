@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 740">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:22px;font-weight:bold}
+.n{font-size:17px}
+.k{font-size:16px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.e{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#141414}
+.h{font-size:17px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.st{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.tr{stroke:#141414;stroke-width:1.8;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<!-- ===== status ===== -->
+<text x="20" y="26" class="h">STATUS · task.json status</text>
+<line x1="20" y1="334" x2="1780" y2="334" stroke="#d6d6d2" stroke-width="1.5"/>
+
+<rect x="40" y="120" width="280" height="90" rx="18" class="st"/>
+<text x="180" y="156" class="t" text-anchor="middle">new</text>
+<text x="180" y="184" class="k" text-anchor="middle">a folder, no task.json</text>
+<text x="40" y="242" class="k">unreadable task.json: the board</text>
+<text x="40" y="262" class="k">shows broken; task open starts over</text>
+
+<rect x="760" y="120" width="280" height="90" rx="18" class="focus"/>
+<text x="900" y="156" class="t" text-anchor="middle">open</text>
+<text x="900" y="184" class="k" text-anchor="middle">task.json names its session</text>
+
+<rect x="1460" y="120" width="280" height="90" rx="18" class="st"/>
+<text x="1600" y="156" class="t" text-anchor="middle">closed</text>
+<text x="1600" y="184" class="k" text-anchor="middle">the folder stays where it is</text>
+
+<circle cx="900" cy="46" r="9" fill="#141414"/>
+<path d="M900,55 V118" class="tr" marker-end="url(#a)"/>
+<text x="886" y="82" class="e" text-anchor="end">task new</text>
+<text x="886" y="102" class="c" text-anchor="end">tasklife.new → task.attach</text>
+
+<path d="M320,165 H758" class="tr" marker-end="url(#a)"/>
+<text x="340" y="132" class="e">task open &lt;name&gt;</text>
+<text x="340" y="152" class="c">tasklife.open_task → task.attach</text>
+
+<path d="M840,210 V262 H960 V213" class="tr" marker-end="url(#a)"/>
+<text x="900" y="290" class="n" text-anchor="middle">task open from another session: a new holder,</text>
+<text x="900" y="312" class="n" text-anchor="middle">the same state · task.attach</text>
+
+<path d="M1040,150 H1458" class="tr" marker-end="url(#a)"/>
+<text x="1060" y="40" class="n">Close on the board · <tspan class="c">Board.close</tspan></text>
+<text x="1060" y="62" class="n">Accept on the board · <tspan class="c">accept.accept</tspan></text>
+<text x="1060" y="84" class="n">promoted and quiet · <tspan class="c">accept.sweep</tspan></text>
+<text x="1060" y="106" class="n">a person's task close · <tspan class="c">close_task</tspan></text>
+<text x="1060" y="134" class="c">all four → task.close</text>
+<path d="M1460,185 H1042" class="tr" marker-end="url(#a)"/>
+<text x="1060" y="210" class="e">task open</text>
+<text x="1060" y="230" class="c">task.attach; a new round after</text>
+<text x="1060" y="250" class="c">a write-back</text>
+
+<rect x="1360" y="244" width="420" height="82" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text x="1376" y="272" class="n">paused: a flag on an open task</text>
+<text x="1376" y="294" class="c">tasklife.pause · resume ·</text>
+<text x="1376" y="314" class="c">resume_on_prompt</text>
+
+<!-- ===== write-back ===== -->
+<text x="20" y="364" class="h">WRITE-BACK (task promote) · task.json promote.state · tasks meant to write back: dev, kb</text>
+
+<path d="M1615,468 V396 H130 V468" class="tr" marker-end="url(#a)"/>
+<text x="560" y="388" class="n">task open after a write-back: round + 1, DEV/ → DEV_r&lt;n&gt;/, PLAN.md → PLAN_r&lt;n&gt;.md · <tspan class="c">task.archive_round</tspan></text>
+
+<rect x="30" y="470" width="200" height="80" rx="18" class="st"/>
+<text x="130" y="506" class="t" text-anchor="middle">none</text>
+<text x="130" y="532" class="k" text-anchor="middle">no plan of it yet</text>
+
+<rect x="500" y="470" width="230" height="80" rx="18" class="st"/>
+<text x="615" y="506" class="t" text-anchor="middle">dry_run</text>
+<text x="615" y="532" class="k" text-anchor="middle">planned, not approved</text>
+
+<rect x="1000" y="470" width="230" height="80" rx="18" class="st"/>
+<text x="1115" y="506" class="t" text-anchor="middle">approved</text>
+<text x="1115" y="532" class="k" text-anchor="middle">stored: dry_run + digest</text>
+
+<rect x="1500" y="470" width="230" height="80" rx="18" class="focus"/>
+<text x="1615" y="506" class="t" text-anchor="middle">done</text>
+<text x="1615" y="532" class="k" text-anchor="middle">a new branch, or a commit</text>
+
+<rect x="1500" y="616" width="230" height="80" rx="18" class="st"/>
+<text x="1615" y="652" class="t" text-anchor="middle">partial</text>
+<text x="1615" y="678" class="k" text-anchor="middle">stopped halfway</text>
+
+<path d="M230,494 H498" class="tr" marker-end="url(#a)"/>
+<text x="246" y="428" class="e">promote --dry-run</text>
+<text x="246" y="448" class="n">plan approved, checks</text>
+<text x="246" y="468" class="n">passed or waived</text>
+<text x="246" y="487" class="c">task.run_promote</text>
+<path d="M1060,550 V598 H190 V552" class="tr" marker-end="url(#a)"/>
+<path d="M615,550 V598" class="tr"/>
+<text x="246" y="622" class="n">fetch, delete or set-branch, from dry_run or approved</text>
+<text x="246" y="642" class="c">task.fetch · delete · set_branch</text>
+<text x="590" y="642" class="k">any other DEV/ edit keeps the state; promote then refuses it</text>
+<path d="M1000,532 H732" class="tr" marker-end="url(#a)"/>
+<text x="746" y="556" class="n">new dry run, other plan</text>
+
+<path d="M730,500 H998" class="tr" marker-end="url(#a)"/>
+<text x="746" y="428" class="e">approve-promote</text>
+<text x="746" y="448" class="n">person, typed code of</text>
+<text x="746" y="468" class="n">the same plan digest</text>
+<text x="746" y="490" class="c">task.approve_promote</text>
+
+<path d="M1230,500 H1498" class="tr" marker-end="url(#a)"/>
+<text x="1246" y="428" class="e">task promote</text>
+<text x="1246" y="448" class="n">dry run and approval</text>
+<text x="1246" y="468" class="n">match the plan now</text>
+<text x="1246" y="490" class="c">promote_target.run_result</text>
+
+<path d="M1115,550 V656 H1498" class="tr" marker-end="url(#a)"/>
+<text x="1135" y="646" class="n">a repository write failed</text>
+
+<path d="M1615,696 V722 H130 V552" class="tr" marker-end="url(#a)"/>
+<text x="160" y="714" class="e">task recover</text>
+<text x="290" y="714" class="n">person, typed code; replays the recovery steps · <tspan class="c">task.recover</tspan></text>
+</svg>

@@ -13,3 +13,6 @@ Harness/programs/*
 !Harness/programs/README.md
 Showcase/source/_pages/
 Showcase/source/_twin-*
+Deep Dive/source/topics/*/_pages/
+Deep Dive/source/topics/*/_twin.*
+Deep Dive/source/topics/*/_draft.pdf

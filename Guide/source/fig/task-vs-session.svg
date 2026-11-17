@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:21px;font-weight:bold}
+.n{font-size:18px}
+.k{font-size:17px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:16px;fill:#6b6b6b}
+.f{font-family:Menlo,Consolas,monospace;font-size:16px;fill:#141414}
+.h{font-size:18px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.dat{stroke:#141414;stroke-width:1.8;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<text x="20" y="30" class="h">SESSION · lives as long as one chat</text>
+<text x="560" y="30" class="h">TASK · outlives its sessions</text>
+
+<!-- session side -->
+<rect x="20" y="50" width="440" height="88" rx="6" class="box"/>
+<text x="38" y="80" class="t">Copilot chat in VS Code</text>
+<text x="38" y="106" class="n">its context, its transcript</text>
+<text x="38" y="128" class="c">~/.copilot/session-state/&lt;id&gt;/</text>
+
+<rect x="20" y="160" width="440" height="330" rx="6" class="box"/>
+<text x="38" y="190" class="t">Session state</text>
+<text x="38" y="214" class="c">.harness/runtime/state/</text>
+<text x="38" y="234" class="c">&lt;surface&gt;/&lt;session&gt;.json</text>
+<text x="38" y="270" class="f">session_id</text>
+<text x="38" y="300" class="f">active_task</text>
+<text x="170" y="300" class="k">the one task it holds</text>
+<text x="38" y="330" class="f">parent_session_id</text>
+<text x="226" y="330" class="k">a subagent's</text>
+<text x="38" y="360" class="f">admin</text>
+<text x="104" y="360" class="k">admin mode holds no task</text>
+<text x="38" y="390" class="f">subagents</text>
+<text x="146" y="390" class="k">running reviewer, mapper</text>
+<text x="38" y="420" class="f">modules.task</text>
+<text x="176" y="420" class="k">per-prompt counters</text>
+<text x="38" y="462" class="k">written by core/state.py under a lock</text>
+
+<rect x="20" y="512" width="440" height="88" rx="6" class="box"/>
+<text x="38" y="542" class="t">Hook log</text>
+<text x="38" y="566" class="c">.harness/runtime/logs/</text>
+<text x="38" y="586" class="c">&lt;surface&gt;/&lt;session&gt;.jsonl</text>
+
+<!-- task side -->
+<rect x="560" y="50" width="470" height="700" rx="6" class="focus"/>
+<text x="578" y="80" class="t">Task state</text>
+<text x="578" y="104" class="c">&lt;task&gt;/.task/task.json</text>
+<text x="578" y="140" class="f">task · name · kind · tier</text>
+<text x="578" y="170" class="f">status</text>
+<text x="660" y="170" class="k">open or closed</text>
+<text x="578" y="200" class="f">round</text>
+<text x="650" y="200" class="k">+1 when reopened after a write-back</text>
+<text x="578" y="230" class="f">session_id</text>
+<text x="700" y="230" class="k">the latest holder</text>
+<text x="578" y="260" class="f">sessions[]</text>
+<text x="700" y="260" class="k">every pick-up, last 100</text>
+<text x="578" y="290" class="f">req</text>
+<text x="625" y="290" class="k">confirmed digest</text>
+<text x="578" y="320" class="f">plan</text>
+<text x="635" y="320" class="k">approved digests</text>
+<text x="578" y="350" class="f">promote</text>
+<text x="665" y="350" class="k">none, dry_run, done, partial</text>
+<text x="578" y="380" class="f">waiting · paused</text>
+<text x="578" y="410" class="f">deliver · handoff</text>
+<text x="578" y="440" class="f">review · allow_conn · links</text>
+<text x="578" y="470" class="f">events[]</text>
+<text x="675" y="470" class="k">the history, last 200</text>
+<text x="578" y="500" class="f">rounds[]</text>
+<text x="675" y="500" class="k">earlier write-backs</text>
+<text x="578" y="530" class="f">chat</text>
+<text x="635" y="530" class="k">the bound VS Code chat</text>
+<line x1="578" y1="556" x2="1012" y2="556" stroke="#d6d6d2" stroke-width="1.5"/>
+<text x="578" y="588" class="t">Task files</text>
+<text x="578" y="618" class="f">TASK.md REQ.md PLAN.md</text>
+<text x="578" y="644" class="f">TODO.md LOG.md DEV/ REQ/ REF/</text>
+<text x="578" y="680" class="k">read by any session, by path;</text>
+<text x="578" y="704" class="k">task.json: written by harness code (CLI,</text>
+<text x="578" y="728" class="k">hook, board), locked, replaced whole</text>
+
+<!-- pointers -->
+<path d="M462,300 H558" class="dat" marker-end="url(#a)"/>
+<text x="510" y="322" class="k" text-anchor="middle">names it</text>
+<path d="M558,230 H462" class="dat" marker-end="url(#a)"/>
+<text x="510" y="222" class="k" text-anchor="middle">holder</text>
+
+<!-- rules -->
+<rect x="20" y="776" width="1010" height="122" rx="6" fill="#ffffff" stroke="#d6d6d2" stroke-width="1.5"/>
+<text x="38" y="806" class="n">One session holds at most one task. Opening another leaves the first open.</text>
+<text x="38" y="836" class="n">Any later session may open the task again: a new holder, the same state.</text>
+<text x="38" y="866" class="n">A subagent's session inherits its parent's task; an admin session holds none.</text>
+<text x="38" y="890" class="c">task.py attach · state.py claim_child</text>
+</svg>

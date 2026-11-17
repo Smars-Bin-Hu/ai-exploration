@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 740">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:20px;font-weight:bold}
+.n{font-size:17px}
+.k{font-size:16px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.in{fill:#ffffff;stroke:#141414;stroke-width:1.2}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.ctl{stroke:#141414;stroke-width:1.7;fill:none;stroke-dasharray:8 6}
+.dat{stroke:#141414;stroke-width:1.9;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<rect x="760" y="12" width="280" height="56" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.5"/>
+<text x="900" y="47" text-anchor="middle" class="t">Person</text>
+
+<rect x="20" y="140" width="360" height="120" rx="6" class="box"/>
+<text x="38" y="170" class="t">Terminal</text>
+<text x="38" y="195" class="c">cli.py</text>
+<text x="38" y="224" class="n">person-only: confirm-req, approve-</text>
+<text x="38" y="246" class="n">plan, approve-promote, recover, …</text>
+
+<rect x="20" y="305" width="360" height="135" rx="6" class="box"/>
+<text x="38" y="335" class="t">Task board (served page)</text>
+<text x="38" y="360" class="c">modules/task/boardserve.py</text>
+<text x="38" y="388" class="n">paired browser: the same functions,</text>
+<text x="38" y="410" class="n">the same typed code; Accept, Close.</text>
+<text x="38" y="432" class="n">Writes the chat binding in task.json</text>
+
+<rect x="20" y="560" width="360" height="130" rx="6" class="box"/>
+<text x="38" y="590" class="t">Copilot's own record</text>
+<text x="38" y="616" class="c">~/.copilot/session-state/</text>
+<text x="38" y="637" class="c">&lt;session&gt;/events.jsonl</text>
+<text x="38" y="672" class="k">not the harness's: read, never written</text>
+
+<rect x="440" y="140" width="600" height="300" rx="6" class="box"/>
+<text x="458" y="170" class="t">Task commands</text>
+<text x="620" y="170" class="c">modules/task/commands.py</text>
+<rect x="458" y="190" width="178" height="232" rx="6" class="in"/>
+<text x="472" y="218" class="c">tasklife.py</text>
+<text x="472" y="250" class="n">new · open</text>
+<text x="472" y="277" class="n">upgrade · list</text>
+<text x="472" y="304" class="n">pause · resume</text>
+<text x="472" y="331" class="n">waiting · state</text>
+<rect x="651" y="190" width="178" height="232" rx="6" class="in"/>
+<text x="665" y="218" class="c">task.py</text>
+<text x="665" y="250" class="n">attach · close</text>
+<text x="665" y="277" class="n">confirm-req</text>
+<text x="665" y="304" class="n">approve-plan</text>
+<text x="665" y="331" class="n">fetch · delete</text>
+<text x="665" y="358" class="n">promote</text>
+<text x="665" y="385" class="n">approve-promote</text>
+<text x="665" y="412" class="n">recover</text>
+<rect x="844" y="190" width="178" height="130" rx="6" class="in"/>
+<text x="858" y="218" class="c">accept.py</text>
+<text x="858" y="250" class="n">deliver</text>
+<text x="858" y="277" class="n">accept</text>
+<text x="858" y="304" class="n">sweep</text>
+<rect x="844" y="334" width="178" height="88" rx="6" class="in"/>
+<text x="858" y="362" class="c">taskstages.py</text>
+<text x="858" y="392" class="n">the stage ribbon</text>
+
+<rect x="440" y="560" width="600" height="130" rx="6" class="focus"/>
+<text x="458" y="590" class="t">Task folder</text>
+<text x="585" y="590" class="c">.workspace/sandbox/tasks/&lt;name&gt;/</text>
+<text x="458" y="618" class="c">TASK.md REQ.md PLAN.md TODO.md LOG.md</text>
+<text x="458" y="646" class="n">REQ/ REF/ INBOX/: the person's · DEV/: after plan approval</text>
+<text x="458" y="674" class="c">.task/task.json</text>
+<text x="610" y="674" class="n">the state; written by harness code</text>
+
+<rect x="1100" y="140" width="280" height="95" rx="6" class="box"/>
+<text x="1116" y="170" class="t">Templates</text>
+<text x="1116" y="196" class="c">.harness/contracts/</text>
+<text x="1116" y="216" class="c">templates/task/&lt;lang&gt;/</text>
+
+<rect x="1100" y="300" width="280" height="135" rx="6" class="box"/>
+<text x="1116" y="330" class="t">Target repositories</text>
+<text x="1116" y="355" class="c">modules/task/</text>
+<text x="1116" y="375" class="c">promote_target.py</text>
+<text x="1116" y="398" class="n">a new branch, not committed;</text>
+<text x="1116" y="420" class="k">a knowledge base: committed</text>
+
+<rect x="1100" y="560" width="280" height="130" rx="6" class="box"/>
+<text x="1116" y="590" class="t">Session state</text>
+<text x="1116" y="616" class="c">.harness/runtime/state/</text>
+<text x="1116" y="637" class="c">&lt;surface&gt;/&lt;session&gt;.json</text>
+<text x="1116" y="672" class="n">active_task · subagents</text>
+
+<rect x="1440" y="140" width="340" height="135" rx="6" class="box"/>
+<text x="1458" y="170" class="t">Agent</text>
+<text x="1458" y="198" class="n">a Copilot chat session in VS Code:</text>
+<text x="1458" y="222" class="n">edit tools, terminal tool, subagents</text>
+
+<rect x="1440" y="335" width="340" height="355" rx="6" class="box"/>
+<text x="1458" y="365" class="t">Hook engine</text>
+<text x="1590" y="365" class="c">hook.py</text>
+<text x="1458" y="390" class="c">.github/hooks/harness.json</text>
+<rect x="1456" y="408" width="308" height="125" rx="6" class="in"/>
+<text x="1470" y="434" class="c">modules/task/handler.py</text>
+<text x="1470" y="462" class="n">says where the task stands at</text>
+<text x="1470" y="485" class="n">every prompt; marks a Stop in</text>
+<text x="1470" y="508" class="n">task.json</text>
+<rect x="1456" y="547" width="308" height="125" rx="6" class="in"/>
+<text x="1470" y="573" class="c">modules/gate/handler.py</text>
+<text x="1470" y="601" class="n">edit tools write only inside</text>
+<text x="1470" y="624" class="n">the task folder; DEV/ only after</text>
+<text x="1470" y="647" class="n">the plan is approved</text>
+
+<path d="M760,32 H200 V138" class="ctl" marker-end="url(#a)"/>
+<text x="560" y="24" class="k" text-anchor="middle">types person-only commands</text>
+<path d="M760,56 H410 V345 H382" class="ctl" marker-end="url(#a)"/>
+<text x="590" y="88" class="k" text-anchor="middle">approves, accepts, closes on the page</text>
+<path d="M1040,32 H1610 V138" class="ctl" marker-end="url(#a)"/>
+<text x="1320" y="24" class="k" text-anchor="middle">prompts</text>
+<path d="M380,200 H438" class="ctl" marker-end="url(#a)"/>
+<path d="M380,390 H438" class="ctl" marker-end="url(#a)"/>
+<path d="M1440,262 H1042" class="ctl" marker-end="url(#a)"/>
+<text x="1240" y="254" class="c" text-anchor="middle">harness task new · open · promote · deliver</text>
+<path d="M1520,275 V333" class="ctl" marker-end="url(#a)"/>
+<text x="1510" y="310" class="k" text-anchor="end">events</text>
+<path d="M1600,333 V277" class="ctl" marker-end="url(#a)"/>
+<text x="1610" y="310" class="k">context, deny, block</text>
+
+<path d="M1100,186 H1042" class="dat" marker-end="url(#a)"/>
+<path d="M1040,360 H1098" class="dat" marker-end="url(#a)"/>
+<path d="M740,440 V558" class="dat" marker-end="url(#a)"/>
+<text x="752" y="505" class="k">writes task.json, makes the tier files</text>
+<path d="M1040,425 H1070 V625 H1098" class="dat" marker-end="url(#a)"/>
+<text x="1082" y="505" class="k">active_task</text>
+<path d="M1440,625 H1382" class="dat" marker-end="url(#a)"/>
+<path d="M200,560 V442" class="dat" marker-end="url(#a)"/>
+<text x="212" y="505" class="k">time, usage, cancels</text>
+
+<line x1="440" y1="722" x2="500" y2="722" class="dat"/>
+<text x="510" y="728" class="k">data</text>
+<line x1="580" y1="722" x2="640" y2="722" class="ctl"/>
+<text x="650" y="728" class="k">control (who calls or decides)</text>
+<text x="930" y="728" class="k">Code paths are under .harness/engine/ unless they start with a dot or a tilde.</text>
+</svg>

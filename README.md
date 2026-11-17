@@ -7,6 +7,8 @@ The source of the company OneDrive folder "AI Exploration". Pull it on the compa
 | `Start Here/` | `Start Here.pptx` (edit this one) and `Start Here.pdf` (preview) | built from `Start Here/source/` |
 | `Harness Engineering 101/` | slidedoc PDFs: `Basic/`, `Advanced/`, `Mindset/` | exported from the smarshu.com repository (`npm run export:team`) |
 | `Showcase/` | `Lessons/` (PDFs) and `Real Tasks/` | `Real Tasks/` is company only: added on the company computer, never committed |
+| `Guide/` | The Harness Guide: the knowledge files of an M365 Copilot agent that answers questions about the harness (`Knowledge/`), how to build the agent (`AGENT.md`) and the questions it is tested with (`questions.md`, not a knowledge source) | built from `Guide/source/` (`python3 Guide/source/build.py`, needs pandoc and Chrome) |
+| `Deep Dive/` | One sample topic (Task) of an earlier plan; its facts are reused by the Guide | built from `Deep Dive/source/` |
 | `Harness/` | the harness install package, the knowledge base, `programs/`, the guides | zips and installers are not committed (see `.gitignore`) |
 
 ## Build Start Here

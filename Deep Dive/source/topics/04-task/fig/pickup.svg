@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:20px;font-weight:bold}
+.n{font-size:18px}
+.k{font-size:17px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.num{font-size:16px;font-weight:bold;fill:#ffffff}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.life{stroke:#d6d6d2;stroke-width:2;stroke-dasharray:4 5}
+.ctl{stroke:#141414;stroke-width:1.7;fill:none;stroke-dasharray:8 6}
+.dat{stroke:#141414;stroke-width:1.9;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<!-- lanes -->
+<rect x="20" y="14" width="200" height="74" rx="6" class="box"/>
+<text x="120" y="44" class="t" text-anchor="middle">Agent</text>
+<text x="120" y="70" class="k" text-anchor="middle">a new chat</text>
+<rect x="270" y="14" width="230" height="74" rx="6" class="box"/>
+<text x="385" y="44" class="t" text-anchor="middle">Task hook</text>
+<text x="385" y="70" class="c" text-anchor="middle">task/handler.py</text>
+<rect x="550" y="14" width="230" height="74" rx="6" class="box"/>
+<text x="665" y="44" class="t" text-anchor="middle">Task CLI</text>
+<text x="665" y="70" class="c" text-anchor="middle">tasklife.py, task.py</text>
+<rect x="830" y="14" width="200" height="74" rx="6" class="focus"/>
+<text x="930" y="44" class="t" text-anchor="middle">Task folder</text>
+<text x="930" y="70" class="k" text-anchor="middle">and session state</text>
+<line x1="120" y1="88" x2="120" y2="900" class="life"/>
+<line x1="385" y1="88" x2="385" y2="900" class="life"/>
+<line x1="665" y1="88" x2="665" y2="900" class="life"/>
+<line x1="930" y1="88" x2="930" y2="900" class="life"/>
+
+<!-- 1 -->
+<circle cx="40" cy="128" r="13" fill="#141414"/><text x="40" y="134" class="num" text-anchor="middle">1</text>
+<path d="M385,150 H124" class="ctl" marker-end="url(#a)"/>
+<text x="140" y="124" class="n">session id; open tasks, newest five</text>
+<text x="140" y="142" class="c">prompt_text · open_tasks_text</text>
+
+<!-- 2 -->
+<circle cx="40" cy="198" r="13" fill="#141414"/><text x="40" y="204" class="num" text-anchor="middle">2</text>
+<path d="M120,222 H661" class="ctl" marker-end="url(#a)"/>
+<text x="140" y="212" class="c">harness task open &lt;name&gt; --session-id &lt;id&gt;</text>
+
+<!-- 3 -->
+<circle cx="40" cy="262" r="13" fill="#141414"/><text x="40" y="268" class="num" text-anchor="middle">3</text>
+<rect x="560" y="246" width="230" height="138" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.2"/>
+<text x="574" y="272" class="n">refuses: no such</text>
+<text x="574" y="294" class="n">session, a subagent,</text>
+<text x="574" y="316" class="n">admin mode, a promote</text>
+<text x="574" y="338" class="n">stopped halfway</text>
+<text x="574" y="368" class="c">check_session · attach</text>
+
+<!-- 4 -->
+<circle cx="40" cy="418" r="13" fill="#141414"/><text x="40" y="424" class="num" text-anchor="middle">4</text>
+<path d="M665,440 H926" class="dat" marker-end="url(#a)"/>
+<text x="685" y="412" class="n">status open, session_id,</text>
+<text x="685" y="432" class="n">sessions[] + 1; active_task</text>
+
+<!-- 5 -->
+<circle cx="40" cy="480" r="13" fill="#141414"/><text x="40" y="486" class="num" text-anchor="middle">5</text>
+<path d="M665,500 H124" class="dat" marker-end="url(#a)"/>
+<text x="140" y="492" class="n">read_first: TASK.md · next: the next step</text>
+
+<!-- 6 -->
+<circle cx="40" cy="544" r="13" fill="#141414"/><text x="40" y="550" class="num" text-anchor="middle">6</text>
+<path d="M926,566 H124" class="dat" marker-end="url(#a)"/>
+<text x="140" y="558" class="n">reads TASK.md first, then REQ.md, REQ/ and REF/, by path</text>
+
+<!-- 7 -->
+<circle cx="40" cy="618" r="13" fill="#141414"/><text x="40" y="624" class="num" text-anchor="middle">7</text>
+<path d="M385,668 H124" class="ctl" marker-end="url(#a)"/>
+<text x="140" y="612" class="n">every prompt: task, kind, tier, round,</text>
+<text x="140" y="634" class="n">next step, write scope</text>
+<text x="140" y="654" class="c">task_text · next_step</text>
+
+<!-- 8 -->
+<circle cx="40" cy="712" r="13" fill="#141414"/><text x="40" y="718" class="num" text-anchor="middle">8</text>
+<path d="M120,722 H381" class="ctl" marker-end="url(#a)"/>
+<text x="140" y="712" class="n">Stop</text>
+<rect x="270" y="738" width="400" height="150" rx="6" fill="#ffffff" stroke="#141414" stroke-width="1.2"/>
+<text x="284" y="764" class="n">task files written but TASK.md not:</text>
+<text x="284" y="786" class="n">block once, "update TASK.md"</text>
+<text x="284" y="808" class="k">also: checks not passed, write-back</text>
+<text x="284" y="828" class="k">loose ends, autorun, a knowledge-base offer</text>
+<text x="284" y="852" class="n">otherwise: let it stop, mark the task</text>
+<text x="284" y="874" class="c">on_stop · mark_waiting</text>
+<path d="M670,840 H926" class="dat" marker-end="url(#a)"/>
+<text x="690" y="830" class="n">waiting: stopped</text>
+<text x="690" y="892" class="k">dashed: control · solid: data</text>
+</svg>

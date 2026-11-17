@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 910">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.n{font-size:18px}
+.b{font-size:19px;font-weight:bold}
+.k{font-size:16px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.h{font-size:17px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.st{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.pill{fill:#f2f1ec;stroke:#141414;stroke-width:1.4}
+.tr{stroke:#141414;stroke-width:1.6;fill:none}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<text x="20" y="26" class="h">BOARD STATE · the first test that holds</text>
+<text x="1030" y="26" class="c" text-anchor="end">tasklife.state_of</text>
+<line x1="20" y1="38" x2="1030" y2="38" stroke="#141414" stroke-width="1.5"/>
+
+<text x="20" y="70" class="n">task.json status is closed</text>
+<path d="M700,64 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="46" width="218" height="34" rx="17" class="st"/><text x="921" y="69" class="b" text-anchor="middle">closed</text>
+<text x="20" y="116" class="n">the folder has no readable task.json</text>
+<path d="M700,110 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="92" width="218" height="34" rx="17" class="st"/><text x="921" y="115" class="b" text-anchor="middle">new · broken</text>
+<text x="20" y="162" class="n">the person put it aside</text>
+<path d="M700,156 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="138" width="218" height="34" rx="17" class="st"/><text x="921" y="161" class="b" text-anchor="middle">paused</text>
+<text x="20" y="208" class="n">the agent is in a turn: its last session holds it, a hook call in</text>
+<text x="20" y="230" class="n">the last 300 s or a subagent runs, no Stop mark since</text>
+<path d="M700,208 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="190" width="218" height="34" rx="17" fill="#f2f1ec" stroke="#e8590c" stroke-width="2.5"/><text x="921" y="213" class="b" text-anchor="middle">working</text>
+<text x="20" y="276" class="n">something waits for the person (reasons below)</text>
+<path d="M700,270 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="252" width="218" height="34" rx="17" fill="#f2f1ec" stroke="#e8590c" stroke-width="2.5"/><text x="921" y="275" class="b" text-anchor="middle">waiting</text>
+<text x="20" y="322" class="n">its last session still holds it (active_task names it)</text>
+<path d="M700,316 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="298" width="218" height="34" rx="17" class="st"/><text x="921" y="321" class="b" text-anchor="middle">quiet</text>
+<text x="20" y="368" class="n">the session that last opened it no longer holds it</text>
+<path d="M700,362 H808" class="tr" marker-end="url(#a)"/><rect x="812" y="344" width="218" height="34" rx="17" class="st"/><text x="921" y="367" class="b" text-anchor="middle">unheld</text>
+
+<text x="20" y="412" class="k">Main reasons, first first (tasklife.waiting): a question asked · a half-done write-back · the plan · the write-back ·</text>
+<text x="20" y="434" class="k">checks used up · to accept · the requirement · a held call · a hand-over · a commit · an approval not told · stopped</text>
+
+<text x="20" y="490" class="h">STAGE RIBBON · computed from files and state each time</text>
+<text x="1030" y="490" class="c" text-anchor="end">taskstages.of</text>
+<line x1="20" y1="502" x2="1030" y2="502" stroke="#141414" stroke-width="1.5"/>
+
+<text x="20" y="536" class="b">development, knowledge base (dev, kb)</text>
+<rect x="20" y="550" width="180" height="40" rx="20" class="pill"/><text x="110" y="577" class="n" text-anchor="middle">requirement</text>
+<rect x="232" y="550" width="180" height="40" rx="20" class="pill"/><text x="322" y="577" class="n" text-anchor="middle">plan</text>
+<rect x="444" y="550" width="180" height="40" rx="20" class="pill"/><text x="534" y="577" class="n" text-anchor="middle">developing</text>
+<rect x="656" y="550" width="180" height="40" rx="20" class="pill"/><text x="746" y="577" class="n" text-anchor="middle">write-back</text>
+<rect x="868" y="550" width="162" height="40" rx="20" class="pill"/><text x="949" y="577" class="n" text-anchor="middle">done</text>
+<text x="110" y="612" class="k" text-anchor="middle">REQ confirmed</text>
+<text x="322" y="612" class="k" text-anchor="middle">plan approved</text>
+<text x="534" y="612" class="k" text-anchor="middle">write-back approved</text>
+<text x="746" y="612" class="k" text-anchor="middle">write-back done</text>
+<text x="949" y="612" class="k" text-anchor="middle">write-back done</text>
+
+<text x="20" y="664" class="b">test (one step per environment TEST-GUIDE.md names, such as DEV, IST, UAT)</text>
+<rect x="20" y="678" width="180" height="40" rx="20" class="pill"/><text x="110" y="705" class="n" text-anchor="middle">guide</text>
+<rect x="232" y="678" width="180" height="40" rx="20" class="pill"/><text x="322" y="705" class="n" text-anchor="middle">DEV</text>
+<rect x="444" y="678" width="180" height="40" rx="20" class="pill"/><text x="534" y="705" class="n" text-anchor="middle">IST</text>
+<rect x="656" y="678" width="180" height="40" rx="20" class="pill"/><text x="746" y="705" class="n" text-anchor="middle">UAT</text>
+<rect x="868" y="678" width="162" height="40" rx="20" class="pill"/><text x="949" y="705" class="n" text-anchor="middle">done</text>
+<text x="110" y="740" class="k" text-anchor="middle">TEST-GUIDE.md</text>
+<text x="534" y="740" class="k" text-anchor="middle">each: "Verdict for &lt;env&gt;: PASS"</text>
+<text x="949" y="740" class="k" text-anchor="middle">all PASS</text>
+
+<text x="20" y="799" class="b">analysis, design, other</text>
+<rect x="290" y="772" width="170" height="40" rx="20" class="pill"/><text x="375" y="799" class="n" text-anchor="middle">doing</text>
+<rect x="490" y="772" width="170" height="40" rx="20" class="pill"/><text x="575" y="799" class="n" text-anchor="middle">done</text>
+<text x="690" y="799" class="k">done when the task is closed</text>
+
+<text x="20" y="858" class="b">Q&amp;A</text>
+<text x="232" y="858" class="k">no ribbon</text>
+<text x="20" y="896" class="k">Under each step: the fact that ends it. A step is done when it and every step before it hold.</text>
+</svg>
