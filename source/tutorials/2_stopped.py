@@ -67,14 +67,16 @@ PAGES = [
 
  dict(kicker='Step 5 · Some commands ask you', title='VS Code asks before some commands',
   text=[
-   'Some commands are not refused but need your yes: deleting files, going on the network (`curl`, `ssh`), installing packages. VS Code shows the command in the chat and waits.',
-   'Read the command. Allow it only when you know why the agent needs it.',
-   ('small', 'On the board the task says the agent asks to run, with the button Allow · deny.'),
+   'Some commands need your yes: deletes, network calls (`curl`, `ssh`), package installs. VS Code shows each in the chat: read it.',
+   'This is a reminder, not a lock: with **Allow all**, or after **Allow in this Session**, VS Code stops asking. Choose neither.',
+   ('small', 'Before target repositories are set up, git push and reset --hard only ask, and git commit passes.'),
   ],
   shot='The VS Code chat with an agent’s terminal command (for example a curl) waiting for your confirmation, its buttons visible',
   notes='Sources: policies/gate.json terminal.ask ("it deletes files", "it goes on the network", "it installs packages"); '
         'handler.py end of check_terminal: permission "ask" with gate.terminal.ask. Board: tasklife.py LIVE_WAITS, '
-        'messages task.waiting.confirm = "the agent asks to run: {what}", board.action.confirm = "Allow · deny", board.ask.allow / board.ask.deny.'),
+        'messages task.waiting.confirm = "the agent asks to run: {what}", board.action.confirm = "Allow · deny". '
+        'Only a reminder: docs/02-features.md line 50 (Allow all shows no box; Allow in this Session is not asked again). '
+        'Without target repositories only the ask rules of gate.json look at git (handler.py lines 763, 770): git commit passes.'),
 
  dict(kicker='Step 6 · Where you see it', title='The chat tells you; the board keeps it',
   text=[
@@ -137,15 +139,28 @@ PAGES = [
 
  dict(kicker='Step 10 · When it is really needed', title='Run it yourself, in your own terminal',
   text=[
-   'Some refusals have no approval: `git push`, a dangerous command, a change to a guardrail file.',
-   'If it is really needed, ask the agent what it is for, read it, and run it yourself in your own terminal. The gate stops the agent, not you.',
+   '`git push` and dangerous commands have no approval.',
+   'If one is really needed, ask the agent what it is for, read it, and run it yourself in your own terminal. The gate stops the agent, not you.',
    ('small', 'Do not ask the agent to find another way round: it is told not to.'),
   ],
-  notes='Sources: messages gate.git.never ("the user runs it in their own terminal"), gate.terminal.denied ("the user runs it"), '
-        'gate.guardrail.file ("the user changes it, or switches admin mode on"). The gate is a hook on the agent’s tool calls only '
-        '(.github/hooks/harness.json), so a command you type yourself is not judged by it.'),
+  notes='Sources: messages gate.git.never ("the user runs it in their own terminal"), gate.terminal.denied ("the user runs it"). '
+        'The gate is a hook on the agent\u2019s tool calls only (.github/hooks/harness.json), so a command you type yourself is not judged by it. '
+        'Guardrail files are the next page.'),
 
- dict(kicker='Step 11 · Commands only you run', title='Never paste an approval command into the chat',
+ dict(kicker='Step 11 · Guardrail files', title='A guardrail file needs one more step',
+  text=[
+   'Settings go in `*.override.json` files: those are not checked.',
+   'After you edit a guardrail file, the agent is refused every command and write until you run `harness doctor --accept` in your terminal, or undo it.',
+   'Or admin mode: `/harness-admin`, in a chat with no task, gives you a `harness admin on` command for your terminal. Ending it accepts the files.',
+  ],
+  notes='Sources: .harness/engine/integrity.py lines 1-8 (what is listed; the hook refuses commands and writes) and lines 23-27 '
+        '(*.override.json and *.company.json are skipped); docs/12-guardrails-and-gate.md "The guardrail files are checked" '
+        '(a hand edit: harness doctor --accept in your terminal, or put the files back); messages gate.guardrail.file '
+        '("switches admin mode on for a session (harness admin on)"), gate.admin.has_task (admin mode needs a chat with no task); '
+        '.github/skills/harness-admin/SKILL.md lines 11 and 23 (the person runs harness admin on --session-id <id>; not in a chat with a task); docs/01-quickstart.md Common cases; modules/gate/commands.py admin_switch_off '
+        '(the end of an admin session accepts the files).'),
+
+ dict(kicker='Step 12 · Commands only you run', title='Never paste an approval command into the chat',
   text=[
    'These `harness` commands are yours: `task approve-plan`, `task confirm-req`, `task approve-promote`, `task recover`, `approve-command`, `approve-action`, `task close`, `admin on`, `doctor --accept`, and more.',
    'The gate refuses them when the agent runs them, so pasting one into its chat only gets a refusal. Press its button on the board, if it has one, or run it in your own terminal.',
@@ -160,6 +175,6 @@ CLOSING = dict(title='When the agent is stopped',
   text=[
    ('list', ['Read the reason first: it says why, and what to do next.',
              'Held outside call: approve it on its card. Git write: `harness approve-command` in your own terminal.',
-             'No approval possible, and really needed: run it yourself.',
+             'No approval possible, and really needed: run it yourself. A guardrail file you change: `harness doctor --accept`.',
              'Never hand an approval command to the agent.']),
   ])
