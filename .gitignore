@@ -7,6 +7,10 @@ source/start-here/_pages/
 source/start-here/_twin.*
 source/showcase/_pages/
 source/showcase/_twin-*
+source/install/_pages/
+source/install/_twin.*
+source/install/_measure.*
+source/install/_crops/
 source/deep-dive/topics/*/_pages/
 source/deep-dive/topics/*/_twin.*
 source/deep-dive/topics/*/_draft.pdf
