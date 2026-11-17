@@ -394,6 +394,17 @@ Object.assign(SCREENS, {
     const top = you.y - 75;  // card 1 shows the path of this computer's harness command; the code repositories below card 3 show this computer's folders
     return { x: dialog.x, y: top, width: dialog.width, height: last.bottom + 24 - top, after: escape(page) };
   }],
+  'tour-setup-repos': ['Change the setup, card 3, the Code repositories row: the field, Add, Browse, the repositories listed, the hint (nothing pressed)', async (page) => {
+    await page.setViewportSize({ width: WIDTH, height: 1500 });
+    await board(page);
+    await page.locator('.dock-setup').click();
+    await sleep(3000);
+    const dialog = await dialogBox(page);
+    const conn = await box(page, page.locator('.shade .dialog').getByText('Connections', { exact: true }).first());
+    const hint = await box(page, page.locator('.shade .dialog').getByText(/You can leave this empty and set it later/).first());
+    const top = conn.bottom + 18;
+    return { x: dialog.x, y: top, width: dialog.width, height: hint.bottom + 18 - top, after: escape(page) };
+  }],
   'tour-setup-local': ['Change the setup, card 4 Local: the programs, the network (CA bundle), MCP, and Save', async (page) => {
     await page.setViewportSize({ width: WIDTH, height: 1500 });
     await board(page);

@@ -161,24 +161,26 @@ PAGES = [
         text='**Records › Log**: the agent’s decisions and findings, newest first.'),
    dict(pic=(B + 'tour-tab-history.png', (40, 208, 2180, 1112)),
         text='**Task Record**: what happened to the task, with times: approvals, write-back, close.'),
-   dict(pic=(B + 'tour-tab-trace.png', (40, 700, 2180, 1468)),
-        text='**Agent actions**: per prompt, its tool calls; on top, what a hook blocked and what failed.'),
+   dict(pic=(B + 'stop-agent-actions.png', (85, 570, 2140, 1490)),
+        text='**Agent actions**: every tool call. A refused one shows the call and the gate’s reason; ▶ opens it all.'),
    dict(pic=(B + 'tour-files-edit.png', (68, 690, 2147, 1150)),
         text='**Files**: edit a text file, add, rename, delete. Not while the agent works. A saved `PLAN.md` needs approval again.'),
   ],
-  notes='Sources: messages.en.json desk.tab.log, desk.tab.history, desk.tab.trace, desk.tab.files and the lines under each tab (as in the pictures); desk.js L21 (Files group: Other documents, Files); desk.files.hint.edit (a text file can be edited), desk.files.busy (not while the agent is in a turn), desk.files.plan.note (saving PLAN.md: an approved plan must be approved again).'),
+  notes='Sources: messages.en.json desk.tab.log, desk.tab.history, desk.tab.trace (stop-agent-actions: Blocked and failed, each row the call, blocked, and the gate’s reason), desk.tab.files and the lines under each tab (as in the pictures); desk.js L21 (Files group: Other documents, Files); desk.files.hint.edit (a text file can be edited), desk.files.busy (not while the agent is in a turn), desk.files.plan.note (saving PLAN.md: an approved plan must be approved again).'),
 
  # ---- Reports -----------------------------------------------------------------------------------------------
  dict(group='Reports', steps=[
    dict(pic=(B + 'tour-report.png', (36, 55, 2044, 628)),
-        text='**…** › **Time and usage**: time, prompts, **Credits**, checks, gate blocks. **Ask why** opens a chat.'),
+        text='One task: **…** › **Time and usage**: time, prompts, **Credits**, premium requests, gate blocks. **Ask why** opens a chat.'),
+   dict(pic=(B + 'tour-list.png', (22, 148, 2350, 335)),
+        text='All tasks: the **List** strip totals every task listed, open and closed, whatever the filter. No view by week.'),
    dict(pic=(B + 'tour-report.png', (42, 950, 2040, 1310)),
         text='**Open** shows the review page. **Agent Performance Review** opens a new review task, which is costly.'),
    dict(pic=(B + 'tour-performance.png', (20, 40, 2140, 1160)),
-        text='The review page: the accounts, each prompt’s Credits or time, every call in time.'),
+        text='The review page: each prompt’s Credits or time. **Credits** are Copilot’s own usage count, not money.'),
   ],
   notes='Sources: messages.en.json desk.report, report.back, report.save, report.why(.hint: opens a chat), report.perf.start(.hint: opens an rca task with harness-agent-performance-review), '
-        'report.perf.open(.hint), dock.costly.hint; the In short line of the page (no review yet: accounts made from the record, at no cost).'),
+        'report.perf.open(.hint), dock.costly.hint; report.footer.note (Credits and premium requests are the usage Copilot records, added up as they are, not turned into money); copilot_events.py L153-157 (Credits = copilotUsage.totalNanoAiu, AI credits; premium requests are a separate count); board.js L328-337 (the strip sums `rows`, every task on the board, not the filter), taskboard.py L187, L240-250 (the board lists open tasks and the newest 50 closed ones; archived tasks are gone); board.js filters: state, kind, search (no date); the In short line of the page (no review yet: accounts made from the record, at no cost).'),
 
  # ---- Round buttons -----------------------------------------------------------------------------------------
  dict(group='Round buttons', steps=[
@@ -208,15 +210,15 @@ PAGES = [
  # ---- Setup -------------------------------------------------------------------------------------------------
  dict(steps=[
    dict(pic=(B + 'tour-setup-window.png', (40, 385, 1644, 1080)),
-        text='Gear, **Change the setup**: **2 You** (name, language), and **3 From the company**.'),
+        text='Gear, **Change the setup**: card **3 From the company**; above it, **2 You** (name, language).'),
+   dict(pic=(B + 'tour-setup-repos.png', (60, 15, 1570, 440)),
+        text='**Code repositories**: type a folder, **Add**, **Save**. The agent may change only these, only through the write-back.'),
    dict(pic=B + 'tour-setup-local.png',
         text='**4 Local**: programs, network, MCP; **Open** for the details. Then **Save**.'),
    dict(pic=(B + 'outside-tools-packs.png', (0, 0, 1644, 545)),
-        text='**Tool packs** › **Open**: the outside systems the agent can work with (tutorial 5).'),
-   dict(pic=B + 'outside-tools-connections.png',
-        text='**Connections** › **Open**: where the agent may reach, and its sign-in (tutorial 5).'),
+        text='**Tool packs** and **Connections** › **Open**: outside systems, where the agent may reach, sign-ins (tutorial 5).'),
   ],
-  notes='Sources: setup.js L401-408 (card 1 The short command), L660-662 (cards 2 You, 3 From the company, 4 Local); messages.en.json dock.setup, setup.*, machine.* (Local: programs, network, MCP); '
+  notes='Sources: setup.js L401-408 (card 1 The short command), L654, L660-662 (cards 2 You, 3 From the company with the Code repositories row last, 4 Local); setup.repos, setup.repos.hint, setup.refused.add (Add), setup.browse; docs/03-configure.md L3, L105 (code repositories are the target repositories); gate refusal "A target repository is never changed directly: only promote writes to it" (stop-agent-actions); messages.en.json dock.setup, setup.*, machine.* (Local: programs, network, MCP); '
         'the lines under Tool packs and Connections & sign-ins (as in the pictures).'),
 
  # ---- Knowledge base ----------------------------------------------------------------------------------------
