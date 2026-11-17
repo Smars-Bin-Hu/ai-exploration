@@ -1,5 +1,5 @@
-# Harness tutorials · 3 Independent checks: a second agent, the reviewer, checks the work before it is written back.
-# Build: .venv/bin/python source/tutorials/build.py 3_checks
+# Harness tutorials · 4 Independent checks: a second agent, the reviewer, checks the work before it is written back.
+# Build: .venv/bin/python source/tutorials/build.py 4_checks
 # Checked against harness 1.7.45 (.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/); sources in each page's notes.
 # Where docs and code disagree, the code wins: `review set` (the Independent review chips) works while the agent is at work
 # (boardserve.py SETTINGS, L96), though docs/04-reference.md says it does not.

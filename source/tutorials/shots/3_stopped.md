@@ -1,4 +1,4 @@
-# Screenshots to take: 2 When the agent is stopped
+# Screenshots to take: 3 When the agent is stopped
 
 Two placeholders. Take them on the company computer, with harness 1.7.45; no company names or data in view (a made-up task and command are fine).
 

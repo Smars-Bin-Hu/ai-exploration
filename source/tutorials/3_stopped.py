@@ -1,5 +1,5 @@
-# Tutorial 2: When the agent is stopped. Checked against harness 1.7.45 (ref/harness-1.7.45, read only).
-# Build: .venv/bin/python source/tutorials/build.py 2_stopped
+# Tutorial 3: When the agent is stopped. Checked against harness 1.7.45 (ref/harness-1.7.45, read only).
+# Build: .venv/bin/python source/tutorials/build.py 3_stopped
 
 H = '.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/'
 DOCIMG = H + 'docs/images/'
@@ -119,7 +119,7 @@ PAGES = [
   notes='Sources: messages desk.outbox.view = "View", desk.outbox.code_tip, desk.outbox.approve = "Approve", desk.outbox.dismiss = "Do not approve", '
         'desk.outbox.reason.*, desk.outbox.tell = "Tell the agent to run it", desk.outbox.tell.hint, desk.outbox.same_as; '
         'docs/04-reference.md approve-action row; core/approvals.py DEFAULT_MINUTES = 10 (gate.json git.approval_minutes). '
-        'The card’s "Open <connection> for this task" button is tutorial 4.'),
+        'The card’s "Open <connection> for this task" button is tutorial 5.'),
 
  dict(kicker='Step 9 · Approve a git write', title='A git write: approve it in your terminal',
   text=[

@@ -123,7 +123,7 @@ The reason a task waits is told from facts, in order of how much it blocks {src:
 - the agent stopped: the Stop hook marks the task "waits for you" when the agent ends its turn, and your next message takes the mark away {src:.harness/engine/modules/task/handler.py#L398-L411} {src:.harness/engine/modules/task/handler.py#L210-L211}.
 - you cancelled the agent's turn in VS Code: "cancelled, waits for you" {src:.harness/engine/core/messages.en.json#L131}.
 
-The task page shows the reason at the top with a button for the answer; the harness tutorials "1 A day with the harness" and "2 When the agent is stopped", in the OneDrive folder `3 Courses/Harness tutorials/`, show it on screen.
+The task page shows the reason at the top with a button for the answer; the harness tutorials "1 A day with the harness" and "3 When the agent is stopped", in the OneDrive folder `3 Courses/Harness tutorials/`, show it on screen.
 
 ## Task: what is enforced by code, and what is not
 

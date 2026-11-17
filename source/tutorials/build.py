@@ -27,10 +27,11 @@ WORD_LIMIT = 60
 DECKS = {
     '0_must_read': ('0', 'MUST READ'),
     '1_day':       ('1', 'A day with the harness'),
-    '2_stopped':   ('2', 'When the agent is stopped'),
-    '3_checks':    ('3', 'Independent checks'),
-    '4_outside':   ('4', 'Outside systems and connections'),
-    '5_kb':        ('5', 'Knowledge base'),
+    '2_tour':      ('2', 'A tour of the harness'),
+    '3_stopped':   ('3', 'When the agent is stopped'),
+    '4_checks':    ('4', 'Independent checks'),
+    '5_outside':   ('5', 'Outside systems and connections'),
+    '6_kb':        ('6', 'Knowledge base'),
     'sample':      ('',  'Sample'),
 }
 
@@ -332,9 +333,15 @@ def make(slug, X, imgs):
             a, y = column(text, TX, TOP, 9.5)
             els += a
             y = max(y + 0.15, 4.9)
+            pp = [runs('Where to go next: open **0 MUST READ.pdf** at the top of the **AI Exploration** folder. '
+                       'It says what each folder is for and which to read next.')]
+            for size, gap in ((16, 0.25), (13, 0.15)):  # smaller when the text above leaves little room
+                ph = text_h(pp, 11.83, size, 0) + 0.05
+                if y + gap + ph <= BOTTOM: break
+            else:
+                warn.append(f'page {n}: the closing text leaves no room for the pointer to {MUST_READ}')
             els += [R(TX, y, 11.83, 0.05, fill=C['accent'], radius=False),
-                    T(TX, y + 0.25, 11.83, 0.9, [runs('Where to go next: open **0 MUST READ.pdf** at the top of the **AI Exploration** folder. '
-                                                    'It says what each folder is for and which to read next.')], 16, C['ink'], SERIF)]
+                    T(TX, y + gap, 11.83, max(ph, 0.9) if size == 16 else ph, pp, size, C['ink'], SERIF)]
             D.page(els, notes=pg.get('notes')); continue
         els = Deck.head(pg['kicker'], pg['title'])
         if kind == 'text':

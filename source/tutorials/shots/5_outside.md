@@ -1,6 +1,6 @@
-# Screenshots to take: 4 Outside systems and connections
+# Screenshots to take: 5 Outside systems and connections
 
-Two placeholders in `source/tutorials/4_outside.py`. Take them on the company computer, with harness 1.7.45; page numbers count the cover as page 1. No company names, servers or data in view: use a made-up dev connection (the deck calls it `orders-dev`) and a made-up task.
+Two placeholders in `source/tutorials/5_outside.py`. Take them on the company computer, with harness 1.7.45; page numbers count the cover as page 1. No company names, servers or data in view: use a made-up dev connection (the deck calls it `orders-dev`) and a made-up task.
 
 | Page | Step | What to capture | Where in the app |
 | --- | --- | --- | --- |

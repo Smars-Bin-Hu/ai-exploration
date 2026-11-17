@@ -1,6 +1,6 @@
-# Screenshots to take: 3 Independent checks
+# Screenshots to take: 4 Independent checks
 
-Four placeholders in `source/tutorials/3_checks.py`. Take them on the company computer, with harness 1.7.45; no company names or data in view (a made-up task is fine). Page numbers count the cover as page 1.
+Four placeholders in `source/tutorials/4_checks.py`. Take them on the company computer, with harness 1.7.45; no company names or data in view (a made-up task is fine). Page numbers count the cover as page 1.
 
 | Page | Step | What to capture | Where in the app |
 | --- | --- | --- | --- |

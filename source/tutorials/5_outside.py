@@ -1,6 +1,6 @@
-# Harness tutorials · 4 Outside systems and connections: how the gate judges a call to a database, a ticket board,
+# Harness tutorials · 5 Outside systems and connections: how the gate judges a call to a database, a ticket board,
 # a pipeline or a server, how you approve a held call, and what opening a connection for a task means.
-# Build: .venv/bin/python source/tutorials/build.py 4_outside
+# Build: .venv/bin/python source/tutorials/build.py 5_outside
 # Checked against harness 1.7.45 (.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/, read only); sources in each page's notes.
 # Names in examples (orders-dev, orders-prod, tracker) are made up.
 

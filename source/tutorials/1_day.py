@@ -138,7 +138,7 @@ PAGES = [
    dict(pic=(B + 'review.png', (74, 716, 1150, 960)),
         text='A separate reviewer checks the work. **Review** lists each check. This task asked for 2.'),
    dict(pic=(B + 'review.png', (74, 2001, 2137, 2446)),
-        text='A FAIL says what to fix; the agent fixes it. Checks used up? See deck 3.'),
+        text='A FAIL says what to fix; the agent fixes it. Checks used up? See deck 4.'),
   ],
   notes='Sources: docs/01-quickstart.md step 3 and step 5 point 7; docs/02-features.md (limit n + 2); messages.en.json desk.rv.button, desk.rv.hint, desk.tab.review, '
         'task.waiting.review, board.action.review-extend, board.action.review-waive; task.py L911-928.'),
@@ -186,5 +186,5 @@ CLOSING = dict(title='That is the day',
   text=[
    'A task that changes a repository always goes this way: you say what, the agent writes, and you read before each approval: requirement, plan, write-back.',
    'Any other task (a question, an RCA, a design) ends with a summary **to accept**.',
-   'Refused, or a call waits for you? Read **2 When the agent is stopped**.',
+   'Refused, or a call waits for you? Read **3 When the agent is stopped**.',
   ])

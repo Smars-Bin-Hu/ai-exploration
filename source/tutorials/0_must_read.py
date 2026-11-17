@@ -5,11 +5,12 @@
 COVER = None
 PAGES = []
 
-CLOSING = dict(kicker='Harness tutorials · Read this first', title='Five picture books for working with the harness',
+CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture books for working with the harness',
   text=[
    'Installed the harness? These picture books, one step per page, start where **Install the harness** ends.',
    ('steps', [
     '**A day with the harness**: one task, from the board to your commit. Read it first.',
+    '**A tour of the harness**: every screen of the harness and what you can do there.',
     '**When the agent is stopped**: why the harness stops it, and what you do. When it happens.',
     '**Independent checks**: a second agent checks the work. When you want checks.',
     '**Outside systems and connections**: calls to company systems. When yours are connected.',
@@ -22,6 +23,6 @@ CLOSING = dict(kicker='Harness tutorials · Read this first', title='Five pictur
     'the harness files, so it is the most direct way in, but it spends GitHub Copilot credits.',
    ]),
   ],
-  notes='Decks: the cover lines of 1-5 (1.7.45). Courses: .github/skills/harness-rookie-quick-start/SKILL.md (description, '
+  notes='Decks: the cover lines of 1-6 (1.7.45). Courses: .github/skills/harness-rookie-quick-start/SKILL.md (description, '
         'part 4 practice task) and harness-rookie-wondering/SKILL.md (description; "read the real files" when the '
         'reference files do not have it). Credits: every chat turn is a Copilot request.')

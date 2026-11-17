@@ -1,6 +1,6 @@
-# Harness tutorials · 5 Knowledge base: what the team knowledge base is, how it is built once, how a `kb` task keeps it
+# Harness tutorials · 6 Knowledge base: what the team knowledge base is, how it is built once, how a `kb` task keeps it
 # true, and how the agent reads it in your tasks.
-# Build: .venv/bin/python source/tutorials/build.py 5_kb
+# Build: .venv/bin/python source/tutorials/build.py 6_kb
 # Checked against harness 1.7.45 (.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/, read only); sources in each page's notes.
 # Names in examples (orders, returns, job:Nightly_Load, usp_load_orders) are made up.
 # Where 1.7.45 shows what a task read: not on the task page. The knowledge base window (column "Last read by a task"),

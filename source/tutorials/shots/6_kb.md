@@ -1,6 +1,6 @@
-# Screenshots to take: 5 Knowledge base
+# Screenshots to take: 6 Knowledge base
 
-Three placeholders in `source/tutorials/5_kb.py`. Take them on the company computer, with harness 1.7.45; page numbers count the cover as page 1. No company names, systems or data in view: use made-up domains (the deck uses `orders` and `returns`) and a made-up task.
+Three placeholders in `source/tutorials/6_kb.py`. Take them on the company computer, with harness 1.7.45; page numbers count the cover as page 1. No company names, systems or data in view: use made-up domains (the deck uses `orders` and `returns`) and a made-up task.
 
 | Page | Step | What to capture | Where in the app |
 | --- | --- | --- | --- |

@@ -45,7 +45,7 @@ A person uses the harness in two places: the Copilot chat in VS Code, to talk to
 4. Approve the plan, then the write-back, each with a code, when the board says the task waits for you {src:.harness/engine/modules/task/tasklife.py#L276-L336}.
 5. Commit the branch the write-back made (the board closes a written-back task without waiting for the commit); or, for a task that changes no repository, press **Accept and close** {src:.harness/engine/modules/task/accept.py#L1-L11} {src:.harness/engine/modules/task/accept.py#L186-L199}.
 
-The harness tutorial "1 A day with the harness", in the OneDrive folder `3 Courses/Harness tutorials/`, shows steps 1 to 3 on screen; the tutorial "2 When the agent is stopped" shows what "waiting for you" on the board means when a call or command is held.
+The harness tutorial "1 A day with the harness", in the OneDrive folder `3 Courses/Harness tutorials/`, shows steps 1 to 3 on screen; the tutorial "3 When the agent is stopped" shows what "waiting for you" on the board means when a call or command is held.
 
 ## Harness: the main safety guarantees and their exact scope
 

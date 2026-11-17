@@ -22,10 +22,11 @@ The build prints `WARNING` when a page has more than about 60 words, a step's li
 | --- | --- | --- |
 | `0_must_read` | `0_must_read.py` | `0 MUST READ.pdf` |
 | `1_day` | `1_day.py` | `1 A day with the harness.pdf` |
-| `2_stopped` | `2_stopped.py` | `2 When the agent is stopped.pdf` |
-| `3_checks` | `3_checks.py` | `3 Independent checks.pdf` |
-| `4_outside` | `4_outside.py` | `4 Outside systems and connections.pdf` |
-| `5_kb` | `5_kb.py` | `5 Knowledge base.pdf` |
+| `2_tour` | `2_tour.py` (not written yet; `all` skips it) | `2 A tour of the harness.pdf` |
+| `3_stopped` | `3_stopped.py` | `3 When the agent is stopped.pdf` |
+| `4_checks` | `4_checks.py` | `4 Independent checks.pdf` |
+| `5_outside` | `5_outside.py` | `5 Outside systems and connections.pdf` |
+| `6_kb` | `6_kb.py` | `6 Knowledge base.pdf` |
 | `sample` | `sample.py` | `source/tutorials/_sample/Sample.pdf` (a test, not published) |
 
 The titles and file names are set in `DECKS` at the top of `build.py`, so a text file does not repeat them.
