@@ -43,24 +43,26 @@ PAGES = [
  dict(kicker='Step 2 · Where it stands', title='Read the Overview',
   text=[
    ('list', ['The steps, from **Code repositories** to **Keeping it true**.',
-             'The **Next** box says what is next, with its button.',
+             'The **Next** box, with its button.',
              'Per domain: **Cards**, **Learned**, **Stale**, **Requests**, **Last read by a task**.']),
-   'A button with a speech bubble opens a Copilot chat; the rest costs nothing.',
-   ('small', 'No knowledge base in this copy? Press Import a knowledge base (see the Install deck).'),
+   'A speech bubble or “in a chat” on a button: it opens a Copilot chat. The rest uses no Copilot.',
+   ('small', 'Window empty? Press Import a knowledge base (Install deck).'),
   ],
   pic=A + 'kb-overview.png',
   caption='The Overview of a knowledge base with five made-up domains.',
   notes='Sources: web/dock.js kbWindow, overview(), nextCard(), domainTable(), emptyState(); messages dock.kb.step.*, dock.kb.col.*, '
-        'dock.kb.tile.*, dock.kb.legend, dock.kb.empty, dock.kb.empty.go = "Import a knowledge base"; tabs Overview, Map, Company, Domains, Look up, Health.'),
+        'dock.kb.tile.*, dock.kb.legend (it leaves out Do the next step in a chat, which has no bubble but opens a chat: nextButton/start), dock.kb.empty, dock.kb.empty.go = "Import a knowledge base"; tabs Overview, Map, Company, Domains, Look up, Health.'),
 
  dict(kicker='Build it · Start', title='Building it: once, led by the agent',
   text=[
-   'None yet? One person builds it, once per code base. Needed first: **Code repositories** and **Knowledge base repository** done (button **Change the setup**).',
-   'Then press **Do the next step in a chat**, or type `/harness-rookie-new-knowledgebase` in Copilot chat. The agent explains each step and asks only what you know.',
-   ('small', 'Stop any time; later say “continue the knowledge base”.'),
+   'One person builds it, once per code base, after **Code repositories** and **Knowledge base repository** are done.',
+   'The setup only brings one in, from a folder or zip; nothing in 1.7.45 starts an empty one.',
+   'Then press **Do the next step in a chat**, or type `/harness-rookie-new-knowledgebase`. The agent leads.',
+   ('small', 'Stop any time; later, “continue the knowledge base”.'),
   ],
   shot='The knowledge base window, tab Overview, with Toolkit as the next step: “Next is the toolkit…” and the button Do the next step in a chat',
   notes='Sources: .github/skills/harness-rookie-new-knowledgebase/SKILL.md (Prerequisites: targets and kb_repo; Opening; "continue the knowledge base"); '
+        'setupjob.py L82-83 and L111 (no content: nothing copied, no repository made); kbsetup.py init (kb.init.empty); KB_IGNORED (a README alone is no content); '
         'web/dock.js nextButton() (targets/kb_repo: "Change the setup"; otherwise "Do the next step in a chat" starts harness-rookie-new-knowledgebase); '
         'messages dock.kb.next, dock.kb.what.toolkit, dock.setup; docs/08-knowledge-base.md "The quickest way"; road.md (about an hour of your time, once).'),
 
@@ -78,16 +80,17 @@ PAGES = [
 
  dict(kicker='Build it · Learn a domain', title='Learn one domain in one task',
   text=[
-   ('steps', ['Press **Learn** on the domain. Give its entry points (where work starts) and what is out of scope.',
+   ('steps', ['Press **Learn**. Give the entry points (where work starts) and the scope.',
               'On the task page, read the plan and its batches; press **Approve plan** once.',
-              'Every two or three batches, press **Go on in a chat** (or **Go on**).',
+              'Every two or three batches: **Go on in a chat**.',
+              'No batch left? No button: say `continue learn-returns` in a new chat, and it writes the architecture.',
               'Approve one write-back of the whole domain.']),
   ],
   pic=(A + 'kb-overview.png', (30, 185, 1130, 520)),
   caption='returns is half learned: Go on in a chat takes the next batch.',
   notes='Sources: road.md rows learn; SKILL.md step 3 (a domain in one task, from its plan to one write-back; "continue learn-<domain>" in a new chat); '
         'web/dock.js learn() (generic-kb-learn-plan, task learn-<domain>, kind kb), goOn() (generic-kb-learn-batch), nextCard(); '
-        'messages dock.kb.learn = "Learn", dock.kb.go.chat = "Go on in a chat", dock.kb.next.batch, dock.kb.next.approve, dock.kb.next.finish; '
+        'messages dock.kb.learn = "Learn", dock.kb.go.chat = "Go on in a chat", dock.kb.next.batch, dock.kb.next.approve, dock.kb.next.finish (no button); generic-kb-learn-batch SKILL.md step 6 ("continue learn-<d>"); kbstatus.next.task_architecture; '
         'docs/08-knowledge-base.md "One task per domain" (the cards stay in the task until the whole domain is written back).'),
 
  dict(kicker='Keep it true · 1', title='When code changes: refresh the stale cards',
@@ -103,7 +106,7 @@ PAGES = [
 
  dict(kicker='Keep it true · 2', title='When a task teaches something: capture it',
   text=[
-   'At the end of a task the agent may name what it learned, or cards it found wrong, and ask whether to capture them. Or press **Capture what was learned** under **Say something**.',
+   'At the end of a task the agent may name what it learned, or cards it found wrong, and ask whether to capture them. Or press **Capture what was learned** under **Say something**, then **Send**.',
    'It only drafts `KB-DRAFT.md` in the task folder. You pick what stays; a knowledge base task writes it in.',
   ],
   notes='Sources: messages task.step.close (names them, asks, does not run it unasked); .github/skills/generic-capture-knowledge/SKILL.md '
@@ -145,11 +148,10 @@ PAGES = [
 
  dict(kicker='In your tasks', title='See what it read',
   text=[
-   'The task page does not list it. Look here:',
-   ('list', ['the window’s **Last read by a task** column;',
-             'in your own terminal:']),
+   'The task page does not list it. Which files one task read, in your own terminal:',
    ('code', 'harness kb reads --task fix_order_totals'),
-   'And the task report, `.workspace/reports/tasks/<task>/report.md`, section **Knowledge base files read**.',
+   'Once the task is closed, its `report.md` (in `.workspace/reports/tasks/<task>/`) lists them under **Knowledge base files read**, if any.',
+   '**Last read by a task** gives only a date per domain.',
    ('small', 'Only files a tool names count. A search over a folder counts the folder.'),
   ],
   notes='Sources: core/kbreads.py (paths of read and search tools and of terminal commands; names only); core/kbreads.py last_by_domain '
