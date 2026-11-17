@@ -333,8 +333,8 @@ def make(slug, X, imgs):
             a, y = column(text, TX, TOP, 9.5)
             els += a
             y = max(y + 0.15, 4.9)
-            pp = [runs('Where to go next: open **0 MUST READ.pdf** at the top of the **AI Exploration** folder. '
-                       'It says what each folder is for and which to read next.')]
+            pp = [runs('Where to go next: the one-page map at the very top, **AI Exploration/0 MUST READ.pdf**. '
+                       'Not the one in this folder.')]
             for size, gap in ((16, 0.25), (13, 0.15)):  # smaller when the text above leaves little room
                 ph = text_h(pp, 11.83, size, 0) + 0.05
                 if y + gap + ph <= BOTTOM: break

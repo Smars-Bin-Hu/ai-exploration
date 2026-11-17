@@ -240,5 +240,5 @@ CLOSING = dict(title='That is the whole board',
   text=[
    'A chat button shows you the message first: nothing goes until **Send** or **Create and send**.',
    'The exception: **▶ Run** on a shell block runs after **Run now**, as you, and the gate does not check it.',
-   'Next: **3 When the agent is stopped**, **4 Independent checks**, **5 Outside systems and connections**, **6 Knowledge base**.',
+   'When something stops the agent: **3 When the agent is stopped**. 4, 5 and 6 only when you need them.',
   ])

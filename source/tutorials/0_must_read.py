@@ -1,27 +1,34 @@
-# The one page at the top of "AI Exploration/3 Courses/Harness tutorials/": who the decks are for, the order,
-# one line per deck, and the two courses inside the harness. No map of the folder: the build adds the pointer
-# to AI Exploration/0 MUST READ.pdf under the text.
+# The one page at the top of "AI Exploration/3 Courses/Harness tutorials/": where Install is, when to open each deck,
+# and the words the decks use. No map of the folder: the build adds the pointer to AI Exploration/0 MUST READ.pdf
+# under the text. The two /harness-rookie-* courses are on that map, so they are not repeated here.
 
 COVER = None
 PAGES = []
 
-CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture manuals for the harness',
+CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture manuals: when to open each',
   text=[
-   'For after **Install the harness**. Numbered small steps, a screenshot each.',
+   'Not installed yet? First **AI Exploration/4 Install the harness/**.',
    ('steps', [
-    '**A day with the harness**: one task, from start to your commit. Read it first.',
-    '**A tour of the harness**: every screen of the harness and what you can do there.',
-    '**When the agent is stopped**: why, and what you do.',
-    '**Independent checks**: a second agent checks the work.',
-    '**Outside systems and connections**: calls to company systems.',
-    '**Knowledge base**: the team knowledge base, built and kept up.',
+    '**A day with the harness**: read it first. One task, start to your commit.',
+    '**A tour of the harness**: look through once, to see what the harness can do.',
+    '**When the agent is stopped**: open it the first time the agent stops.',
+    '**Independent checks**: only when you turn checks on.',
+    '**Outside systems and connections**: only if your company has tool packs.',
+    '**Knowledge base**: only if you own or build the team knowledge base.',
    ]),
-   'After installing, in VS Code Copilot chat:',
    ('list', [
-    '`/harness-rookie-quick-start` walks you through a first task.',
-    '`/harness-rookie-wondering` teaches it all from the code (spends Copilot credits).',
+    '**task**: one job, one folder · **board**: the page of all tasks · **gate**: checks each agent call',
+    '**requirement**, **plan**: you confirm each · **write-back** = **promote**: to a new branch; you commit',
+    '**round**: one more pass · **Live**: the chat as it runs · **Records**: what happened · **Credits**: Copilot usage',
+    '**Paired**: this browser can press the buttons · **No chat**: the board cannot reach the agent',
    ]),
   ],
-  notes='Decks: the cover lines of 1-6 (1.7.45). Courses: .github/skills/harness-rookie-quick-start/SKILL.md (description, '
-        'part 4 practice task) and harness-rookie-wondering/SKILL.md (description; "read the real files" when the '
-        'reference files do not have it). Credits: every chat turn is a Copilot request.')
+  notes='When to open: the person (2026-11-17). Install: the folder AI Exploration/4 Install the harness/. '
+        'Words, harness 1.7.45: task = one folder (docs/00-overview.md part 2); board = harness task board (docs/04-reference.md); '
+        'gate checks every tool call (docs/00-overview.md part 2, docs/12-guardrails-and-gate.md); requirement and plan = '
+        'Confirm requirement, Approve plan, each with a code (docs/01-quickstart.md part 5, steps 3 and 5); write-back = promote, '
+        'a new branch feature/<task>, not committed (quickstart step 9; messages.en.json promote.question "the promote (write-back repo)"); '
+        'round = task open again after a promote, a new plan and approval (messages promote.done_already; quickstart "One more round after a write-back"); '
+        'Live follows the chat (messages desk.live.hint); Records = Log, Task Record, Agent actions (modules/task/web/desk.js GROUPS); '
+        'Credits = the usage Copilot records (docs/02-features.md, the columns of the list); Paired = the buttons act, approvals still ask '
+        'the code (messages board.serve.paired); No chat = no VS Code chat linked, nothing is sent (messages board.vscode.nochat, send.refused.unbound).')
