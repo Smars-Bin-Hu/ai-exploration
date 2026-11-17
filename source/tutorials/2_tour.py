@@ -33,12 +33,23 @@ PAGES = [
    dict(pic=(B + 'tour-lobby.png', (85, 350, 830, 680)),
         text='**Lobby**: a robot per task. **Waiting for you** comes first. What it holds shows the kind.'),
    dict(pic=(B + 'tour-lobby.png', (85, 960, 520, 1640)),
-        text='Then **At work** and **Resting** (quiet or paused).'),
+        text='Then **At work**, **Left alone**, **Resting** (quiet or paused).'),
    dict(pic=(B + 'tour-lobby.png', (85, 1715, 560, 2075)),
         text='Closed tasks rest on the dock. Click a robot to open its task.'),
   ],
   notes='Sources: lobby.js L1-5, L20-32 (zones: Waiting for you, At work, Left alone when no session holds it, Resting = quiet or paused; the thing in the hand is the kind; '
         'hover opens a card, a click opens the page); messages.en.json board.lobby.zone.*, board.offwork.hint, board.onwork.hint (a task paused by hand stays paused).'),
+
+ dict(steps=[
+   dict(pic=(B + 'tour-lobby-left-alone.png', (88, 375, 780, 700)),
+        text='**Left alone**: no session holds the task; its robot’s plug hangs loose. Open a chat and name the task.'),
+   dict(pic=(B + 'tour-readybar-red.png', (30, 176, 2190, 452)),
+        text='Red, **The agent cannot work right now**: a required line broke after Enter. Its button fixes it.'),
+   dict(pic=(B + 'tour-readybar-yellow.png', (30, 168, 2190, 447)),
+        text='Yellow, **Not fully ready for your company’s tasks**: each problem with its button. **Hide** puts it away.'),
+  ],
+  notes='Sources: lobby.js L20-23 (lost -> Left alone); messages.en.json board.lobby.zone.left, desk.actions.unheld.hint; readybar.js L1-5 (red cannot be hidden, yellow has Hide); '
+        'board.ready.red.title, board.ready.yellow.title, board.ready.hide.'),
 
  dict(steps=[
    dict(pic=(B + 'tour-lobby.png', (30, 20, 790, 125)),
@@ -68,12 +79,10 @@ PAGES = [
         text='**New task**: **Name**, **Kind**, and **Fork from a task** to start from an old one.'),
    dict(pic=(B + 'new-task.png', (38, 510, 1058, 910)),
         text='**Knowledge base** names a domain (tutorial 6). **Link tickets** names tickets (tutorial 5).'),
-   dict(pic=(B + 'new-task.png', (1096, 110, 2122, 815)),
-        text='On the right: the first message, exactly as it will be sent.'),
-   dict(pic=(B + 'new-task.png', (38, 1300, 1058, 1730)),
-        text='Model, thinking, language, **Ask me first**, then **Create and send**. Tutorial 1 walks it.'),
+   dict(pic=B + 'tour-new-task-fields.png',
+        text='**What to do**: the task in your own words. Model, **Context window**, **Ask me first**, then **Create and send**.'),
   ],
-  notes='Sources: messages.en.json board.new.* (Name, Kind, Fork from a task, board.new.source.hint: copies the old task’s conclusions and materials into REF/), '
+  notes='Sources: chat.js L271-301 (form order); messages.en.json board.new.text(.ph), board.new.context, board.new.* (Name, Kind, Fork from a task, board.new.source.hint: copies the old task’s conclusions and materials into REF/), '
         'board.new.first, board.new.go; chatnew.py first_message.'),
 
  # ---- A task page -------------------------------------------------------------------------------------------
@@ -95,11 +104,17 @@ PAGES = [
         text='**…**: **Time and usage**, **Save as HTML**, **Autorun on**, **Pause**, **Close** (it can be opened again).'),
    dict(pic=(B + 'tour-reply.png', (30, 40, 1200, 560)),
         text='**Say something** (key **R**) writes to the task’s chat. A skill button puts its command in the box.'),
+  ],
+  notes='Sources: messages.en.json desk.report, desk.save(.hint), desk.hint.close; reply.js L1-10 (pill “Say something”, key R), L60 (a skill click puts the slash command in the box; nothing goes by itself).'),
+
+ dict(steps=[
    dict(pic=(B + 'tour-reply.png', (30, 570, 1200, 1050)),
         text='Model, thinking, context, permissions: the settings of this task’s chat. **Save draft** or **Send**.'),
+   dict(shot='A task page while the agent works: Stop beside Say something; the panel open with Steer and Queue', aspect=16/10,
+        text='While it works: **Stop** halts it. **Send** becomes **Steer** (now) or **Queue** (after). **Withdraw**, **Try again**.'),
   ],
   notes='Sources: messages.en.json desk.report, desk.save(.hint), board.close.*, desk.reply.*; reply.js L1-10 (pill “Say something”, key R; the task settings and drafts), '
-        'L60 (a skill click puts the slash command in the box; nothing goes by itself). Autorun is not in this first batch of tutorials.'),
+        'L60 (a skill click puts the slash command in the box; nothing goes by itself); reply.js L28-33, messages desk.reply.stop.tip, board.action.stop, desk.reply.steer, desk.reply.queue, desk.reply.back, desk.reply.retry. Autorun is not in this first batch of tutorials.'),
 
  # ---- Task tabs ---------------------------------------------------------------------------------------------
  dict(group='Task tabs', steps=[
@@ -132,9 +147,14 @@ PAGES = [
    dict(pic=(B + 'tour-tab-design.png', (40, 620, 1760, 1340)),
         text='**Design** (design tasks): `DESIGN.md`. Read it here; tell the agent what to change.'),
    dict(pic=(B + 'tour-tab-rca.png', (72, 298, 1700, 1250)),
-        text='**RCA** (RCA tasks): `RCA.md`. Done? **Accept and close**. Missing something? **Not yet**.'),
+        text='**RCA** (RCA tasks): `RCA.md`. Any kind can end **to accept**: **Accept and close** or **Not yet**.'),
+   dict(pic=(B + 'tour-run-block.png', (60, 30, 1760, 330)),
+        text='A shell block: **Ask agent** sends it to the chat, and the gate holds. **▶ Run** runs it yourself.'),
+   dict(pic=B + 'tour-run-dialog.png',
+        text='The gate does not check **▶ Run**: the board runs it as you. Read the whole command, then **Run now**.'),
   ],
-  notes='Sources: desk.js L76 (Design and RCA when the file is there, or the kind is open); messages.en.json desk.tab.design, desk.tab.rca, desk.accept.*.'),
+  notes='Sources: desk.js L76 (Design and RCA when the file is there, or the kind is open); messages.en.json desk.tab.design, desk.tab.rca, desk.accept.*, task.waiting.accept; accept.py L25 (DELIVER_KINDS: any kind; a Q&A closes itself, a promote is the acceptance); '
+        'run.js L1-3, L11-15 (Ask agent: the gate holds; Run: the board starts it, the gate does not see it); taskrun.py L44-46 (bash; powershell, batch on Windows); messages desk.run, desk.run.hint, desk.run.ask(.hint), desk.run.warn, desk.run.go.'),
 
  dict(steps=[
    dict(pic=(B + 'tour-tab-log.png', (40, 208, 2180, 712)),
@@ -143,10 +163,10 @@ PAGES = [
         text='**Task Record**: what happened to the task, with times: approvals, write-back, close.'),
    dict(pic=(B + 'tour-tab-trace.png', (40, 700, 2180, 1468)),
         text='**Agent actions**: per prompt, its tool calls; on top, what a hook blocked and what failed.'),
-   dict(pic=(B + 'tour-tab-files.png', (40, 630, 1500, 1500)),
-        text='**Files**: open, edit, add, rename or delete any file. Deleted ones go to `.task/trash/`.'),
+   dict(pic=(B + 'tour-files-edit.png', (68, 690, 2147, 1150)),
+        text='**Files**: edit a text file, add, rename, delete. Not while the agent works. A saved `PLAN.md` needs approval again.'),
   ],
-  notes='Sources: messages.en.json desk.tab.log, desk.tab.history, desk.tab.trace, desk.tab.files and the lines under each tab (as in the pictures); desk.js L21 (Files group: Other documents, Files).'),
+  notes='Sources: messages.en.json desk.tab.log, desk.tab.history, desk.tab.trace, desk.tab.files and the lines under each tab (as in the pictures); desk.js L21 (Files group: Other documents, Files); desk.files.hint.edit (a text file can be edited), desk.files.busy (not while the agent is in a turn), desk.files.plan.note (saving PLAN.md: an approved plan must be approved again).'),
 
  # ---- Reports -----------------------------------------------------------------------------------------------
  dict(group='Reports', steps=[
@@ -162,28 +182,28 @@ PAGES = [
 
  # ---- Round buttons -----------------------------------------------------------------------------------------
  dict(group='Round buttons', steps=[
-   dict(pic=(B + 'tour-enter.png', (2380, 1270, 2545, 1700)),
-        text='Bottom right: gear (setup), book (knowledge base; the number counts stale cards), **?** (help), sliders (settings).'),
+   dict(pic='source/tutorials/img/2_tour/tour-dock-wide.png',
+        text='Bottom right: house (**Back to the Enter screen**), gear (setup), book (knowledge base), **?** (help), sliders (settings).'),
    dict(pic=(B + 'tour-enter.png', (2120, 15, 2545, 180)),
         text='Top right: **Search** (⌘K or Ctrl+K) and **>_**, the terminal.'),
    dict(pic=B + 'tour-search.png',
         text='Search: type to go to a task, a view, a filter, a tab or a setting.'),
-   dict(pic=B + 'tour-settings.png',
-        text='Sliders, **Settings**: theme, Glass or Lite, a background, the language, **Restart board**.'),
   ],
   notes='Sources: dock.js L506-540 (help panel, book, gear = Change the setup, house = Back to the Enter screen, hidden on Enter: dock.css L3); dock.js L466-478 (badge: stale cards); '
-        'shell.js L301 (Cmd or Ctrl + K); messages.en.json board.shell.search.ph, board.shell.*, board.shell.restart.hint. On the board and task pages a house also takes you back to Enter.'),
+        'shell.js L301 (Cmd or Ctrl + K); dock.js L536-538, dock.css L3, L9 (the house, Back to the Enter screen, above the gear, hidden on Enter); messages.en.json board.shell.search.ph, board.shell.*, board.shell.restart.hint. On the board and task pages a house also takes you back to Enter.'),
 
  dict(steps=[
    dict(pic=B + 'tour-help.png',
         text='**?**: ask how the harness works, or **How the harness works**, or **First lesson**. Each opens a chat.'),
    dict(pic=(B + 'tour-everything.png', (0, 0, 1524, 700)),
-        text='**Everything you can ask for**: every skill a click starts. You read the message, then **Send**.'),
+        text='**Everything you can ask for**: every skill. **Start** shows the message first; **Open** is a web page.'),
+   dict(pic=B + 'tour-settings.png',
+        text='Sliders, **Settings**: theme, Glass or Lite, a background, the language, **Restart board**.'),
    dict(pic=B + 'tour-terminal.png',
         text='**>_**: a terminal for `harness` commands only, such as `harness doctor`. No agent.'),
   ],
   notes='Sources: dock.js L506-523 (Ask and How the harness works start harness-rookie-wondering, First lesson harness-rookie-quick-start), L20-48 (start shows the whole message and a model, then Send), '
-        'L51-100 (Everything you can ask for; Full course opens the book online); messages.en.json term.refused.other (harness commands only), term.ph.'),
+        'L51-100 (Everything you can ask for: Start through the message dialog, a skill that opens a task through New task, Open for a link, a tag In a task for reply-panel skills, costly tag); messages.en.json term.refused.other (harness commands only), term.ph.'),
 
  # ---- Setup -------------------------------------------------------------------------------------------------
  dict(steps=[
@@ -202,7 +222,7 @@ PAGES = [
  # ---- Knowledge base ----------------------------------------------------------------------------------------
  dict(group='Knowledge base', steps=[
    dict(pic=(B + 'kb-overview.png', (36, 105, 1400, 925)),
-        text='Book, **Knowledge base**: the eight steps, what is next, each domain. Tutorial 6.'),
+        text='Book, **Knowledge base**: the eight steps, what is next, each domain. Its number: stale cards.'),
    dict(pic=(B + 'kb-map.png', (36, 105, 1200, 960)),
         text='**Map**: which domain uses which. **Company**: what the agent gets. **Domains**: each domain.'),
    dict(pic=(B + 'kb-lookup.png', (36, 105, 1300, 700)),
@@ -216,7 +236,7 @@ PAGES = [
 
 CLOSING = dict(title='That is the whole board',
   text=[
-   'A button that opens a chat first shows you the message: nothing goes until **Send** or **Create and send**.',
-   'Refused, or a call waits for you: **3 When the agent is stopped**. Checks: **4 Independent checks**.',
-   'Tool packs, connections, tickets: **5 Outside systems and connections**. The book: **6 Knowledge base**.',
+   'A chat button shows you the message first: nothing goes until **Send** or **Create and send**.',
+   'The exception: **▶ Run** on a shell block runs after **Run now**, as you, and the gate does not check it.',
+   'Next: **3 When the agent is stopped**, **4 Independent checks**, **5 Outside systems and connections**, **6 Knowledge base**.',
   ])
