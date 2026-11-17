@@ -6,6 +6,8 @@
 //   python3 source/tutorials/shots/demo.py start      # its board on 127.0.0.1:8845, in the background
 //   node source/tutorials/shots/capture.mjs --make-chat   # once: the one task with a real chat in VS Code (New task, Ask me first: see below)
 //   node source/tutorials/shots/capture.mjs           # every screen; or name some: node source/tutorials/shots/capture.mjs plan review
+//   node source/tutorials/shots/capture.mjs --one     # show-delivery-date through the whole flow: the one-* screens (see ONE_FLOW below)
+//   python3 source/tutorials/shots/demo.py daily on; node source/tutorials/shots/capture.mjs state-quiet state-stuck ...   # the daily states
 //   python3 source/tutorials/shots/demo.py stop
 //
 // It starts from a running board and changes no task: each run pairs a new browser (demo.py pair: a second `harness task board`, which makes the
@@ -698,12 +700,243 @@ Object.assign(SCREENS, {
   }, { pack: true }],
 });
 
+// --- one development task through the whole flow (--one), and the daily states (state-*) --------------------------------------------------
+// --one runs `demo.py one <step>` for show-delivery-date, step by step, and takes the screens of each stage between them (ONE_FLOW). It ends
+// with the task in its second round; `demo.py one reset` takes it away again. The state-* screens of the daily states need `demo.py daily on`
+// first, and the board started with `demo.py start --demo-copilot` (for state-cancelled); state-quiet and state-stuck wait until enough time
+// has passed since `daily on` (5 and 10 minutes), as at work. Nothing here sends to a chat: Send to agent and Approve promote are opened for
+// their window or their refusal and closed again; Answer..., Steer, Stop, Recover and Send to chat are never pressed.
+
+const ONE = 'show-delivery-date';
+const DEMO_TASKS = path.join(DEMO, 'harness/.workspace/sandbox/tasks');
+const ORDERS_REPO = path.join(DEMO, 'repos/orders-service');
+async function listRow(page, name) {  // the List, searched for one task: the numbers, the filters and its row
+  await page.setViewportSize({ width: 1720, height: 900 });
+  await board(page, 'List');
+  await page.locator('input.search').fill(name);
+  await sleep(1200);
+  return { ...(await listTo(page, name)), after: async () => { await page.locator('input.search').fill(''); await page.getByRole('button', { name: 'Lobby', exact: true }).click(); } };
+}
+async function lobbyBot(page, name) {  // the Lobby, cut round the robot of one task and the group it stands in
+  await board(page);
+  const found = await page.evaluate((wanted) => {
+    const label = [...document.querySelectorAll('body *')].find((node) => node.children.length === 0 && node.textContent.trim() === wanted);
+    if (!label) return null;
+    let card = label;
+    while (card.parentElement && !card.querySelector('svg.lb-bot')) card = card.parentElement;
+    card.scrollIntoView({ block: 'center' });
+    const parts = [card.querySelector('svg.lb-bot').getBoundingClientRect(), label.getBoundingClientRect()];
+    const top = Math.min(...parts.map((r) => r.top)), bottom = Math.max(...parts.map((r) => r.bottom));
+    const left = Math.min(...parts.map((r) => r.left)), right = Math.max(...parts.map((r) => r.right));
+    return { x: left + window.scrollX, y: top + window.scrollY, width: right - left, height: bottom - top };
+  }, name);
+  if (!found) throw new Error('no robot for ' + name);
+  await sleep(600);
+  return { x: Math.max(0, found.x - 200), y: Math.max(0, found.y - 12), width: found.width + 400, height: found.height + 24 };  // its robot, in its row
+}
+const pageTop = (page, to, padding = 24) => region(page, { top: 0, to, pad: padding });
+async function waitClosed(name, seconds = 90) {  // the board closes a promoted task whose agent stopped (accept.sweep, every few seconds)
+  for (let i = 0; i < seconds; i++) {
+    const data = JSON.parse(fs.readFileSync(path.join(DEMO_TASKS, name, '.task/task.json'), 'utf8'));
+    if (data.status === 'closed') return;
+    await sleep(1000);
+  }
+  throw new Error(name + ' was not closed by the board');
+}
+async function waitSince(what, minutes) {  // a timed daily state: until `minutes` have passed since `demo.py daily on`
+  const started = JSON.parse(fs.readFileSync(path.join(DEMO, 'daily.json'), 'utf8'))[what];
+  const left = started * 1000 + minutes * 60000 + 20000 - Date.now();
+  if (left > 0) { console.log(`waiting ${Math.ceil(left / 1000)} s for ${what}`); await sleep(left); }
+}
+async function refusal(page, task, button) {  // press an approval button for its preview only: the board answers with a refusal in a window
+  await page.goto(`${BOARD}/task/${task}`);
+  await sleep(1800);
+  await page.getByRole('button', { name: button }).first().click();
+  const shot = await dialogBox(page);
+  return { ...shot, after: async () => { await page.locator('.shade .dialog').getByRole('button', { name: 'Cancel' }).last().click().catch(() => page.keyboard.press('Escape')); await sleep(400); } };
+}
+async function terminalRun(page, line, seconds) {  // the board's Terminal window (>_), one command of the person's own
+  await board(page);
+  await page.locator('.term-toggle').click();
+  await sleep(900);
+  await page.locator('section.term input').first().fill(line);
+  await page.keyboard.press('Enter');
+  await sleep(seconds * 1000);
+  return { ...pad(await box(page, page.locator('section.term')), 6), after: async () => { await page.locator('section.term .term-x').last().click().catch(() => {}); await sleep(400); } };
+}
+
+Object.assign(SCREENS, {
+  'one-01-new-task': ['New task filled in for show-delivery-date: Name, Kind development, What to do, Ask me first ticked (Create and send is not pressed)', async (page) => {
+    await page.setViewportSize({ width: WIDTH, height: 1060 });
+    const dialog = await fillNewTask(page, ONE, 'Show the expected delivery date in the order confirmation of orders-service. Done when the confirmation has delivery_date, three working days after the order.');
+    const shot = await box(page, dialog);
+    return { x: shot.x - 1, y: shot.y - 1, width: shot.width + 2, height: shot.height + 2, after: escape(page) };
+  }],
+  'one-02-lobby': ['The Lobby after the agent asked its questions: the robot of show-delivery-date among those waiting for you', async (page) => lobbyBot(page, ONE)],
+  'one-03-list-asked': ['Its row in the List: waits for you (the agent asked in the chat and stopped), Answer...', async (page) => listRow(page, ONE)],
+  'state-waits-for-you': ['The task page when the agent asked in the chat and stopped: the card “waits for you”, Answer... (not pressed)', async (page) => {
+    await task(page, ONE);
+    return pageTop(page, page.locator('.tk-need').first());
+  }],
+  'one-04-list-req': ['Its row: the requirement waits for your confirmation, Confirm requirement', async (page) => listRow(page, ONE)],
+  'one-05-requirement': ['Requirement tab: the card “the requirement waits for your confirmation”, Confirm requirement, REQ.md', async (page) => {
+    await task(page, ONE, 'req');
+    return region(page, { top: 0, to: page.getByText('Shown by the task files').locator('xpath=following::ul[1]') });
+  }],
+  'one-06-approve-code': ['Confirm requirement pressed: the window with the code to type (cancelled here)', async (page) => {
+    await task(page, ONE, 'req');
+    await page.getByRole('button', { name: 'Confirm requirement' }).first().click();
+    return { ...(await dialogBox(page)), after: escape(page) };
+  }],
+  'one-07-list-go-req': ['Its row after the code: the requirement is confirmed, tell the agent to go on; Send to agent', async (page) => listRow(page, ONE)],
+  'one-08-send-to-agent': ['The task page: the card with Send to agent (not pressed)', async (page) => {
+    await task(page, ONE);
+    return pageTop(page, page.locator('.tk-need').first());
+  }],
+  'one-09-send-panel': ['Send to agent opened: the message the board would send, and Send to chat (cancelled here, nothing sent)', async (page) => {
+    await task(page, ONE);
+    await page.locator('.tk-need').first().getByRole('button', { name: 'Send to agent' }).first().click();
+    await sleep(2500);  // the preview of the message comes from the server
+    return { ...(await dialogBox(page)), after: async () => { await page.locator('.shade .dialog').getByRole('button', { name: 'Cancel' }).last().click(); await sleep(400); } };
+  }],
+  'state-busy-greyed': ['The plan waits, but the agent is still in its turn: Approve plan greyed, the note that nothing can be pressed until it stops', async (page) => {
+    demo('touch', ONE);
+    await task(page, ONE, 'plan');
+    return pageTop(page, page.locator('.tk-need').first());
+  }],
+  'one-10-list-plan': ['Its row: the plan waits for your approval, Approve plan', async (page) => listRow(page, ONE)],
+  'one-11-plan': ['Plan tab: the card “the plan waits for your approval”, Approve plan, PLAN.md', async (page) => {
+    await task(page, ONE, 'plan');
+    return region(page, { top: 0, to: page.getByRole('heading', { name: 'Risks' }).locator('xpath=following::*[1]') });
+  }],
+  'one-12-list-working': ['Its row while the agent works: working, the TODO counted', async (page) => { demo('touch', ONE); return listRow(page, ONE); }],
+  'one-13-live': ['Live tab while the agent works (a task whose chat the board did not make: no live link)', async (page) => {
+    demo('touch', ONE);
+    await task(page, ONE, 'live');
+    return region(page, { top: 0, to: page.getByText(/^Nothing waits for you/).locator('xpath=..'), pad: 20 });
+  }],
+  'one-14-todo': ['TODO tab while it works: two steps ticked, the one in progress', async (page) => {
+    demo('touch', ONE);
+    await task(page, ONE, 'todo');
+    return region(page, { top: 0, to: page.getByText('Dry run of the write-back').last(), pad: 40 });
+  }],
+  'one-15-list-promote': ['Its row: the promote (write-back repo) waits for your approval, Approve promote', async (page) => listRow(page, ONE)],
+  'one-16-changes-promote': ['Changes tab: the promote card, Approve promote, the diff of the three files', async (page) => {
+    await page.setViewportSize({ width: WIDTH, height: 1400 });
+    await task(page, ONE, 'changes');
+    return region(page, { top: 0, to: page.getByText(/^This is also what goes into/).first(), pad: 20 });
+  }],
+  'one-17-list-closed': ['Its row once written back: the board closed it (List, Closed)', async (page) => {
+    await page.setViewportSize({ width: 1720, height: 900 });
+    await board(page, 'List');
+    await page.getByRole('button', { name: /^Closed \d/ }).click();
+    await page.locator('input.search').fill(ONE);
+    await sleep(1200);
+    return { ...(await listTo(page, ONE)), after: async () => { await page.locator('input.search').fill(''); await page.getByRole('button', { name: /^All \d/ }).click(); await page.getByRole('button', { name: 'Lobby', exact: true }).click(); } };
+  }],
+  'one-18-closed-changes': ['Closed task, Changes tab: Promoted, commit it with this message; Copy commit message, Copy commands', async (page) => {
+    await task(page, ONE, 'changes');
+    return region(page, { top: 0, to: page.getByRole('button', { name: 'Copy commands' }).first(), pad: 6 });
+  }],
+  'state-queue-held': ['The board’s Terminal, harness task queue: orders-service held by show-delivery-date (files not committed), limit-order-items in line', async (page) => {
+    const shot = await terminalRun(page, 'harness task queue', 8);
+    await page.evaluate(() => {  // the answer is JSON: scrolled to the block of orders-service, whose "next" says it is held
+      const out = [...document.querySelectorAll('section.term *')].filter((node) => node.scrollHeight > node.clientHeight + 4 && /orders-service/.test(node.textContent)).pop();
+      if (!out) return;
+      const lines = out.textContent.split('\n');
+      const at = lines.findIndex((line) => /"current_branch": "feature\/show_delivery_date"/.test(line));
+      out.scrollTop = Math.max(0, (at - 1) * (out.scrollHeight / lines.length));
+    });
+    await sleep(500);
+    return shot;
+  }],
+  'state-promote-dirty': ['Approve promote of a second task on the same repository while it is not clean: the board’s refusal (nothing approved)', async (page) => refusal(page, 'limit-order-items', 'Approve promote')],
+  'state-promote-branch': ['Approve promote when the task’s branch exists already in the repository: the board’s refusal (nothing approved)', async (page) => {
+    execFileSync('git', ['-C', ORDERS_REPO, 'branch', 'feature/limit_order_items']);  // made by hand, as a person trying the change would
+    try {
+      const shot = await refusal(page, 'limit-order-items', 'Approve promote');
+      return { ...shot, after: async () => { await shot.after(); execFileSync('git', ['-C', ORDERS_REPO, 'branch', '-D', 'feature/limit_order_items']); } };
+    } catch (error) {
+      execFileSync('git', ['-C', ORDERS_REPO, 'branch', '-D', 'feature/limit_order_items']);
+      throw error;
+    }
+  }],
+  'state-round-two': ['After “needs more changes”: Round 1 · Round 2 (current), the requirement changed and waits for your confirmation again', async (page) => {
+    await task(page, ONE, 'req');
+    return region(page, { top: 0, to: page.getByRole('button', { name: 'Confirm requirement' }).first(), pad: 30 });
+  }],
+  'state-round-one': ['Round 1 picked on the round switch: the earlier round, read only, Go to the current round', async (page) => {
+    await task(page, ONE, 'changes');
+    await page.locator('.round-switch .subtab').first().click();
+    await sleep(1800);
+    return region(page, { top: 0, to: page.getByRole('button', { name: 'Diff text' }).first(), pad: 16 });
+  }],
+  // daily states (demo.py daily on)
+  'state-quiet': ['quiet: a session holds the task, it made no call for five minutes and did not stop', async (page) => {
+    await waitSince('quiet', 5);
+    return listRow(page, 'log-stock-misses');
+  }],
+  'state-quiet-page': ['The page of a quiet task: No sign of the agent for a while', async (page) => {
+    await waitSince('quiet', 5);
+    await task(page, 'log-stock-misses');
+    return region(page, { top: 0, to: page.getByText(/^No sign of the agent for a while/).locator('xpath=..'), pad: 20 });
+  }],
+  'state-stuck': ['⚠ Stuck?: the agent waits for its reviewer and has made no tool call for ten minutes', async (page) => {
+    await waitSince('stuck', 10);
+    return listRow(page, 'speed-up-totals');
+  }],
+  'state-stuck-page': ['Records › Agent actions of that task: ⚠ Stuck? The agent made no tool call for 10 minutes (the words of the ⚠ on the list)', async (page) => {
+    await waitSince('stuck', 10);
+    await task(page, 'speed-up-totals', 'trace');
+    return region(page, { top: 0, to: page.locator('.warn-note').first(), pad: 12 });
+  }],
+  'state-cancelled': ['cancelled, waits for you: the person stopped the agent in VS Code (no Stop hook)', async (page) => listRow(page, 'tidy-order-errors')],
+  'state-cancelled-page': ['The page of a cancelled task: the card and its words', async (page) => {
+    await task(page, 'tidy-order-errors');
+    return pageTop(page, page.locator('.tk-need').first());
+  }],
+  'state-recover': ['The promote failed halfway and waits for you to recover: the card, why, Recover the repository (not pressed)', async (page) => {
+    await task(page, 'add-stock-moves');
+    return pageTop(page, page.locator('.tk-need').first());
+  }],
+  'state-recover-list': ['Its row: the promote failed halfway and waits for you to recover', async (page) => listRow(page, 'add-stock-moves')],
+  'state-get-ready-repos': ['Get ready, with the code repositories set: the repositories card', async (page) => {
+    await page.setViewportSize({ width: WIDTH, height: 1500 });
+    await page.goto(BOARD + '/setup');
+    await sleep(3000);
+    const conn = page.getByText('Connections', { exact: true }).first();
+    const hint = page.getByText(/You can leave this empty and set it later/).first();
+    const top = (await box(page, conn)).bottom + 18;
+    const end = (await box(page, hint)).bottom + 18;
+    const card = await box(page, page.getByText('Your name').first().locator('xpath=ancestor::section[1]'));
+    return { x: card.x - 2, y: top, width: card.width + 4, height: end - top };
+  }],
+});
+
+// The order of --one: the step of demo.py one, then the screens of that stage.
+const ONE_FLOW = [
+  ['reset', ['one-01-new-task']],
+  ['asked', ['one-02-lobby', 'one-03-list-asked', 'state-waits-for-you']],
+  ['req', ['one-04-list-req', 'one-05-requirement', 'one-06-approve-code']],
+  ['confirmed', ['one-07-list-go-req', 'one-08-send-to-agent', 'one-09-send-panel']],
+  ['plan-busy', ['state-busy-greyed']],
+  ['plan', ['one-10-list-plan', 'one-11-plan']],
+  ['approved', []],
+  ['working', ['one-12-list-working', 'one-13-live', 'one-14-todo']],
+  ['promote', ['one-15-list-promote', 'one-16-changes-promote']],
+  ['approved-promote', []],
+  ['promoted', ['one-17-list-closed', 'one-18-closed-changes', 'state-queue-held', 'state-promote-dirty']],
+  ['committed', ['state-promote-branch']],
+  ['round2', ['state-round-two', 'state-round-one']],
+];
+
 async function main() {
   const asked = process.argv.slice(2).filter((item) => !item.startsWith('--'));
   const makeChat = process.argv.includes('--make-chat');
+  const oneFlow = process.argv.includes('--one');
   const unknown = asked.filter((name) => !(name in SCREENS));
   if (unknown.length) throw new Error('no such screen: ' + unknown.join(', ') + '\nscreens: ' + Object.keys(SCREENS).join(', '));
-  const wanted = asked.length ? asked : Object.keys(SCREENS);
+  const wanted = asked.length ? asked : oneFlow ? [] : Object.keys(SCREENS).filter((name) => !/^(one|state)-/.test(name));  // one-* and state-* need their states: --one, or named
   fs.mkdirSync(OUT, { recursive: true });
   const failed = [];
 
@@ -753,6 +986,15 @@ async function main() {
         await page.keyboard.press('Escape').catch(() => {});
       }
     };
+    if (oneFlow) {  // show-delivery-date, stage by stage
+      for (const [step, names] of ONE_FLOW) {
+        demo('one', step);
+        console.log('step', step);
+        if (step === 'promoted') await waitClosed(ONE);
+        await sleep(3500);  // the board reads the tasks again every few seconds
+        for (const name of names) await take(name);
+      }
+    }
     const packed = wanted.filter((name) => (SCREENS[name][2] || {}).pack);
     for (const name of wanted) {
       if (['enter', 'tour-enter', 'tour-enter-open'].includes(name) || packed.includes(name)) continue;

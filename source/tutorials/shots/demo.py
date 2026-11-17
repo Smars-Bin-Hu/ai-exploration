@@ -6,7 +6,11 @@
   python3 source/tutorials/shots/demo.py pack on|off       the demo tool pack and its connection on or off (capture.mjs turns it on for the outside screens)
   python3 source/tutorials/shots/demo.py kb on|off         the knowledge base registered or not (capture.mjs turns it off for a moment, for the yellow block)
   python3 source/tutorials/shots/demo.py hold              the held outside call of answer-ticket-t7 made again (it lives 10 minutes; the pack must be on)
-  python3 source/tutorials/shots/demo.py start             start its board on 127.0.0.1:8845 in the background (`harness task board`, in a pseudo terminal)
+  python3 source/tutorials/shots/demo.py start [--demo-copilot]   start its board on 127.0.0.1:8845 in the background (`harness task board`, in a pseudo terminal);
+                                                            --demo-copilot: Copilot's records from demo/copilot (for the cancelled state)
+  python3 source/tutorials/shots/demo.py one <step>        move show-delivery-date one stage on (reset, asked, req, confirmed, plan-busy, plan, approved, working,
+                                                            promote, approved-promote, promoted, committed, round2): capture.mjs --one runs them
+  python3 source/tutorials/shots/demo.py daily on|off      the tasks of the daily states (quiet, stuck, cancelled, recover), or none of them
   python3 source/tutorials/shots/demo.py pair              a new pairing link for a board that runs (a second `harness task board`, as a person would start it)
   python3 source/tutorials/shots/demo.py stop              stop the board
   python3 source/tutorials/shots/demo.py touch <task>      a fresh hook call in the task's session, so the board shows it as working (5 minutes)
@@ -1121,6 +1125,257 @@ def extra():
     print(f"extra states made in {H}")
 
 
+# --- one development task through the whole flow (demo.py one <step>), for the one-* screens ---------------------------------------------
+# Each step moves show-delivery-date one stage on, the way it moves in a real day: the agent's side through the hook and its commands, the
+# person's approvals through the harness's own functions. No chat is made: the messages the board would send to the agent ("Requirement
+# confirmed (REQ.md). Go on.") are given to the hook as the next prompt. capture.mjs --one runs the steps in order and takes the screens between.
+
+ONE = "show-delivery-date"
+ONE_SESSION = 40
+ONE_WORDS = ("Show the expected delivery date in the order confirmation of orders-service. Done when the confirmation has delivery_date, "
+             "three working days after the order.")
+ONE_STEPS = ("reset", "asked", "req", "confirmed", "plan-busy", "plan", "approved", "working", "promote", "approved-promote", "promoted", "committed", "round2")
+
+ONE_API_HEAD = ('"""HTTP handlers of the orders service."""\n\nfrom . import client, pricing, settings\n',
+                '"""HTTP handlers of the orders service."""\n\nimport datetime\n\nfrom . import client, pricing, settings\n\n\n'
+                'def delivery_date(ordered):\n    """The expected delivery date: DELIVERY_WORKING_DAYS working days (Monday to Friday) after `ordered`."""\n'
+                '    day, left = ordered, settings.DELIVERY_WORKING_DAYS\n    while left:\n        day += datetime.timedelta(days=1)\n'
+                '        if day.weekday() < 5:\n            left -= 1\n    return day\n')
+ONE_API_ANSWER = ('    return {"ok": True, "total": pricing.total(items)}\n',
+                  '    return {"ok": True, "total": pricing.total(items), "delivery_date": delivery_date(datetime.date.today()).isoformat()}\n')
+ONE_TEST = ('\n\ndef test_delivery_date_skips_the_weekend():\n    import datetime\n\n'
+            '    assert api.delivery_date(datetime.date(2026, 11, 20)) == datetime.date(2026, 11, 25)  # a Friday: Monday, Tuesday, Wednesday\n')
+
+
+def one_reset():
+    """show-delivery-date gone, and orders-service on main with no branch of it: the flow can start again."""
+    shutil.rmtree(TASKS / ONE, ignore_errors=True)
+    for folder in ("state", "logs"):  # its session from before: a new run starts with a new chat, as a person's would
+        for found in (H / ".harness/runtime" / folder / "vscode").glob(session_id(ONE_SESSION) + ".*"):
+            found.unlink()
+    git = ["git", "-C", str(ORDERS)]
+    if run(git + ["status", "--porcelain"], cwd=DEMO).stdout.strip():
+        run(git + ["checkout", "-q", "--", "."], cwd=DEMO, check=False)
+        run(git + ["clean", "-qfd"], cwd=DEMO, check=False)
+    run(git + ["checkout", "-q", "main"], cwd=DEMO)
+    run(git + ["branch", "-D", "feature/show_delivery_date"], cwd=DEMO, check=False)
+
+
+def one(step):
+    name, session = ONE, session_id(ONE_SESSION)
+    if step == "reset":
+        one_reset()
+    elif step == "asked":  # New task with Ask me first: the agent opens the task, asks its questions in the chat and ends its turn
+        one_reset()
+        new_task(ONE_SESSION, name, "dev", ONE_WORDS + "\n\nBefore you start, ask me what is not clear.")
+        task_md(name, "dev", "full", "waiting for the user's answers", "Asked two questions in the chat: which days count, and the date format.",
+                "Write REQ.md from the answers.")
+        stop(session)
+    elif step == "req":  # the person answered in the chat; the agent writes REQ.md and stops
+        prompt(session, "Monday to Friday count, Saturday and Sunday do not. The date as YYYY-MM-DD, in the answer of create_order.")
+        req_md(name, what="The answer of `create_order` in `orders-service` carries `delivery_date`: the date three working days after the order, as YYYY-MM-DD. "
+                          "Monday to Friday are working days; Saturday and Sunday are not.",
+               not_do="Do not change totals, stock calls or the order limits.",
+               done_t="- [T1] `create_order` answers with `delivery_date`.\n- [T2] An order on a Friday gets the Wednesday after.\n- [T3] The number of days is a setting.")
+        task_md(name, "dev", "full", "waiting for the user to confirm the requirement", "The requirement is written.", "The user confirms REQ.md on the task page.")
+        stop(session)
+    elif step == "confirmed":
+        person("confirm-req", name)
+    elif step == "plan-busy":  # the board's message reached the agent; it wrote PLAN.md and is still in its turn
+        prompt(session, "Requirement confirmed (REQ.md). Go on.")
+        plan_md(name, files="- `orders-service/orders/settings.py`: `DELIVERY_WORKING_DAYS = 3`.\n- `orders-service/orders/api.py`: `delivery_date`, and the date in the answer.\n"
+                            "- `orders-service/tests/test_api.py`: a test of an order on a Friday.",
+                steps="1. Fetch the three files.\n2. Add the setting.\n3. Add `delivery_date` and put it in the answer.\n4. Add the test.\n5. Dry run of the write-back.",
+                check="Each of [T1] to [T3] has a line in the diff; the test covers [T2].",
+                risks="A client that reads the answer strictly may not expect a new field: none is known.")
+        task_md(name, "dev", "full", "waiting for the user to approve the plan", "The plan is written.", "The user approves PLAN.md on the task page.",
+                "2026-11-17: requirement confirmed by the user")
+        tool(session, f"write .workspace/sandbox/tasks/{name}/PLAN.md")
+    elif step == "plan":
+        stop(session)
+    elif step == "approved":
+        person("approve-plan", name)
+    elif step == "working":
+        prompt(session, "Plan approved (PLAN.md). Go on with TODO.md.")
+        cli("task", "fetch", "orders-service/orders/settings.py", "orders-service/orders/api.py", "orders-service/tests/test_api.py", "--task", name)
+        edit(name, "orders/settings.py", "RETRY_COUNT = 0\n", "RETRY_COUNT = 0\nDELIVERY_WORKING_DAYS = 3\n")
+        edit(name, "orders/api.py", *ONE_API_HEAD)
+        todo_md(name, ["- [x] Fetch settings.py, api.py and test_api.py", "- [x] Add DELIVERY_WORKING_DAYS", "- [ ] Put delivery_date in the answer of create_order <- now",
+                       "- [ ] Test an order on a Friday", "- [ ] Dry run of the write-back"])
+        task_md(name, "dev", "full", "in progress", "Putting delivery_date in the answer.", "Add the test.")
+        tool(session, f"edit .workspace/sandbox/tasks/{name}/DEV/orders-service/orders/api.py")
+    elif step == "promote":
+        edit(name, "orders/api.py", *ONE_API_ANSWER)
+        test = TASKS / name / "DEV/orders-service/tests/test_api.py"
+        test.write_text(test.read_text(encoding="utf-8") + ONE_TEST, encoding="utf-8")
+        todo_md(name, ["- [x] Fetch settings.py, api.py and test_api.py", "- [x] Add DELIVERY_WORKING_DAYS", "- [x] Put delivery_date in the answer of create_order",
+                       "- [x] Test an order on a Friday", "- [x] Dry run of the write-back"])
+        cli("task", "diff", "--task", name)
+        tool(session, f"harness task diff --task {name}")
+        cli("task", "promote", "--dry-run", "--task", name)
+        tool(session, f"harness task promote --dry-run --task {name}")
+        task_md(name, "dev", "full", "waiting for the user to approve the promote", "The dry run is done.", "The user approves the promote on the task page.")
+        stop(session)
+    elif step == "approved-promote":
+        person("approve-promote", name)
+    elif step == "promoted":  # the agent writes back and stops: the board closes the task by itself (accept.sweep)
+        prompt(session, "Promote (write-back repo) approved. Go on with the promote, then stop and report.")
+        cli("task", "promote", "--task", name)
+        tool(session, f"harness task promote --task {name}")
+        write(name, "COMMIT-MESSAGE.md", """
+Show the expected delivery date in the order confirmation
+
+create_order answers with delivery_date: three working days after the
+order (Monday to Friday), as YYYY-MM-DD. The number of days is the
+setting DELIVERY_WORKING_DAYS.
+""")
+        task_md(name, "dev", "full", "done", "Written back to feature/show_delivery_date.", "The user commits the branch.")
+        stop(session)
+    elif step == "committed":  # the person commits the branch and goes back to main
+        git = ["git", "-C", str(ORDERS)]
+        run(git + ["add", "-A"], cwd=DEMO)
+        run(git + ["commit", "-qm", "Show the expected delivery date in the order confirmation"], cwd=DEMO)
+        run(git + ["checkout", "-q", "main"], cwd=DEMO)
+    elif step == "round2":  # "Task show-delivery-date needs more changes: ...": the agent opens the task again (a new round) and changes the requirement first
+        prompt(session, "Task show-delivery-date needs more changes: public holidays do not count either; take them from a list in settings.")
+        cli("task", "open", name, "--session-id", session)
+        tool(session, f"harness task open {name}")
+        path = TASKS / name / "REQ.md"
+        text = path.read_text(encoding="utf-8")
+        text = text.replace("Saturday and Sunday are not.", "Saturday, Sunday and the public holidays listed in `settings.PUBLIC_HOLIDAYS` are not.")
+        text = text.replace("## Changes\n\nnone\n", "## Changes\n\n- 2026-11-17, round 2: public holidays do not count either (the user).\n")
+        path.write_text(text, encoding="utf-8")
+        task_md(name, "dev", "full", "waiting for the user to confirm the requirement", "Round 2: the requirement is changed (public holidays).",
+                "The user confirms REQ.md again; then a new plan.")
+        stop(session)
+    else:
+        sys.exit("steps: " + ", ".join(ONE_STEPS))
+
+
+# --- daily states (demo.py daily on|off), for the state-* screens -------------------------------------------------------------------------
+# Each is a task of its own, made the way the board reads it. Two of them need time to pass, as they would at work: quiet (no hook call for
+# five minutes, the agent never stopped) and stuck (a reviewer runs for ten minutes and the agent makes no call meanwhile). capture.mjs waits
+# for them. cancelled is told from Copilot's own record of the session (an `abort` with no turn after it): the board must be started with
+# `demo.py start --demo-copilot`, which points COPILOT_HOME at demo/copilot, a folder of this demo only, where the record is written.
+
+DAILY = {"log-stock-misses": 41, "speed-up-totals": 42, "tidy-order-errors": 43, "add-stock-moves": 44}
+COPILOT = DEMO / "copilot"
+DAILY_FILE = DEMO / "daily.json"  # when each timed state began
+
+
+def daily_working(number, name, words, req, plan, todo):
+    session = through_plan(number, name, words, req, plan)
+    todo_md(name, todo)
+    task_md(name, "dev", "full", "in progress", "Working on the TODO.", "Go on.")
+    return session
+
+
+def copilot_record(session, rows):
+    """Copilot's record of a session (`<COPILOT_HOME>/session-state/<id>/events.jsonl`), only the rows the board reads: types and times."""
+    folder = COPILOT / "session-state" / session
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "events.jsonl").write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+
+def daily_on():
+    daily_off()
+    started = {}
+    # quiet: the agent is at work, then nothing for five minutes, and it never stopped (its VS Code window was closed, or a long step runs)
+    name = "log-stock-misses"
+    session = daily_working(41, name, "Log each stock call that times out in orders-service, with the SKU.", dict(
+        what="`orders-service` writes one log line for each stock call that times out, with the SKU and the time it waited.", not_do="No change to the timeout or the retry.",
+        done_t="- [T1] A timeout writes one line with the SKU.\n- [T2] A test of a timeout."),
+        dict(files="- `orders-service/orders/client.py`\n- `orders-service/tests/test_client.py` (new)", steps="1. Fetch client.py.\n2. Log the timeout.\n3. Add the test.\n4. Dry run.",
+             check="[T1], [T2] in the diff.", risks="none"),
+        ["- [x] Fetch client.py", "- [ ] Log the timeout <- now", "- [ ] Add the test", "- [ ] Dry run of the write-back"])
+    cli("task", "fetch", "orders-service/orders/client.py", "--task", name)
+    tool(session, f"harness task fetch orders-service/orders/client.py --task {name}")
+    started["quiet"] = time.time()
+    # stuck: the agent asked for its independent check and waits for the reviewer, which runs and runs; the agent makes no call of its own
+    name = "speed-up-totals"
+    session = session_id(42)
+    prompt(session, "Make pricing.total in orders-service faster for orders of many lines. [review]=1", first=True)
+    cli("task", "new", name, "--kind", "dev", "--session-id", session)
+    req_md(name, what="`pricing.total` in `orders-service` adds up an order of 50 lines in one pass, with no conversion per line.", not_do="Same totals as before, to the cent.",
+           done_t="- [T1] One pass over the lines.\n- [T2] A test: the totals of three orders are as before.")
+    stop(session)
+    person("confirm-req", name)
+    prompt(session, "Confirmed.")
+    plan_md(name, files="- `orders-service/orders/pricing.py`\n- `orders-service/tests/test_pricing.py` (new)", steps="1. One pass.\n2. The test.\n3. One independent check.",
+            check="By the reviewer.", risks="none")
+    stop(session)
+    person("approve-plan", name)
+    prompt(session, "Approved.")
+    cli("task", "fetch", "orders-service/orders/pricing.py", "--task", name)
+    edit(name, "orders/pricing.py", "    return sum(int(item[\"price\"] * 100) * item[\"count\"] for item in items)",
+         "    total = 0\n    for item in items:\n        total += round(item[\"price\"] * 100) * item[\"count\"]\n    return total")
+    todo_md(name, ["- [x] One pass", "- [x] The test", "- [ ] One independent check <- now", "- [ ] Dry run of the write-back"])
+    task_md(name, "dev", "full", "in progress", "The independent check runs.", "Read the reviewer's verdict.")
+    cli("task", "diff", "--task", name)
+    tool(session, f"harness task diff --task {name}")
+    cli("task", "review", "start", "--task", name)
+    tool(session, f"harness task review start --task {name}")
+    run([sys.executable, ".harness/engine/launch.py"], stdin=json.dumps({"sessionId": session, "agentName": "reviewer", "agentDescription": "Independent check",
+                                                                        "timestamp": int(time.time() * 1000)}))  # SubagentStart: no hook_event_name, camelCase
+    started["stuck"] = time.time()
+    # cancelled: the person pressed stop in VS Code while the agent worked; a cancel fires no Stop hook, Copilot's record has the abort
+    name = "tidy-order-errors"
+    session = daily_working(43, name, "Make the error words of create_order in orders-service the same style: lower case, the value at the end.", dict(
+        what="Every error of `create_order` in `orders-service` is lower case and ends with the value it is about.", not_do="No change to when an order is refused.",
+        done_t="- [T1] Every error has the same style.\n- [T2] The tests match the new words."),
+        dict(files="- `orders-service/orders/api.py`\n- `orders-service/tests/test_api.py`", steps="1. Fetch both.\n2. Change the words.\n3. The tests.\n4. Dry run.",
+             check="[T1], [T2] in the diff.", risks="A client that matches the old words."),
+        ["- [x] Fetch api.py and test_api.py", "- [ ] Change the words <- now", "- [ ] The tests", "- [ ] Dry run of the write-back"])
+    cli("task", "fetch", "orders-service/orders/api.py", "orders-service/tests/test_api.py", "--task", name)
+    tool(session, f"harness task fetch orders-service/orders/api.py orders-service/tests/test_api.py --task {name}")
+    now = time.time()
+    iso = lambda at: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(at)) + f".{int(at * 1000) % 1000:03d}Z"
+    copilot_record(session, [{"type": "user.message", "timestamp": iso(now - 90), "data": {}},
+                             {"type": "assistant.turn_start", "timestamp": iso(now - 88), "data": {}},
+                             {"type": "tool.execution_start", "timestamp": iso(now - 60), "data": {}},
+                             {"type": "tool.execution_complete", "timestamp": iso(now - 58), "data": {}},
+                             {"type": "abort", "timestamp": iso(now - 30), "data": {"reason": "user initiated"}}])
+    # recover: the write-back failed halfway: the branch was made in shop-dw, then a folder could not be written
+    name = "add-stock-moves"
+    session = through_plan(44, name, "Add a table of stock moves to shop-dw.", dict(
+        what="`shop-dw` gets a table `dbo.stock_moves`: one row per move of stock, with the SKU, the change and the time.", not_do="No change to `dbo.stock` or its procedures.",
+        done_t="- [T1] `Shop/dbo/Tables/stock_moves.sql` makes the table."),
+        dict(files="- `shop-dw/Shop/dbo/Tables/stock_moves.sql` (new)", steps="1. Write the table.\n2. Dry run.\n3. Write back.", check="[T1] in the diff.", risks="none"))
+    table = TASKS / name / "DEV/shop-dw/Shop/dbo/Tables/stock_moves.sql"
+    table.parent.mkdir(parents=True, exist_ok=True)
+    table.write_text("CREATE TABLE dbo.stock_moves (\n    sku CHAR(6) NOT NULL,\n    change INT NOT NULL,\n    moved_at DATETIME2 NOT NULL\n);\n", encoding="utf-8")
+    todo_md(name, ["- [x] Write the table", "- [x] Dry run of the write-back", "- [ ] Write back <- now"])
+    cli("task", "diff", "--task", name)
+    cli("task", "promote", "--dry-run", "--task", name)
+    stop(session)
+    person("approve-promote", name)
+    prompt(session, "Promote (write-back repo) approved. Go on with the promote, then stop and report.")
+    folder = SHOP / "Shop/dbo/Tables"
+    folder.chmod(0o555)  # the folder cannot be written now (held by another program, read only): the copy fails after the branch was made
+    try:
+        print("promote:", json.dumps(cli("task", "promote", "--task", name, check=False))[:400])
+    finally:
+        folder.chmod(0o755)
+    tool(session, f"harness task promote --task {name}")
+    task_md(name, "dev", "full", "the promote failed halfway", "The write-back stopped in shop-dw.", "The user recovers the repository on the task page.")
+    stop(session)
+    DAILY_FILE.write_text(json.dumps(started) + "\n", encoding="utf-8")
+    print("daily states made:", ", ".join(DAILY))
+
+
+def daily_off():
+    for name in DAILY:
+        shutil.rmtree(TASKS / name, ignore_errors=True)
+    shutil.rmtree(COPILOT, ignore_errors=True)
+    DAILY_FILE.unlink(missing_ok=True)
+    git = ["git", "-C", str(SHOP)]
+    if SHOP.exists():
+        (SHOP / "Shop/dbo/Tables").chmod(0o755)
+        run(git + ["checkout", "-q", "main"], cwd=DEMO, check=False)
+        run(git + ["clean", "-qfd"], cwd=DEMO, check=False)
+        run(git + ["branch", "-D", "feature/add_stock_moves"], cwd=DEMO, check=False)
+
+
 # --- the board ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -1129,12 +1384,16 @@ def board_pid():
     return [int(pid) for pid in found]
 
 
-def start_board():
+def start_board(demo_copilot=False):
+    """`demo_copilot`: Copilot's records are read from demo/copilot (COPILOT_HOME), not from this computer's own: for the cancelled state."""
     if board_pid():
         print(f"the board runs: http://127.0.0.1:{PORT}/")
         return
     (DEMO / "pair-url.txt").unlink(missing_ok=True)
     env = dict(os.environ, BROWSER=f"{DEMO / 'opener.sh'} %s")
+    if demo_copilot:
+        COPILOT.mkdir(parents=True, exist_ok=True)
+        env["COPILOT_HOME"] = str(COPILOT)
     log = open(DEMO / "board.log", "w")
     subprocess.Popen(["script", "-q", "/dev/null", "sh", ".harness/bin/harness", "task", "board", "--port", str(PORT)], cwd=H, env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
     for _ in range(60):
@@ -1195,7 +1454,11 @@ if __name__ == "__main__":
     elif what == "hold":
         hold()
     elif what == "start":
-        start_board()
+        start_board("--demo-copilot" in sys.argv)
+    elif what == "one" and len(sys.argv) > 2:
+        one(sys.argv[2])
+    elif what == "daily" and len(sys.argv) > 2 and sys.argv[2] in ("on", "off"):
+        daily_on() if sys.argv[2] == "on" else daily_off()
     elif what == "pair":
         pair()
     elif what == "stop":
