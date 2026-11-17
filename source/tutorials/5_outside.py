@@ -28,11 +28,11 @@ PAGES = [
    dict(pic=(B + 'outside-enter-not-ready.png', (60, 1470, 900, 1580)),
         text='The Enter screen lists both under **From the company**. You signed in during Install.'),
    dict(pic=(B + 'outside-enter-not-ready.png', (60, 1015, 900, 1222)),
-        text='**VS Code** red, **no settings**? Press **Restart VS Code**: the agent needs the pack’s program.'),
+        text='**VS Code** red, **no settings**? Press the button it names: **Restart VS Code** (or **… with identities**).'),
   ],
   notes='Sources: messages tools.packs.title/lead ("A pack brings a program, the rules the gate judges it by, and skills"), tools.conn.title/lead, '
         'connections.signin, connections.test; core/systems.py ENVS (dev, ist, qat, prod, none); docs/01-quickstart.md (Enter screen: From the company, '
-        'Restart VS Code when VS Code runs without this copy\'s tool folders); the red box text is the board\'s own. Install deck, Get ready card 3.'),
+        'Restart VS Code, or Restart VS Code with identities once a connection has a tested sign-in: ready.py L602-607, ready.vs.restart, ready.vs.identities); the red box text is the board\'s own. Install deck, Get ready card 3.'),
 
  dict(steps=[
    dict(shot='Your own terminal in the demo workspace after `harness connections find demo`: the lines it prints for the demo connection', aspect=16/7,
@@ -59,13 +59,16 @@ PAGES = [
         text='Defaults only: a type or your company changes them. Sample **sqlserver** holds a dev job or destroy for you.'),
    dict(pic=(B + 'plan.png', (72, 290, 1730, 515)),
         text='A call your company marks **task** is refused until you approve the plan; then it runs.'),
-   dict(pic=(B + 'stop-agent-actions.png', (86, 576, 2128, 716)),
-        text='What the gate cannot judge does not run. It reads no scripts: your account’s rights are the limit.'),
+   dict(pic=(B + 'outside-held-card.png', (100, 630, 1000, 730)),
+        text='What the gate cannot judge never runs unasked: it is refused, or it waits for you on a card.'),
+   dict(pic=(B + 'outside-tools-connections.png', (1010, 215, 1590, 290)),
+        text='It cannot see all a script does. It is no sandbox: your account’s rights are the limit.'),
   ],
   notes='Sources: toolpacks/sqlserver/types/sqlserver.json rules (dev, ist: exec and destroy outbox; qat: destroy deny) and open (dev, ist all); '
         'core/connections.py (a connection\'s rules win, else its type\'s); policies/tools.json rules values allow|task|outbox|human|deny; '
         'handler.py _judge_one L266-270 (task passes once tasks.plan_approved), messages gate.external.task; docs/12-guardrails-and-gate.md '
-        '"What the gate cannot judge, it does not pass" (no server or an unknown one: refused; a hidden command: refused; a faulty pack file: held), '
+        '"What the gate cannot judge, it does not pass" (a program it cannot read, no server or an unknown one: refused; a faulty pack file, an unreadable script, an unnamed kind, a statement on no list: held on a card; handler.py L255-256, 280, 417-420; gate.external.outbox.what.unknown, gate.external.broken). '
+        'It reads sqlcmd -i files, script files a line runs, here-documents and build files (docs/12 L123-127, 154, 162); not what a script does through a library or a program it starts (L78). '
         '"A guardrail, not a sandbox", "What is still not covered" (python3 query.py not read; the rights of the account); docs/03-configure.md:300.'),
 
  # ---- Approve a held call -------------------------------------------------------------------------------------------------
@@ -94,17 +97,19 @@ PAGES = [
  # ---- Open a connection ---------------------------------------------------------------------------------------------------
  dict(group='Open a connection', steps=[
    dict(pic=(B + 'outside-held-card.png', (540, 732, 1700, 808)),
-        text='A card may offer **Open <connection> for this task**. It needs the code, like **Approve**.'),
+        text='This card offers **Open linked items of demo for this task**; a database card, **Open <connection> for this task**.'),
    dict(shot='The same card after its Open button was pressed with the code: Opened, and Tell the agent to run it again if shown', aspect=16/6,
-        text='The card says **Opened**. If it offers **Tell the agent to run it again**, press it.'),
-   dict(shot='Your own terminal after `harness task allow --conn demo --on --task answer-ticket-t7` and then `--off`: both answers', aspect=16/7,
-        text='Or in your own terminal: `harness task allow --conn <connection> --on`; `--off` closes it.'),
-   dict(pic=(B + 'outside-tools-connections.png', (45, 205, 1600, 295)),
-        text='Open only a place you could repair, like a dev database. Prod is never opened.'),
+        text='It needs the code, like **Approve**. Then **Opened**: press **Tell the agent to run it again** if offered.'),
+   dict(shot='Own terminal: the answers to task allow --conn demo --on, then task allow --links --off', aspect=16/7,
+        text='Or in your own terminal: `harness task allow --conn <connection> --on`; `--off` closes a database connection.'),
+   dict(pic=(B + 'outside-open-to-agent.png', (20, 380, 600, 610)),
+        text='A ticket board: close with **Close**, or `--links --off`. `--conn … --off` leaves it open in 1.7.45.'),
   ],
   notes='Sources: messages desk.outbox.open = "Open {name} for this task", desk.outbox.open.tip.all ("It needs the code, like Approve"), desk.outbox.opened, '
         'desk.outbox.opened.tell; core/outbox.py offer_for; task/commands.py "allow" (--conn, --on/--off, person only, terminal); tasklife.set_allow; '
-        'handler.py _judge_one L288-292 (an offer only on a held write); messages task.allow.no.'),
+        'handler.py _judge_one L288-292 (an offer only on a held write: all scope = Open <name>, items scope = Open linked items); messages task.allow.no. '
+        'Harness 1.7.45 bug: for an items-scope connection, task allow --conn X --on opens the linked items (tasklife.py L554-559 -> _set_allow_links) but '
+        '--conn X --off only pops X from allow_conn and prints task.allow.conn.off; the linked items stay open. The board\'s Close flips links (desk.js L783-785). '),
 
  dict(steps=[
    dict(pic=(B + 'outside-open-to-agent.png', (20, 30, 600, 205)),
@@ -113,6 +118,8 @@ PAGES = [
         text='Even a destroy its type allows: with the sample **sqlserver** type, a table drop on dev.'),
    dict(pic=(B + 'stop-agent-actions.png', (44, 270, 2172, 440)),
         text='They are only logged, in **Records** › **Agent actions**. A statement on no list still waits.'),
+   dict(pic=(B + 'outside-tools-connections.png', (45, 205, 1600, 295)),
+        text='Open only a place you could repair, like a dev database. Prod is never opened.'),
   ],
   notes='Sources: messages task.allow.conn.on ("A destroy passes only where the tool pack\'s type lets it (the SQL Server sample: a table drop on DEV and IST)"), '
         'desk.set.open.tip.conn, desk.set.open.never; handler.py _judge_one L279-286 (opened: task, outbox, human pass; listed_write destroy passes; '
@@ -140,9 +147,9 @@ PAGES = [
         text='A ticket board opens less: **Open linked items of <connection> for this task**.'),
    dict(pic=(B + 'outside-open-to-agent.png', (20, 380, 600, 600)),
         text='Then writes to the tickets linked to the task pass. A write to an unlinked ticket is refused.'),
-   dict(pic=(B + 'outside-link.png', (36, 172, 940, 256)),
-        text='A ticket you add with **Link a ticket** while they are open is opened too.'),
    dict(pic=(B + 'outside-task-head.png', (36, 180, 560, 248)),
+        text='A ticket you add with **Link a ticket** while they are open is opened too.'),
+   dict(pic=(B + 'outside-held-card.png', (100, 378, 1000, 480)),
         text='A ticket the agent links itself, or a new one, still waits for you.'),
   ],
   notes='Sources: toolpacks/ado/types "open": "items"; handler.py _item_scope (unlinked refused, opened passes) and _judge_one L273-277; '
