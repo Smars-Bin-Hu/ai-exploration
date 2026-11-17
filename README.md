@@ -9,7 +9,7 @@ The source of the company OneDrive folder "AI Exploration". Two parts:
 
 | Folder | What is in it | Built from |
 |---|---|---|
-| `0 MUST READ.pdf` | the one page map of the folder: what each folder is for, for whom, how to use it. Sorts first. Other files do not draw their own map; they point here | `source/must-read/` |
+| `0 MUST READ.pdf` | the one page map of the folder, one colour per group: what to read, what to ask M365 Copilot, what not to open. Sorts first. Other files do not draw their own map; they point here | `source/must-read/` |
 | `1 Showcase/` | `Why AI-assisted development has not taken off.pdf` (the entry for a leader), `Real Tasks/` (one folder per real task: a deck and the task page saved as HTML), `Lessons/` | That deck: `source/start-here/`. The Real Tasks template: `source/showcase/`. Real tasks are company only, never committed |
 | `2 Ask the Harness Guide/` | `Knowledge/pdf/`: the knowledge of the M365 Copilot agent that helps people understand the harness, PDF only (the agent reads this folder only) | `source/guide/` |
 | `3 Courses/` | slidedoc PDFs: `Basic/` (and `Advanced/` when added) on AI harness engineering in general; `Harness tutorials/` on using the harness day to day, with its own `0 MUST READ.pdf` | `Basic/`, `Advanced/`: exported from the smarshu.com repository (`npm run export:team`). `Harness tutorials/`: `source/tutorials/` |

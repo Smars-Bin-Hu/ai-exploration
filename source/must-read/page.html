@@ -1,63 +1,30 @@
 <!-- The text of "AI Exploration/0 MUST READ.pdf": the one map of the folder. Edit here, then run build.py.
-     data-folder must be a folder name exactly as on disk under "AI Exploration/": build.py checks it. -->
-<p class="kicker">AI Exploration · Read this first</p>
-<h1>What is in this folder, and where to start</h1>
-<p class="lead">AI Exploration is about how our team can make AI-assisted development work: the coding agent in Copilot,
-with a <b>harness</b> around it (rules, checks and approvals) so that we can trust it with real work.
-New here? Read <code>1 Showcase/Why AI-assisted development has not taken off.pdf</code> first.</p>
+     Three groups, one colour each: read / ask M365 Copilot / do not open. One short line per item.
+     data-path: a folder or file exactly as on disk under "AI Exploration/"; build.py checks it, and checks every
+     <code> path that ends in / or .pdf, read from the item's data-path or from the top of the folder. -->
+<p class="kicker">AI Exploration</p>
+<h1>What to open here</h1>
 
-<section class="folder" data-folder="1 Showcase">
-  <div class="name"><span class="n">1</span> Showcase/</div>
-  <div class="body">
-    <p class="what">Why AI-assisted development has not taken off in our team, and what the harness changes. Then real tasks done
-    with the harness, and the lessons we learned.</p>
-    <p class="meta"><b>For</b> everyone on the team, leads and managers included. <b>How</b> Read it. Start with
-    <code>Why AI-assisted development has not taken off.pdf</code>, then <code>Real Tasks/</code> and <code>Lessons/</code>.</p>
-  </div>
+<section class="group read">
+  <h2>Read</h2>
+  <div class="item" data-path="1 Showcase"><code>1 Showcase/</code><span>Start with <code>Why AI-assisted development has not taken off.pdf</code></span></div>
+  <div class="item" data-path="3 Courses"><code>3 Courses/</code><span><code>Harness tutorials/</code> to use the harness, <code>Basic/</code> for the ideas</span></div>
+  <div class="item" data-path="4 Install the harness"><code>4 Install the harness/</code><span>To install it</span></div>
 </section>
 
-<section class="folder" data-folder="2 Ask the Harness Guide">
-  <div class="name"><span class="n">2</span> Ask the Harness Guide/</div>
-  <div class="body">
-    <p class="what">An agent that helps you understand the harness and learn AI harness engineering. It is not a tutorial.</p>
-    <p class="meta"><b>For</b> anyone who wants to go deeper: leads, architects, curious colleagues. <b>How</b> Open Microsoft 365
-    Copilot, pick the <strong>Harness Guide</strong> agent, and ask. It answers four kinds of question, from shallow to deep:</p>
-    <ol class="layers">
-      <li><b>The harness itself.</b> <q>What is this harness, and what problem does it solve?</q></li>
-      <li><b>Its common features.</b> <q>What does the board show, and what does ‘waiting for you’ mean?</q></li>
-      <li><b>How it is designed and built</b>, with the places in the code. <q>How does the gate block dangerous commands, and where are its rules?</q></li>
-      <li><b>The AI harness engineering ideas behind it</b>, with links to smarshu.com. <q>Why isn't a rule in the prompt enough to keep the agent safe?</q></li>
-    </ol>
-    <p class="meta">Do not ask it for step-by-step how-to (<q>How do I start a task?</q>): it gives a short answer and sends you
-    to the harness tutorials in <code>3 Courses/</code>, which show each step on screen.</p>
-  </div>
+<section class="group ask">
+  <h2>Ask M365 Copilot</h2>
+  <p class="line">Open the <b>Harness Guide</b> agent and ask what the harness is, what it does, how it is built, and the ideas behind it.</p>
+  <p class="eg"><q>What is this harness, and what problem does it solve?</q></p>
+  <p class="eg"><q>Why isn't a rule in the prompt enough to keep the agent safe?</q></p>
+  <p class="line small">Not how to click: that is in <code>Harness tutorials/</code>.</p>
 </section>
 
-<section class="folder" data-folder="3 Courses">
-  <div class="name"><span class="n">3</span> Courses/</div>
-  <div class="body">
-    <p class="what">Picture-book courses, one step per page.</p>
-    <ul class="parts">
-      <li data-folder="3 Courses/Basic"><code>Basic/</code> (and <code>Advanced/</code> when it is added): AI harness engineering in general, not tied to our harness.</li>
-      <li data-folder="3 Courses/Harness tutorials"><code>Harness tutorials/</code>: using the harness day to day, after you have installed it. Start with its <code>0 MUST READ.pdf</code>.</li>
-    </ul>
-    <p class="meta"><b>For</b> the team. <b>How</b> Read the one you need, when you need it.</p>
-  </div>
+<section class="group skip">
+  <h2>Do not open</h2>
+  <div class="item" data-path="2 Ask the Harness Guide/Knowledge"><code>2 Ask the Harness Guide/Knowledge/</code><span>The agent's, not yours</span></div>
+  <div class="item" data-path="_Archive"><code>_Archive/</code><span>Old material</span></div>
 </section>
 
-<section class="folder" data-folder="4 Install the harness">
-  <div class="name"><span class="n">4</span> Install the harness/</div>
-  <div class="body">
-    <p class="what">Install the harness on your computer, step by step, up to your first task.</p>
-    <p class="meta"><b>For</b> the team. <b>How</b> Follow <code>Install the harness.pdf</code> page by page.</p>
-  </div>
-</section>
-
-<div class="after">
-  <p><b>After installing:</b> two courses run inside the harness. In VS Code, open Copilot chat and type:</p>
-  <ul>
-    <li><code>/harness-rookie-quick-start</code> takes a newcomer through a first task.</li>
-    <li><code>/harness-rookie-wondering</code> teaches all of harness engineering and how this harness does it. The agent reads
-    the harness code, so it is the most direct way to learn, but it spends GitHub Copilot credits.</li>
-  </ul>
-</div>
+<p class="last">After installing, in VS Code Copilot chat: <code>/harness-rookie-quick-start</code> walks you through a first task;
+<code>/harness-rookie-wondering</code> teaches it all from the code (spends Copilot credits).</p>
