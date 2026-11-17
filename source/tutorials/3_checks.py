@@ -111,27 +111,31 @@ PAGES = [
 
  dict(kicker='Step 4 · When checks run out', title='Checks used up: you decide',
   text=[
-   'At most your number + 2 checks, plus any you give. Used up without enough passes, the agent stops: **the checks are used up and wait for your decision**.',
+   'You get your number + 2 checks, plus any you give. Used up without enough passes, the agent stops: **the checks are used up and wait for your decision**.',
    'Read the newest FAIL on **Review**, then press:',
    ('list', ['**More checks**: 2 more.',
-             '**Waive checks**: this version goes through without the passes, until the work changes.']),
-   ('small', 'Each asks for its code.'),
+             '**Waive checks**: this version goes through, until the work changes.']),
+   ('small', 'Each asks for its code. Or, in a terminal:'),
+   ('code', 'harness task review extend --task <name> --checks 2'),
   ],
   shot='The task page of a task whose checks are used up: the waiting box with More checks and Waive checks',
   notes='Sources: taskreview.py limit L161-163 (n + extra_checks 2 + extra), extend L496-509, waive L512-528; boardserve.py L150-151 '
         '(the board’s More checks gives 2); tasklife.py L297-303 (waits "review"); taskboard.py L117; messages.en.json '
         'task.waiting.review, board.action.review-extend, board.action.review-waive, desk.hint.review-waive, review.limit.'),
 
- dict(kicker='Step 4 · Then tell the agent', title='Tell the agent to go on',
+ dict(kicker='Step 4 · Stop checks early', title='Stop checks early, then tell the agent',
   text=[
-   'The same two decisions in your own terminal; each asks you to type its code:',
-   ('code', 'harness task review extend --task <name> --checks 2\nharness task review waive --task <name>'),
-   'Either way, nothing tells the agent. The board says **the checks are decided: tell the agent to go on**.',
-   'Press **Send to agent**: it sends “The checks are decided. Go on.” Or say so in the chat.',
+   '**Waive checks** appears only once the checks are used up. Before that, either:',
+   ('list', ['set **Independent review** to **off** (no code); or',
+             'waive this version in your own terminal, any time it lacks passes; it asks for its code.']),
+   ('code', 'harness task review waive --task <name>'),
+   'After **More checks** or a waive, nothing tells the agent: press **Send to agent** or say so in the chat.',
   ],
-  notes='Sources: taskreview.py L507, L527 (waiting "go-review"); chatsend.py L48 (the text sent); taskboard.py L118 SEND_WAITS; '
-        'messages.en.json task.waiting.go-review, board.action.send, desk.wait.go-review; commands.py L236-242 '
-        '(--checks 1-9, default 2; --task); paths.py SHORT_COMMAND "harness".'),
+  notes='Sources: taskboard.py L117 ACTIONS_BY_WAIT (review extend/waive offered only when the task waits "review", i.e. used up) and '
+        'tasklife.py L297-303; web/desk.js shows desk.actions only (no other waive button); taskreview.py waive L512-528 '
+        '(refused only when n is 0 or passes are enough; the waiver holds for this digest); set_by_person L476-494 (off, no code); '
+        'L507, L527 (waiting "go-review"); chatsend.py L48; messages.en.json board.action.send, task.waiting.go-review; '
+        'commands.py L236-242 (extend --checks 1-9, default 2); paths.py SHORT_COMMAND "harness".'),
 
  dict(kicker='Step 5 · A check you judge wrong', title='Dismiss a check that judged wrong',
   text=[
