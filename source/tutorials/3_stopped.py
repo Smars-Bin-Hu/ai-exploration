@@ -46,7 +46,7 @@ PAGES = [
  # ---- What is refused ---------------------------------------------------------------------------------------
  dict(group='What is refused', steps=[
    dict(pic=(B + 'stop-agent-actions.png', (88, 1305, 2128, 1445)),
-        text='A file in your repository: refused. Only the write-back, after your approval, writes there.'),
+        text='Repositories set up in **Get ready**? A file in one is refused. Only the approved write-back writes there.'),
    dict(pic=(OLD + 'refusals-list.png', (0, 458, 2410, 600)),
         text='The harness’s own files (engine, policies, hooks) and any `.git` folder: refused.'),
    dict(pic=(OLD + 'refusals-list.png', (0, 80, 2410, 250)),
@@ -58,11 +58,11 @@ PAGES = [
 
  dict(steps=[
    dict(pic=(B + 'stop-agent-actions.png', (88, 1145, 2128, 1280)),
-        text='`git push`, `reset --hard`, `clean`, any force, `sudo`, `rm -rf ~`: refused, never approved.'),
+        text='`sudo`, `rm -rf ~`: always refused. With repositories set up, `git push`, `reset --hard`, `clean`, any force too.'),
    dict(pic=(B + 'stop-agent-actions.png', (88, 990, 2128, 1125)),
-        text='Other git writes wait for your code, once repositories are set up in **Get ready**; until then, git only asks.'),
+        text='Other git writes then wait for your code. No repositories in **Get ready**? These git and repository rules are off.'),
    dict(pic=(B + 'stop-agent-actions.png', (88, 830, 2128, 965)),
-        text='A destroy on an outside system: refused. Outside systems: deck 5.'),
+        text='A destroy on an outside system: refused by default. A tool pack can hold it for you instead (deck 5).'),
   ],
   notes='Sources: gate.json terminal.deny (sudo, rm -rf of root/home/current folder, download piped into a shell, mkfs, terraform apply ...); '
         'gitcmd.py NEVER (push, clean, filter-branch, update-ref, prune, reset --hard, branch -D, any force, gh pr); handler.py line 109 and 770: '
@@ -76,9 +76,9 @@ PAGES = [
    dict(pic=(B + 'tour-reply.png', (40, 575, 1190, 835)),
         text='A chat the board made starts with **Permissions** **Allow all**: then nothing asks, they just run.'),
    dict(shot='Board, List: a task in state “the agent asks to run: …”, Do shows Allow · deny', aspect=16/5,
-        text='When VS Code asks, **State** reads **the agent asks to run: …** and **Do** has **Allow · deny**'),
+        text='In a chat made in VS Code, or not on **Allow all**: **State** reads **the agent asks to run: …**'),
    dict(shot='Board: the Allow · deny window, with the command and its buttons', aspect=16/9,
-        text='**Allow · deny** shows the command: **Allow** runs that one call, **Deny** refuses it.'),
+        text='**Allow · deny** in **Do** shows the command: **Allow** runs that one call, **Deny** refuses it.'),
   ],
   notes='Sources: gate.json terminal.ask (deletes, network, package installs, git history); handler.py end of check_terminal (permission "ask"); '
         'docs/02-features.md line 50 ("only a reminder, not protection": Allow all shows no box; after Allow in this Session the session is not asked again); '
@@ -129,13 +129,15 @@ PAGES = [
  dict(group='When there is no approval', steps=[
    dict(pic=(B + 'stop-agent-actions.png', (88, 1145, 2128, 1280)),
         text='`git push` or a harmful command really needed? Ask what it is for, read it, run it yourself.'),
+   dict(shot='Enter screen (or the notice on the board): guardrail files differ, with Accept these files', aspect=16/6,
+        text='Changed an engine, hook or shipped policy file yourself? Until it is accepted, the agent can only read.'),
    dict(shot='Terminal: harness doctor --accept, listing the guardrail files it takes in', aspect=16/7,
-        text='Edited a guardrail file yourself? The agent is refused every command until `harness doctor --accept`.'),
+        text='Put the file back, press **Accept these files**, or run `harness doctor --accept` in your own terminal.'),
    dict(shot='VS Code: a new chat with /harness-admin typed in the box, not sent', aspect=16/10,
         text='Or admin mode: `/harness-admin` in a chat with no task gives a `harness admin on` command for your terminal.'),
   ],
   notes='Sources: messages gate.git.never, gate.terminal.denied ("the user runs it in their own terminal"); the gate is a hook on the agent\'s tool calls only. '
-        'integrity.py lines 1-8 (a changed guardrail file: the hook refuses commands and writes) and 23-27 (*.override.json is not checked); '
+        'integrity.py lines 1-8 and 20-27 (listed: .harness/engine, .harness/bin, .github/hooks, .harness/toolpacks, registry.json, shipped policies; not *.override.json, *.company.json, .vscode/settings.json); hook.py:177 hook.integrity (commands and writes refused, reads pass); doctor.py:1018-1021 (doctor --accept needs a person: refused in the board Terminal); web/readyui.js acceptFiles, board.integrity.button = "Accept these files"; '
         'docs/12-guardrails-and-gate.md "The guardrail files are checked" (doctor --accept, or put the files back); messages gate.guardrail.file ("harness admin on"), '
         'gate.admin.has_task; .github/skills/harness-admin/SKILL.md lines 11 and 23 (the person runs harness admin on --session-id <id> in their terminal); '
         'commands.py admin_switch_off (ending admin mode accepts the files).'),
@@ -155,6 +157,6 @@ CLOSING = dict(title='When the agent is stopped',
   text=[
    ('list', ['Read the reason first: it says why, and what to do next.',
              'Held outside call: approve it on its card. Git write: `harness approve-command` in your own terminal.',
-             'No approval, and really needed: run it yourself. A guardrail file you changed: `harness doctor --accept`.',
+             'No approval, and really needed: run it yourself. A harness file you changed: **Accept these files**, or `harness doctor --accept` in your own terminal.',
              'Never hand an approval command to the agent.']),
   ])
