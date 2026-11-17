@@ -1,157 +1,179 @@
-# Harness tutorials · 1 A day with the harness: one task from the board to your own commit, and the next day.
+# Harness tutorials · 1 A day with the harness: how to operate the harness, one small step per picture.
 # Build: .venv/bin/python source/tutorials/build.py 1_day
 # Checked against harness 1.7.45 (.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/); sources in each page's notes.
+# Board pictures: source/tutorials/img/_board/ (1.7.45, made-up data), cropped to the part each step is about.
+# Placeholders (VS Code, and board states with no picture yet) are listed in shots/1_day.md.
 
-A = '.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/docs/images/'
+B = 'source/tutorials/img/_board/'
 
 COVER = dict(
- sub='One task from start to finish: open the board, give the requirement, approve the plan and the write-back, '
-     'commit. Then how a task that changes no repository ends, and how to pick a task up the next day.',
+ sub='How to work with the harness, step by step: start a task, give the requirement, approve, '
+     'follow the work, finish it, and pick it up the next day.',
  how=['Start here once the Install deck is done and the board opens in your browser.'],
 )
 
+CONTENTS = True
+
 PAGES = [
- dict(kicker='Step 1 · Open the board', title='Open the board',
-  text=[
-   'Double-click **Start Harness** and keep its black window open. When every line under **Harness & Local** is green, press **Enter**. **From the company** may stay yellow.',
-   'The **board** is the harness’s page in your browser: every task and what waits for you. '
-   '**Lobby** shows tasks as robots, **List** as a table.',
+ # ---- Start -------------------------------------------------------------------------------------------------
+ dict(group='Start', steps=[
+   dict(shot='Finder (or Explorer) with the harness folder open and Start Harness selected', aspect=16/10,
+        text='Double-click **Start Harness**. Keep its terminal window open.'),
+   dict(pic=(B + 'enter.png', (40, 925, 910, 1165)),
+        text='Wait until every line under **Harness & Local** is green.'),
+   dict(pic=(B + 'enter.png', (40, 1180, 910, 1585)),
+        text='**From the company** is optional: yellow there never stops Enter.'),
+   dict(pic=(B + 'enter.png', (934, 1505, 1810, 1650)),
+        text='Press **Enter**. The board opens.'),
   ],
-  pic=A + 'board-list.png',
-  caption='The List view. The Do column has the button for your next move.',
-  notes='Sources: docs/01-quickstart.md steps 1 and 3; messages.en.json board.offwork, board.onwork, board.col.*; '
-        'tasklife.py L856-870 (waiting first); guide 21-start-a-task.md Step 5.'),
+  notes='Sources: docs/01-quickstart.md step 1 (the Enter screen: Harness & Local required, From the company optional, never stops Enter); '
+        'messages.en.json board.enter.g.required / board.enter.g.optional.'),
 
- dict(kicker='Step 2 · Start a task', title='Say what you want done',
-  text=[
-   'A **task** is one piece of work kept as a folder.',
-   ('steps', ['Press **New task**.',
-              'Give a **Name** and a **Kind** (**development** for a code change or bug fix).',
-              'Under **What to do**: what, in which repository (one set up in **Get ready**), and when it is done.',
-              'Press **Create and send**. The agent opens the task in a Copilot chat.']),
+ dict(steps=[
+   dict(pic=(B + 'lobby.png', (80, 480, 1900, 1020)),
+        text='The **board**: every task, and what waits for you. **Lobby** shows tasks as robots.'),
+   dict(pic=(B + 'list.png', (24, 720, 1877, 1270)),
+        text='**List** shows a table. The **Do** column has the button for your next move.'),
   ],
-  pic='source/start-here/img/new-task.png',
-  caption='From 1.7.43; 1.7.45 may add a Context window field.',
-  notes='Sources: messages.en.json board.new.* (New task, Name, Kind, What to do, Create and send, Ask me first); '
-        'chatnew.py first_message (name and kind given, the agent does not ask for them); web/chat.js L261-306; '
-        'tasklife.py L33-69 (name rules); task.kind.dev; docs/03-configure.md L11 (Code repositories in Get ready); docs/01-quickstart.md step 7.'),
+  notes='Sources: messages.en.json board.col.*, board.offwork, board.onwork; tasklife.py L856-870 (tasks waiting for you first).'),
 
- dict(kicker='Step 3 · Answer its questions', title='Answer what the agent asks',
-  text=[
-   'The agent asks what is not clear, often with numbered options: answer with the numbers. **Ask me first** in New task makes it ask before it starts.',
-   'When it stops, the board says **waits for you**; the **Live** tab shows its last words. Press **Answer...**: your reply goes to its chat in VS Code.',
-   ('small', 'Or reply in the chat itself.'),
+ # ---- Start a task ------------------------------------------------------------------------------------------
+ dict(group='Start a task', steps=[
+   dict(pic=(B + 'lobby.png', (1700, 20, 2200, 130)),
+        text='Press **New task**.'),
+   dict(pic=(B + 'new-task.png', (32, 105, 1066, 250)),
+        text='Give a **Name**. As **Kind**, pick **development** for a code change or bug fix.'),
+   dict(pic=(B + 'new-task.png', (32, 940, 1066, 1240)),
+        text='**What to do**: what, in which repository (one set up in **Get ready**), when done.'),
   ],
-  pic=A + 'talk-live.png',
-  caption='The Live tab of a task that waits for you.',
-  notes='Sources: .github/skills/harness-my-task/SKILL.md step 2; messages.en.json board.new.grill, task.waiting.stopped, '
-        'task.waiting.question, board.action.answer, desk.reply.pill, desk.hint.answer; web/chat.js L306 (Ask me first adds generic-grill-me).'),
+  notes='Sources: messages.en.json board.new.* (New task, Name, Kind, What to do, Ask me first, Create and send), task.kind.dev; '
+        'web/chat.js L261-306 (Ask me first adds generic-grill-me); docs/03-configure.md L11 (Code repositories in Get ready); tasklife.py L33-69 (name rules).'),
 
- dict(kicker='Step 4 · Give it the documents', title='Put the requirement documents on Intake',
-  text=[
-   'Came as documents? Open the task’s **Intake** tab and drop the files.',
-   'A program turns them into Markdown and CSV, with no AI. Read its report of what was left out; trim what the agent does not need.',
-   'Press **Create INTAKE.md**, then **Copy message** under **Tell the agent**, and paste it into the chat.',
+ dict(steps=[
+   dict(pic=(B + 'new-task.png', (32, 1435, 1066, 1515)),
+        text='Tick **Ask me first** to have the agent ask what is unclear before it starts.'),
+   dict(pic=(B + 'new-task.png', (1098, 113, 2126, 817)),
+        text='On the right: the first message the board will send.'),
+   dict(pic=(B + 'new-task.png', (20, 1655, 700, 1765)),
+        text='Press **Create and send**.'),
+   dict(shot='VS Code: the new Copilot chat the board made, with the agent opening the task (harness task new)', aspect=16/10,
+        text='A Copilot chat opens in VS Code, and the agent opens the **task**: a folder that outlives the chat.'),
   ],
-  pic=(A + 'task-intake.png', (40, 395, 990, 1560)),
-  caption='The Intake tab. A Q&A task has no Intake tab.',
-  notes='Sources: docs/09-intake.md; intake.py L1-10; taskdesk.py intake_view L509-516 (only an open task with REQ.md); '
-        'messages.en.json desk.intake.*, desk.go.copy; guide 21-start-a-task.md Step 3.'),
+  notes='Sources: chatnew.py first_message (name and kind given; the agent does not ask for them); messages.en.json board.new.first, board.new.go; core/tasks.py L1-8.'),
 
- dict(kicker='Step 5 · Confirm the requirement', title='Check that it understood you',
-  text=[
-   'The agent writes the **requirement** (`REQ.md`): what to do and not, when it is done, what is unclear.',
-   'Open **Requirement**: is each item what you meant? If not, tell the agent. If so, press **Confirm requirement**: a window shows the file and a six-character code. Type it.',
-   ('small', 'Needed on development, testing, knowledge base, and tasks raised to change a repository.'),
+ # ---- Give the requirement ----------------------------------------------------------------------------------
+ dict(group='Give the requirement', steps=[
+   dict(pic=(B + 'live-waiting.png', (277, 1095, 1983, 1673)),
+        text='The agent asks what is unclear. Press **Answer...** and pick an option or type.'),
+   dict(shot='VS Code: the Copilot chat with the agent’s numbered questions and a typed answer', aspect=16/10,
+        text='Or answer in the chat in VS Code.'),
+   dict(pic=(B + 'intake.png', (44, 520, 2172, 676)),
+        text='Requirement came as documents? Open the task’s **Intake** tab.'),
   ],
-  shot='A development task page, tab Requirement open, with the Confirm requirement button at the top',
-  notes='Sources: messages.en.json board.action.confirm-req, desk.hint.confirm-req, req.changed, desk.tab.bang.unfinished; '
-        'task.py L570-612; tasklife.py L310-315 (full tier waits); SKILL.md Gotchas (only full tier stands on a confirmed requirement); '
-        'templates/task/en/REQ.md; req.screen.file, approval.ask (the window shows the file and the code); approval.py CODE_LENGTH 6.'),
+  notes='Sources: SKILL.md harness-my-task step 2 (numbered options); messages.en.json task.waiting.asking, task.waiting.question, board.action.question, desk.hint.question.'),
 
- dict(kicker='Step 6 · Approve the plan', title='Read the plan, then approve it',
-  text=[
-   'The agent writes a **plan**, then stops: **the plan waits for your approval**. Open **Plan**. Look at which files change, the steps, how it will check the result, and the risks.',
-   'To change it, tell the agent. If you agree, press **Approve plan** and type the code. If the requirement is not confirmed yet, the same code confirms it too.',
+ dict(steps=[
+   dict(pic=(B + 'intake.png', (78, 835, 2139, 1150)),
+        text='Drop the files, or press **Choose files**. A program converts them, with no AI.'),
+   dict(pic=(B + 'intake-files.png', (66, 280, 1000, 700)),
+        text='Open **Conversion reports** to see what was left out. Click a file to trim it.'),
+   dict(pic=(B + 'intake-files.png', (66, 22, 1385, 294)),
+        text='Press **Create INTAKE.md**: a short goal the agent reads first.'),
+   dict(pic=(B + 'intake-files.png', (66, 814, 2139, 1125)),
+        text='Under **Tell the agent**, press **Copy message** and paste it into the chat.'),
   ],
-  pic=(A + 'task-plan.png', (40, 135, 990, 1090)),
-  caption='The Plan tab, with Approve plan on the card at the top.',
-  notes='Sources: messages.en.json task.waiting.plan, desk.hint.approve-plan, plan.question, approval.ask; '
-        'task.py L428-475 (--with-req, one code); docs/01-quickstart.md step 5 points 4-5; approve-dialog.png shows the code window.'),
+  notes='Sources: docs/09-intake.md; intake.py L1-10; desk.intake.tell, desk.intake.message, desk.go.copy; taskdesk.py intake_view L509-516 (an open task with REQ.md: no Intake tab on a Q&A task); messages.en.json desk.intake.*.'),
 
- dict(kicker='Step 7 · Let it work', title='Let it work, and follow it',
-  text=[
-   'Now the agent copies the files it changes into the task folder (`DEV/`) and works there. Its edit tools cannot write your repository; the write-back does.',
-   'Follow it on the **TODO** and **Live** tabs. Press **Say something** to add a word.',
-   ('small', 'If the board says “the plan is approved: tell the agent to go on”, press Send to agent.'),
-  ],
-  pic=(A + 'task-todo.png', (40, 135, 990, 705)),
-  caption='The TODO tab: the steps the agent ticks off.',
-  notes='Sources: docs/01-quickstart.md step 5 points 5-6; gate/handler.py L38-88 (edit tools: DEV/ after the plan, never a target working tree); '
-        'messages.en.json board.action.send, task.waiting.go-plan, desk.hint.steer, desk.reply.pill.'),
 
- dict(kicker='Sometimes · Your run', title='Do the run it hands you',
-  text=[
-   'Some “done when” items need a run you do, such as on DEV, before the write-back. The board says **waits for your run**; the card says what.',
-   'Run it. Under **Give the results here**, paste the **Output**, add screenshots, press **Save and send to the agent**. Until then, checks and the write-back wait.',
-   ('small', 'Or give the result in the chat.'),
+ # ---- Approve -----------------------------------------------------------------------------------------------
+ dict(group='Approve', steps=[
+   dict(pic=(B + 'requirement.png', (66, 1050, 1720, 1673)),
+        text='Open **Requirement** (`REQ.md`). Is each item what you meant? If not, tell the agent.'),
+   dict(pic=(B + 'requirement.png', (80, 300, 1000, 520)),
+        text='Right? Press **Confirm requirement**. Needed on development, testing, knowledge base and repository-changing tasks.'),
+   dict(pic=B + 'approve-code.png',
+        text='A window shows the file and a six-character code. Type the code, press **Approve**.'),
   ],
-  shot='A task page that says waits for your run: the card with what to run, and the Give the results here form below it',
-  notes='Sources: messages.en.json task.waiting.run, desk.wait.run(.form), desk.inbox.* (Give the results here, Output, What you ran, Add pictures, '
-        'Save and send to the agent / Save to the task when no chat is linked), review.runs_marked, task.handoff.next.run; '
-        'docs/02-features.md L102-103 ([R...] items); taskreview.py L320-373 (no check starts until the run is back; the harness marks the handoff itself); '
-        'web/desk.js L905-915, L960-990 (the form on the card, INBOX/<env>/).'),
+  notes='Sources: messages.en.json board.action.confirm-req, desk.hint.confirm-req, req.screen.*, req.question, approval.ask; approval.py CODE_LENGTH 6; '
+        'taskdesk.py L533-535 (waits on every full-tier task: dev, test, kb, and a task raised to change a repository); task.py L570-612.'),
 
- dict(kicker='Step 8 · Read the checks', title='Read the check results',
-  text=[
-   'Only when you asked: press **Independent review** on the task page and pick 1, or write `[review]=1`. A separate reviewer checks the work.',
-   'The **Review** tab lists each check, PASS or FAIL, and what it found. The agent fixes a FAIL; the write-back waits for enough passes.',
-   ('small', 'Checks used up? You decide: More checks or Waive checks (deck 3).'),
+ dict(steps=[
+   dict(pic=(B + 'plan.png', (66, 764, 1150, 1884)),
+        text='Open **Plan**: the files that change, the steps, how it is checked, the risks.'),
+   dict(pic=(B + 'plan.png', (80, 300, 1000, 520)),
+        text='Agree? Press **Approve plan** and type its code. Not yet? Tell the agent.'),
+   dict(shot='A task page whose state reads “the plan is approved: tell the agent to go on”, with the Send to agent button', aspect=16/5,
+        text='The board says “the plan is approved: tell the agent to go on”? Press **Send to agent**.'),
   ],
-  pic=(A + 'task-review.png', (40, 300, 990, 1380)),
-  caption='This task asked for 2: one FAIL, then two passes.',
-  notes='Sources: docs/01-quickstart.md step 3 and step 5 point 7; messages.en.json desk.rv.button, desk.rv.hint, desk.tab.review; '
-        'task.py L911-928 and taskreview.py L563-568 (dry run needs the passes); SKILL.md (checks on only when the user sets them).'),
+  notes='Sources: messages.en.json task.waiting.plan, desk.hint.approve-plan, plan.question, task.waiting.go-plan, board.action.send; '
+        'task.py L428-475 (--with-req: one code confirms the requirement too); docs/01-quickstart.md step 5 points 4-5.'),
 
- dict(kicker='Step 9 · Approve the write-back', title='Read the changes, then approve the write-back',
-  text=[
-   'The **write-back** (the board says promote) puts the changed files into your repository. The agent first runs a dry run; then **the promote (write-back repo) waits for your approval**.',
-   'Open **Changes** and read every file’s diff: it is exactly what goes in. If you agree, press **Approve promote** and type the code.',
+ # ---- Follow the work ---------------------------------------------------------------------------------------
+ dict(group='Follow the work', steps=[
+   dict(pic=(B + 'todo.png', (60, 420, 1250, 1010)),
+        text='Now it works on copies in the task folder. **TODO** shows the steps it ticks off.'),
+   dict(pic=(B + 'live-waiting.png', (222, 399, 1983, 1064)),
+        text='**Live** shows what it does now. Its edit tools cannot write your repository.'),
   ],
-  pic=(A + 'task-changes.png', (40, 135, 990, 740)),
-  caption='The Changes tab, side by side.',
-  notes='Sources: messages.en.json task.waiting.promote, desk.hint.approve-promote, promote.question, promote.screen.repo; '
-        'task.py L941-944, L984-1024; docs/01-quickstart.md step 5 point 8.'),
+  notes='Sources: docs/01-quickstart.md step 5 point 6; gate/handler.py L38-88 (edit tools: DEV/ after the plan, never a target working tree); messages.en.json desk.tab.todo, desk.tab.live.'),
 
- dict(kicker='Step 10 · Commit', title='Commit the branch yourself',
-  text=[
-   'The files land on a new branch named after the task, such as `feature/fix_login_timeout`, uncommitted. Once the agent stops, the board closes the task by itself: closed does not mean committed.',
-   'Find it under **Closed**, open **Changes**, and press **Copy commit message** or **Copy commands**. Commit, push and open the PR yourself.',
+ dict(steps=[
+   dict(pic=(B + 'run.png', (73, 299, 2144, 483)),
+        text='**waits for your run**: some checks need a run you do, such as on DEV.'),
+   dict(pic=(B + 'run.png', (73, 1429, 2144, 2425)),
+        text='Run it. Paste the **Output**, add pictures, press **Save and send to the agent** (no chat: **Save to the task**).'),
   ],
-  shot='A closed development task, tab Changes: “Promoted: commit it with this message”, with Copy commit message and Copy commands',
-  notes='Sources: promote_target.py L1-14 (new branch from the base branch, never commits); task.py default_branch L60-72; '
-        'messages.en.json task.waiting.commit, promote.done.person, desk.changes.commit, desk.commit.copy, desk.commit.copy_commands; '
-        'accept.py L184-218 (board closes; QUIET_WAITS includes commit; boardserve.py SWEEP_EVERY 5 s); docs/02-features.md L249. A knowledge base task is different: one commit on its base branch (deck 5).'),
+  notes='Sources: messages.en.json task.waiting.run, desk.wait.run.form, desk.inbox.* (Save and send to the agent; Save to the task when no chat is linked, as in the picture); '
+        'docs/02-features.md L102-103; taskreview.py L320-373 (no check or write-back until the run is back).'),
 
- dict(kicker='Another ending', title='A task that changes no repository: Accept and close',
-  text=[
-   'A question, an RCA, a design or a test ends with a short summary from the agent. The board then says **to accept**.',
-   'Read **What the agent delivered**, and look where it points. Done: press **Accept and close** (no message, no tokens). Something missing: press **Not yet** and say what.',
+ dict(steps=[
+   dict(pic=(B + 'review.png', (1300, 105, 2200, 200)),
+        text='Want checks? Press **Independent review** and pick 1, or write `[review]=1`.'),
+   dict(pic=(B + 'review.png', (74, 716, 1150, 960)),
+        text='A separate reviewer checks the work. **Review** lists each check. This task asked for 2.'),
+   dict(pic=(B + 'review.png', (74, 2001, 2137, 2446)),
+        text='A FAIL says what to fix; the agent fixes it. Checks used up? See deck 3.'),
   ],
-  shot='A task page that says to accept, with the summary and the Accept and close and Not yet buttons',
-  notes='Sources: SKILL.md step 5; messages.en.json task.waiting.accept, desk.accept.summary, board.action.accept, desk.accept.hint, desk.accept.not_yet; '
-        'accept.py L45-68, L167-181.'),
+  notes='Sources: docs/01-quickstart.md step 3 and step 5 point 7; docs/02-features.md (limit n + 2); messages.en.json desk.rv.button, desk.rv.hint, desk.tab.review, '
+        'task.waiting.review, board.action.review-extend, board.action.review-waive; task.py L911-928.'),
 
- dict(kicker='The next day', title='Pick the task up again',
-  text=[
-   'The work lives in the task folder. Leaving? **Off work** pauses the tasks not at work, so the night is not counted; **Back to work** takes them back.',
-   'Chat gone? Press **Go on in a new chat** on the task page, or say `Go on with <task name>` in a new chat. Words only in the old chat are lost.',
+ # ---- Finish ------------------------------------------------------------------------------------------------
+ dict(group='Finish', steps=[
+   dict(pic=(B + 'changes-promote.png', (66, 720, 2144, 1518)),
+        text='**the promote (write-back repo) waits**: read every diff on **Changes**. It is exactly what goes in.'),
+   dict(pic=(B + 'changes-promote.png', (72, 299, 2144, 576)),
+        text='Press **Approve promote** and type the code. The files go on a new branch, uncommitted.'),
   ],
-  pic=(A + 'board.png', (0, 0, 1130, 560)),
-  caption='The Lobby, with Off work and Back to work.',
-  notes='Sources: messages.en.json board.offwork(.hint), board.onwork(.hint), board.go.new, desk.newchat.go, desk.newchat.tip; '
-        'web/desk.js L405-435 (offered when no chat is linked, or from the Context card when the chat is idle); '
-        'handler.py L124-137; SKILL.md step 1-3 (task open).'),
+  notes='Sources: messages.en.json task.waiting.promote, desk.hint.approve-promote, promote.question, promote.screen.repo; promote_target.py L1-14; task.py L941-944, L984-1024.'),
+
+ dict(steps=[
+   dict(pic=(B + 'list.png', (24, 2030, 1600, 2145)),
+        text='Once the agent stops, the board closes the task. Closed does not mean committed.'),
+   dict(pic=B + 'commit-message.png',
+        text='Open it under **Closed**, tab **Changes**: **Copy commit message**. Commit, push, open the PR yourself.'),
+  ],
+  notes='Sources: accept.py L186 QUIET_WAITS ("", "stopped", "commit"), L189-218; boardserve.py SWEEP_EVERY 5 s; docs/02-features.md L249; '
+        'messages.en.json desk.changes.commit, desk.commit.copy, desk.commit.copy_commands; task.py default_branch L60-72 (feature/<name>, - becomes _).'),
+
+ dict(steps=[
+   dict(pic=(B + 'accept.png', (72, 299, 2144, 650)),
+        text='A task that changes no repository ends with a summary: **to accept**. Read it.'),
+   dict(pic=(B + 'accept.png', (72, 640, 1000, 754)),
+        text='Done: **Accept and close**. Something missing: **Not yet**, and say what.'),
+  ],
+  notes='Sources: SKILL.md harness-my-task step 5; messages.en.json task.waiting.accept, desk.accept.*, board.action.accept; accept.py L45-68, L167-181.'),
+
+ # ---- Next day ----------------------------------------------------------------------------------------------
+ dict(group='Next day', steps=[
+   dict(pic=(B + 'list.png', (1431, 30, 2352, 120)),
+        text='Leaving? **Off work** pauses idle tasks. **Back to work** takes them back.'),
+   dict(pic=(B + 'go-on-new-chat.png', (72, 260, 2144, 488)),
+        text='Chat gone? **Go on in a new chat**. Words only in the old chat are lost.'),
+   dict(shot='VS Code: a new Copilot chat with “Go on with add-gift-wrap” typed in the chat box', aspect=16/10,
+        text='Or in a new Copilot chat, type `Go on with <task name>`.'),
+  ],
+  notes='Sources: messages.en.json board.offwork(.hint), board.onwork(.hint), board.go.new, desk.newchat.tip, desk.hint.newchat; '
+        'web/desk.js L405-435; handler.py L124-137; SKILL.md steps 1-3 (task open).'),
 ]
 
 CLOSING = dict(title='That is the day',
