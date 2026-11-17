@@ -421,6 +421,80 @@ Object.assign(SCREENS, {
     await sleep(2500);
     return region(page, { top: 0, x: 100, right: 1180 });
   }],
+  'tour-dock-full': ['The round buttons at the bottom right: the house (Back to the Enter screen), the gear (setup), the book (knowledge base), ?, the sliders (settings)', async (page) => {
+    await board(page);
+    const home = await box(page, page.locator('.dock-home'));
+    const gear = await box(page, page.locator('.sh-gear'));
+    return { x: home.x - 24, y: home.y - 24, width: Math.max(home.width, gear.width) + 48, height: gear.bottom + 24 - (home.y - 24) };
+  }],
+  'tour-lobby-left-alone': ['The Lobby with a task Left alone: tidy-readme, whose chat went on to another task (no session holds it)', async (page) => {
+    await board(page);
+    return region(page, { from: page.getByText(/^At work/).first(), to: page.getByText('tidy-readme').first(), pad: 16 });
+  }],
+  'tour-readybar-yellow': ['After Enter, the yellow block: Not fully ready for your company’s tasks (here: no knowledge base), with the button that mends it and Hide', async (page) => {
+    demo('kb', 'off');
+    try {
+      await board(page);
+      const bar = page.locator('.rd-bar.rd-yellow').first();
+      for (let i = 0; i < 30 && !(await bar.isVisible().catch(() => false)); i++) { await sleep(1000); if (i % 6 === 5) await page.reload(); }
+      await sleep(1000);
+      return region(page, { top: 0, to: bar, pad: 14 });
+    } finally {
+      demo('kb', 'on');
+    }
+  }],
+  'tour-readybar-red': ['After Enter, the red block: The agent cannot work right now (here: VS Code without this copy’s settings, the demo pack on), with its button; the yellow block folds under it', async (page) => {
+    demo('pack', 'on');
+    try {
+      await board(page);
+      const bar = page.locator('.rd-bar.rd-red').first();
+      for (let i = 0; i < 40 && !(await bar.isVisible().catch(() => false)); i++) { await sleep(1000); if (i % 6 === 5) await page.reload(); }
+      await sleep(1500);
+      const last = page.locator('.rd-bar').last();
+      return region(page, { top: 0, to: last, pad: 14 });
+    } finally {
+      demo('pack', 'off');
+    }
+  }],
+  'tour-new-task-fields': ['New task, the lower half: What to do, attach files, Model, Thinking, Context window, reply language, Ask me first (nothing is sent)', async (page) => {
+    await page.setViewportSize({ width: WIDTH, height: 1060 });
+    const dialog = await fillNewTask(page, 'show-delivery-date', 'Show the expected delivery date in the order confirmation of orders-service. Done when the confirmation has delivery_date, three working days after the order.');
+    const model = dialog.locator('.new-model select');  // a model of the list: its context windows come with it (nothing is sent)
+    const options = await model.locator('option').evaluateAll((items) => items.map((item) => item.value));
+    for (const value of options.filter(Boolean)) {
+      await model.selectOption(value);
+      await sleep(400);
+      if (await dialog.locator('.new-context').isVisible()) break;
+    }
+    await sleep(500);
+    const what = await box(page, dialog.getByText('What to do', { exact: true }).first());
+    const grill = await box(page, dialog.locator('.new-grill'));
+    const form = await box(page, dialog.locator('.new-form'));
+    return { x: form.x - 14, y: what.y - 14, width: form.width + 28, height: grill.bottom + 4 - (what.y - 14), after: escape(page) };
+  }],
+  'tour-files-edit': ['Files with PLAN.md open for editing: the edit box, Save, Close, and the note that saving PLAN.md changes the plan (closed without saving)', async (page) => {
+    await page.setViewportSize({ width: WIDTH, height: 1100 });
+    await task(page, 'add-order-notes', 'files');
+    await page.locator('button', { hasText: /^PLAN\.md/ }).first().click();
+    await sleep(1200);
+    await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
+    await sleep(1200);
+    return { ...(await region(page, { top: 0, to: page.locator('textarea').first(), pad: 60 })), after: async () => {
+      await page.getByRole('button', { name: 'Close', exact: true }).first().click().catch(() => {});
+      await sleep(600);
+      if (await page.locator('.shade .dialog').count()) await page.keyboard.press('Escape');  // a question about unsaved words: not saved
+    } };
+  }],
+  'tour-run-block': ['A shell code block in a task file (RCA.md): Copy, Ask agent, ▶ Run', async (page) => {
+    await task(page, 'why-orders-slow', 'rca');
+    const block = page.locator('.code-box', { hasText: 'stock-service.log' }).first();
+    return region(page, { from: page.getByRole('heading', { name: 'Check it yourself' }).first(), to: block, pad: 20 });
+  }],
+  'tour-run-dialog': ['▶ Run on that block: Run this command yourself?, the command, The gate does not check this…, Run now (cancelled here, never run)', async (page) => {
+    await task(page, 'why-orders-slow', 'rca');
+    await page.locator('.code-box', { hasText: 'stock-service.log' }).first().locator('.run-go').click();
+    return { ...(await dialogBox(page)), after: async () => { await page.locator('.shade .dialog').getByRole('button', { name: 'Cancel' }).click(); await sleep(400); } };
+  }],
   // the task page
   'tour-task-head': ['The head of a task page: back, name, state, the stage strip, the checks, VS Code, …; the time, Independent review, VS Code linked, Paired, Link a ticket', async (page) => {
     await task(page, 'validate-sku-format');

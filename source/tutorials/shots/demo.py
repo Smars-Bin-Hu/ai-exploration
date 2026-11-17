@@ -4,6 +4,7 @@
   python3 source/tutorials/shots/demo.py build [--fresh]   unpack 1.7.45 (git archive of ~/Developer/DE-agentic-harness), make repos/orders-service and the tasks
   python3 source/tutorials/shots/demo.py extra             add the states of the tour and tutorials 2 to 5 to a workspace built before (build does it too)
   python3 source/tutorials/shots/demo.py pack on|off       the demo tool pack and its connection on or off (capture.mjs turns it on for the outside screens)
+  python3 source/tutorials/shots/demo.py kb on|off         the knowledge base registered or not (capture.mjs turns it off for a moment, for the yellow block)
   python3 source/tutorials/shots/demo.py hold              the held outside call of answer-ticket-t7 made again (it lives 10 minutes; the pack must be on)
   python3 source/tutorials/shots/demo.py start             start its board on 127.0.0.1:8845 in the background (`harness task board`, in a pseudo terminal)
   python3 source/tutorials/shots/demo.py pair              a new pairing link for a board that runs (a second `harness task board`, as a person would start it)
@@ -1067,6 +1068,42 @@ def pack(on):
     run([sys.executable, ".harness/engine/cli.py", "company", "sync"])
 
 
+def left_alone():
+    """A task no session holds: its chat opened another task after it (the Lobby's Left alone)."""
+    session = new_task(30, "tidy-readme", "other", "Tidy the README of orders-service: one line per module.")
+    new_task(30, "list-endpoints", "qa", "Which endpoints does orders-service have?")  # the same chat picks up another task: tidy-readme is left
+    stop(session)
+
+
+RUN_BLOCK = """
+## Check it yourself
+
+The answer times of the stock service on Monday morning, from its log:
+
+```bash
+grep "GET /stock" stock-service.log | awk '$2 >= "09:00" && $2 < "10:00" {print $NF}' | sort -n | tail -5
+```
+"""
+
+
+def run_block():
+    """A shell code block in a delivered file: the task page gives it Ask agent and Run (the person's own run)."""
+    path = TASKS / "why-orders-slow" / "RCA.md"
+    if "Check it yourself" not in path.read_text(encoding="utf-8"):
+        path.write_text(path.read_text(encoding="utf-8").rstrip() + "\n" + RUN_BLOCK, encoding="utf-8")
+
+
+def kb_registered(on):
+    """The knowledge base registered as a target repository, or not (for a moment: the board's yellow block says there is none)."""
+    policy = H / ".harness/policies/target.override.json"
+    data = json.loads(policy.read_text())
+    if on:
+        data["repos"]["kb"] = {"path": "knowledge-base", "knowledge_base": True}
+    else:
+        data["repos"].pop("kb", None)
+    policy.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
 def extra():
     if not KB.exists():
         make_kb()
@@ -1077,6 +1114,9 @@ def extra():
                        ("answer-ticket-t7", outside_task), ("test-sku-check", test_and_design_tasks)):
         if not (TASKS / name).exists():
             make()
+    if not (TASKS / "tidy-readme").exists():
+        left_alone()
+    run_block()
     pack(False)
     print(f"extra states made in {H}")
 
@@ -1150,6 +1190,8 @@ if __name__ == "__main__":
         extra()
     elif what == "pack" and len(sys.argv) > 2 and sys.argv[2] in ("on", "off"):
         pack(sys.argv[2] == "on")
+    elif what == "kb" and len(sys.argv) > 2 and sys.argv[2] in ("on", "off"):
+        kb_registered(sys.argv[2] == "on")
     elif what == "hold":
         hold()
     elif what == "start":
