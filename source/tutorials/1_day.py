@@ -24,18 +24,17 @@ PAGES = [
 
  dict(kicker='Step 2 · Start a task', title='Say what you want done',
   text=[
-   'A **task** is one piece of work kept as a folder, so it outlives any chat.',
+   'A **task** is one piece of work kept as a folder.',
    ('steps', ['Press **New task**.',
-              'Give a **Name** and a **Kind**.',
-              'Under **What to do**: what, in which repository, and what “done” means.',
-              'Press **Create and send**. A Copilot chat opens in VS Code; the agent opens the task.']),
-   ('small', 'Or just ask in a Copilot chat.'),
+              'Give a **Name** and a **Kind** (**development** for a code change or bug fix).',
+              'Under **What to do**: what, in which repository (one set up in **Get ready**), and when it is done.',
+              'Press **Create and send**. The agent opens the task in a Copilot chat.']),
   ],
   pic='source/start-here/img/new-task.png',
   caption='From 1.7.43; 1.7.45 may add a Context window field.',
   notes='Sources: messages.en.json board.new.* (New task, Name, Kind, What to do, Create and send, Ask me first); '
         'chatnew.py first_message (name and kind given, the agent does not ask for them); web/chat.js L261-306; '
-        'tasklife.py L33-69 (name rules); docs/01-quickstart.md step 7.'),
+        'tasklife.py L33-69 (name rules); task.kind.dev; docs/03-configure.md L11 (Code repositories in Get ready); docs/01-quickstart.md step 7.'),
 
  dict(kicker='Step 3 · Answer its questions', title='Answer what the agent asks',
   text=[
@@ -62,13 +61,13 @@ PAGES = [
  dict(kicker='Step 5 · Confirm the requirement', title='Check that it understood you',
   text=[
    'The agent writes the **requirement** (`REQ.md`): what to do and not, when it is done, what is unclear.',
-   'Open **Requirement**: is each item what you meant, nothing added? If not, tell the agent. If so, press **Confirm requirement** and type the code.',
-   ('small', 'Needed on development, testing and knowledge base tasks, and on tasks raised to change a repository.'),
+   'Open **Requirement**: is each item what you meant? If not, tell the agent. If so, press **Confirm requirement**: a window shows the file and a six-character code. Type it.',
+   ('small', 'Needed on development, testing, knowledge base, and tasks raised to change a repository.'),
   ],
   shot='A development task page, tab Requirement open, with the Confirm requirement button at the top',
   notes='Sources: messages.en.json board.action.confirm-req, desk.hint.confirm-req, req.changed, desk.tab.bang.unfinished; '
         'task.py L570-612; tasklife.py L310-315 (full tier waits); SKILL.md Gotchas (only full tier stands on a confirmed requirement); '
-        'templates/task/en/REQ.md.'),
+        'templates/task/en/REQ.md; req.screen.file, approval.ask (the window shows the file and the code); approval.py CODE_LENGTH 6.'),
 
  dict(kicker='Step 6 · Approve the plan', title='Read the plan, then approve it',
   text=[
