@@ -123,7 +123,7 @@ The reason a task waits is told from facts, in order of how much it blocks {src:
 - the agent stopped: the Stop hook marks the task "waits for you" when the agent ends its turn, and your next message takes the mark away {src:.harness/engine/modules/task/handler.py#L398-L411} {src:.harness/engine/modules/task/handler.py#L210-L211}.
 - you cancelled the agent's turn in VS Code: "cancelled, waits for you" {src:.harness/engine/core/messages.en.json#L131}.
 
-The task page shows the reason at the top with a button for the answer; the file 21 Start a task and give it the requirement shows it on screen.
+The task page shows the reason at the top with a button for the answer; the harness tutorials "1 A day with the harness" and "2 When the agent is stopped", in the OneDrive folder `3 Courses/Harness tutorials/`, show it on screen.
 
 ## Task: what is enforced by code, and what is not
 
@@ -174,7 +174,7 @@ Left to a person: confirming the requirement, approving the plan and the write-b
 ## Task: related files
 
 - The whole harness, its parts and its safety guarantees: the file 00 Harness at a glance.
-- How a person starts a task, gives the requirement documents and reads the board: the file 21 Start a task and give it the requirement.
+- How a person starts a task, gives the requirement documents and reads the board: the harness tutorial "1 A day with the harness", in the OneDrive folder `3 Courses/Harness tutorials/`.
 
 Code map, under `.harness/engine/` {src:.harness/engine/modules/task/tasklife.py#L1-L13}:
 

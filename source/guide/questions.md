@@ -1,172 +1,233 @@
 # Harness Guide: questions the agent must answer
 
-The test for the Harness Guide agent. Each question has the key points a right answer must contain, the file it should cite and the course it should link. Answers are graded against these. This file is **not** a knowledge source of the agent: it stays outside `AI Exploration/2 Ask the Harness Guide/Knowledge/`.
+The test for the Harness Guide agent. Each question has the key points a right answer must contain, the Guide section it should cite and the course or tutorial it should name. Answers are graded against these. This file is **not** a knowledge source of the agent: it stays outside `AI Exploration/2 Ask the Harness Guide/Knowledge/`.
 
-- **Grain:** `broad` (the whole design, or how to use it at all) or `detail` (one mechanism or one step).
-- **Type:** `use` (how do I…), `how` (how does it work, why this way), `safety` (can it go wrong, can it be bypassed). The person signs off the expected answers of every `safety` question.
-- **Files:** `at-a-glance` = Harness at a glance; `task` = Task; `start-task` = Start a task and give it the requirement.
+The Guide helps people understand the harness; it is not a tutorial. Its questions come in four layers, from shallow to deep, plus two kinds of test:
+
+- **Layer 1 · the harness:** what it is, what problem it solves.
+- **Layer 2 · features:** its common features (task, board, approvals).
+- **Layer 3 · design:** how it is designed and built, and where in the source.
+- **Layer 4 · ideas:** the harness engineering knowledge behind it; the answer links the course on smarshu.com that teaches it.
+- **How-to:** "how do I…". The right answer is short (a few sentences from the Guide), then names the harness tutorial that teaches it step by step, in `AI Exploration/3 Courses/Harness tutorials/`. The tutorial names are the working names of GOAL.md (not confirmed): when they change, change them here and in `AGENT.md`.
+- **Not covered:** the right answer says "The Harness Guide does not cover this yet." and makes nothing up.
+
+How to read each entry:
+
+- **Grain:** `broad` (the whole design) or `detail` (one mechanism).
+- **Should cite:** the Guide file and section, as written in the page. The Guide's knowledge is two files: `00 Harness at a glance` (`pages/00-at-a-glance.md`) and `11 Task` (`pages/11-task.md`). Every question here is answerable from these two. `21 Start a task and give it the requirement` is not knowledge any more: an answer that cites it, or sends the reader to it, is wrong.
+- **Course:** the link written in the front matter of the cited page (the PDF lists it under "courses to learn more"), exactly as written. A how-to answer names the tutorial instead.
+- **Key points:** each with its code location in the harness at tag `1.7.45`, checked against the 1.7.45 copy. The code locations are for the grader: a right answer gives the Guide's own links for what it says; it need not repeat every location listed here.
+- **Wrong if:** what makes an otherwise good answer wrong.
+- Every answer must come from the Guide only. An answer that uses the asker's own work (their repository, mail, chats, files) to make an example is wrong, whatever else it gets right.
+- The person signs off the expected answers of the questions about guarantees: Q3, Q8, Q9, Q10.
+
+The 15 questions of the first pilot (P1–P15) and their expected answers are in git (commit 74cab51); they were written for the old goal and are not used any more.
 
 ## Pilot (15)
 
-| # | Question | Grain | Type | Should cite |
+| # | Question | Layer | Grain | Should cite |
 |---|---|---|---|---|
-| P1 | What is this harness, and what does it do? | broad | how | at-a-glance |
-| P2 | Tell me how to use the harness. | broad | use | at-a-glance, start-task |
-| P3 | What is a task, and how is it different from a chat session? | broad | how | task |
-| P4 | Is it safe to let the agent work on our code? What stops it from going wrong? | broad | safety | at-a-glance |
-| P5 | What does a person still have to do, and what does the agent do alone? | broad | how | at-a-glance |
-| P6 | How do I start a task and give the agent my requirement documents? | detail | use | start-task |
-| P7 | How does a task move from one stage to the next? Is that controlled by a skill or by code? | detail | how | at-a-glance, task |
-| P8 | How are dangerous commands blocked? | detail | safety | at-a-glance |
-| P9 | Can the agent approve its own plan? | detail | safety | task |
-| P10 | What happens if the requirement changes after I approved the plan? | detail | how | task |
-| P11 | I closed VS Code yesterday. Can a new chat continue the same task, and how? | detail | use | task |
-| P12 | Where is a task's record kept, and what is in it? | detail | how | task |
-| P13 | Can the agent write files outside its task folder? | detail | safety | task |
-| P14 | What does "waiting for you" on the board mean, and what should I do? | detail | use | start-task, task |
-| P15 | How is the knowledge base built? | detail | how | none in the pilot: the right answer says the Guide does not cover it yet, and does not make one up |
+| Q1 | What is this harness, and what problem does it solve? | 1 · harness | broad | 00 |
+| Q2 | Where does the harness run, and what does our team have to bring to it? | 1 · harness | broad | 00 |
+| Q3 | Is the harness a sandbox? What does it protect against, and what not? | 1 · harness | broad | 00 |
+| Q4 | What is a task, and how is it different from a chat session? | 2 · features | broad | 11 |
+| Q5 | What kinds of tasks are there, and how does each one end? | 2 · features | detail | 11, 00 |
+| Q6 | What does the board show, and what does "waiting for you" mean? | 2 · features | detail | 11, 00 |
+| Q7 | How does a task move from one stage to the next? Is that controlled by a skill or by code, and where in the code? | 3 · design | detail | 11, 00 |
+| Q8 | How does the gate block dangerous commands, and where are its rules? | 3 · design | detail | 00 |
+| Q9 | How does the approval code work, and why can't the agent approve its own plan? | 3 · design | detail | 11 |
+| Q10 | Why isn't a rule in the prompt or in `AGENTS.md` enough to keep the agent safe? | 4 · ideas | broad | 00 |
+| Q11 | Why does the harness keep the work in tasks instead of in the chat? | 4 · ideas | broad | 11 |
+| Q12 | What is the idea behind the approval gates, and where does a person hold the keys? | 4 · ideas | detail | 00, 11 |
+| Q13 | I maintain a data pipeline repository. How do I start a task and give the agent my requirement documents? | how-to | detail | 00 |
+| Q14 | The agent says my command was refused. How do I get it run? | how-to | detail | 00 |
+| Q15 | How does autorun work? Can a task run on its own overnight? | not covered | detail | none |
 
 ## Expected answers
 
-Written in step 3, with the evidence for each key point, then fact-checked.
+### Q1. What is this harness, and what problem does it solve?
 
-Code locations are in the harness at tag `1.7.41`. "Cite" names the Guide file and section the answer should point to; "Course" the link it should give.
+Layer 1 · broad.
 
-### P1. What is this harness, and what does it do?
+- A set of files and Python code that wraps the GitHub Copilot agent in VS Code so that a team can let it work on real code under rules; the Guide describes version 1.7.45 (`docs/00-overview.md` L159).
+- The problem: rules that are only written for the model ask it, and it can ignore them; the harness makes the rules that must hold into code, and leaves what cannot be taken back to a person (`AGENTS.md` L42-L64; `.harness/engine/modules/task/handler.py` L88-L121).
+- It does three things. A hook checks every tool call of the agent before it runs (`.github/hooks/harness.json` L1-L113; `.harness/engine/hook.py` L1-L15). Work is done in tasks, folders with the requirement, the plan, the results and a state file; opening one is asked of the agent by text, not forced (`.harness/engine/core/tasks.py` L1-L8; `AGENTS.md` L46-L47). A person approves the plan and every write-back to a code repository by typing a code, and confirms the requirement the same way, though that confirmation is a text line the agent can write (`.harness/engine/core/approval.py` L1-L8; `.harness/engine/modules/task/taskreview.py` L88-L110).
+- It is not a sandbox: it guards against an agent's mistakes, not against an agent set on getting round it (`.harness/engine/modules/gate/terminal.py` L1-L5).
 
-- It wraps the GitHub Copilot agent in VS Code: a hook checks every tool call before it runs (`.github/hooks/harness.json`; `.harness/engine/hook.py` L1-L15).
-- Work is done in tasks: a folder under `.workspace/sandbox/tasks/<name>/` with requirement, plan, results and a state file (`.harness/engine/core/tasks.py` L1-L37); opening one is asked of the agent by text, not forced (`AGENTS.md` L46-L47).
-- A person approves the plan and every write-back to a code repository with a typed code (`.harness/engine/core/approval.py` L1-L8, L17-L58); the requirement is confirmed with a code too, but its confirmation is a text line in `REQ.md` the agent can write (`modules/task/taskreview.py` L88-L110).
-- It carries no business knowledge: the team plugs in knowledge base, skills and target repositories (`AGENTS.md` L7-L15). The harness has no remote server: everything of it, the board's local web server included, runs on the person's computer; the model runs in Copilot's service (`docs/00-overview.md` L159; `modules/task/boardserve.py` L8-L9).
-- It is a guardrail, not a sandbox: the gate reads command text (`.harness/engine/modules/gate/terminal.py` L1-L5).
+Should cite: 00 Harness at a glance, "Harness: what it is" and "Harness: the parts and how a piece of work flows through them". Course: The book · 0.1 What is Harness Engineering? (https://smarshu.com/book/read/0-1-the-gap-and-the-map.html).
 
-Cite: 00 Harness at a glance, "Harness: what it is" and "Harness: the parts and how a piece of work flows through them". Course: The book 0.1 What is Harness Engineering? (https://smarshu.com/book/read/0-1-the-gap-and-the-map.html).
+Wrong if: it calls the harness a sandbox or a security boundary; it gives the courses of 11 Task instead of those of 00 (the first pilot's P1 did).
 
-### P2. Tell me how to use the harness.
+### Q2. Where does the harness run, and what does our team have to bring to it?
 
-- Start the board (`Start Harness` or `harness task board`) and use the browser it pairs (`.harness/engine/modules/task/boardserve.py` L1-L17; `core/messages.en.json` L1085-L1087).
-- Say in one sentence what to do and in which repository, in the chat or with **New task**; the agent asks, then opens a task (`.harness/engine/modules/task/chatnew.py` L1-L8; `.github/skills/harness-my-task/SKILL.md` L35-L65).
-- Give documents on the Intake tab and confirm the requirement with **Confirm requirement** and its code (`.harness/engine/modules/task/intake.py` L1-L10; `modules/task/task.py` L570-L612).
-- Approve the plan and the write-back with a code when the board says the task waits for you (`modules/task/task.py` L428-L475, L984-L1024; `modules/task/tasklife.py` L276-L336).
-- Commit the new branch, or press **Accept and close** for a task that changes no repository (`modules/task/accept.py` L1-L11).
+Layer 1 · broad.
 
-Cite: 00 Harness at a glance, "Harness: how a person uses it day to day"; 21 Start a task and give it the requirement, "Start a task: steps". Course: The book 5.1 Manage tasks, not chats (https://smarshu.com/book/read/5-1-tasks.html).
+- The harness has no remote server: everything of it, the board's local web server included, runs on the person's computer; the board answers on 127.0.0.1 only (`docs/00-overview.md` L159; `.harness/engine/modules/task/boardserve.py` L1-L17).
+- The model runs in GitHub Copilot's service, and the agent may call the outside systems the company connects; such a call is judged by what it does, by the company's rules for that system (`.harness/engine/core/systems.py` L37-L38; `.harness/engine/modules/gate/handler.py` L192-L293).
+- The harness carries no business knowledge. The team plugs in its own knowledge base, skills and target repositories, the company code repositories the agent may change, set in `target.override.json` (`AGENTS.md` L13-L14; `.harness/engine/core/targets.py` L3). A company may also bring tool packs, which let the agent call an outside system under the gate's rules (`.harness/toolpacks/README.md` L1-L5).
+- The person brings the decisions: confirming the requirement, approving the plan and the write-back, committing (`.harness/policies/gate.json` L131-L144).
 
-### P3. What is a task, and how is it different from a chat session?
+Should cite: 00 Harness at a glance, "Harness: what it is" and "Harness: terms". Course: The book · 0.1 What is Harness Engineering?
 
-- A task is a folder holding one piece of work and its state `.task/task.json`, written only by harness code (`core/tasks.py` L1-L37; `.harness/policies/gate.json` L24-L34).
-- A session is one Copilot chat; it lives as long as the chat; Copilot compacts it near 80% of its context (`core/copilot_events.py` L1; `.harness/policies/task.json` L3).
-- They point at each other: the session's `active_task`, the task's `session_id`; a session holds at most one task, and opening another leaves the first open (`modules/task/task.py` L140-L218).
-- Any later session can pick the task up from its files; a subagent inherits its parent's task, a subagent or admin session cannot open one (`core/state.py` L252-L303; `modules/task/tasklife.py` L126-L135).
+Wrong if: it says the harness sends code or data to a server of its own; it makes up install or setup steps.
 
-Cite: 11 Task, "Task: what it is" and "Task: how it differs from a chat session". Course: The book 5.1 Manage tasks, not chats.
+### Q3. Is the harness a sandbox? What does it protect against, and what not?
 
-### P4. Is it safe to let the agent work on our code? What stops it from going wrong?
+Layer 1 · broad · guarantees.
 
-- The harness itself writes a target repository only through `task promote`, after the person approved the same plan digest (branch, base commits, sha256 of every file), to a new uncommitted branch; a registered knowledge base gets one commit on its base branch (`modules/task/task.py` L941-L944; `modules/task/promote_target.py` L1-L14, L112-L116). A git command the person approves with `approve-command` can also write there (`modules/gate/handler.py` L132-L141). The agent's edit tools, and terminal commands that name a path there in full or after a `cd` in the same line, are refused; scripts and run-time paths are not seen (`modules/gate/handler.py` L47-L52; `modules/gate/policy.py` L149-L156; `modules/gate/terminal.py` L1-L5, L65-L117).
-- The gate checks every call: guardrail files (except in a chat the person switched to admin mode, where only `.harness/runtime/**`, `admin_locked_paths` and the integrity-list folder `~/.copilot-harness` stay closed, and ending admin mode accepts the files as they are), `.git`, a deny list of dangerous commands, person-only commands; git writes need the person's code when target repositories are set up (`modules/gate/handler.py` L38-L146; `.harness/policies/gate.json` L88-L144; `core/guardrails.py` L21-L61; `integrity.py` L1-L5).
-- Approvals need a person and a typed code bound to a sha256; the agent is refused the commands (`core/approval.py` L17-L58; `gate.json` L131-L137).
-- Once the person has accepted them, the engine, policies, hook files, tool packs and `registry.json` are checked against that list before every call (not in admin mode), and a failing hook refuses commands and writes (`.harness/engine/hook.py` L11-L15, L312-L323, L342-L360; `integrity.py` L18-L26).
-- Limits must be stated: `task allow --conn`/`--links` is not refused by the gate (its pattern lists only the retired `allow --env`), and an opened connection passes writes with no further approval (`gate.json` L136; `modules/task/tasklife.py` L541-L546; `modules/gate/handler.py` L266-L287); the terminal is not confined to the task folder; the folder binds only a chat holding an open task, and only the listed VS Code edit tools; the requirement's confirmation is a text line; after plan approval `task`-marked outside calls and `task allow` connections pass; it is not a sandbox (`modules/gate/handler.py` L64-L118, L266-L287; `modules/task/taskreview.py` L88-L110; `modules/gate/scriptcheck.py` L1-L11).
+- No. The agent runs as the person's own operating system user, and the gate reads the text of a command, so the harness guards against an agent's mistakes, not against an agent set on getting round it (`.harness/engine/modules/gate/terminal.py` L1-L5).
+- What it protects most: the harness writes a target repository only through `task promote`, in the version the person approved (the same plan digest: branch, base commit of each repository, sha256 of every file), to a new branch, never committed; a registered knowledge base gets one commit on its base branch (`.harness/engine/modules/task/task.py` L941-L944; `.harness/engine/modules/task/promote_target.py` L1-L14, L112-L116). A git command the person approves with `approve-command` can also write there (`.harness/engine/modules/gate/handler.py` L132-L141).
+- Also: approvals need a person and a typed code (`.harness/policies/gate.json` L131-L137; `.harness/engine/core/approval.py` L17-L58); guardrail files are refused and checked against the list the person accepted (`.harness/policies/gate.json` L4-L19; `.harness/engine/integrity.py` L18-L26); when the engine cannot decide, commands and writes are refused and reads stay allowed (`.harness/engine/hook.py` L11-L15).
+- What not, at least three of the known limits: the terminal is not confined to the task folder (`.harness/engine/modules/gate/handler.py` L96-L118); a script or a path made at run time is not seen (`.harness/engine/modules/gate/scriptcheck.py` L1-L11); a tool not recorded in `tool_kinds.json` gets no write check (`.harness/engine/adapters/tool_kinds.json` L1-L10; `.harness/engine/modules/gate/handler.py` L719-L734); the ask rules are only Copilot's confirmation, absent under Allow all, which is how **New task** makes a chat (`docs/02-features.md` L50; `.harness/engine/modules/task/chatnew.py` L25-L26); `task allow --conn` is not refused by the gate (`.harness/policies/gate.json` L136; `.harness/engine/modules/task/tasklife.py` L541-L546); admin mode opens the guardrails (`.harness/engine/core/guardrails.py` L21-L23).
 
-Cite: 00 Harness at a glance, "Harness: the main safety guarantees and their exact scope" and "Harness: known limits". Course: Basic 06 · A prompt cannot stop a dangerous action: a harness can (https://smarshu.com/writing/basic-06-prompt-cannot-stop).
+Should cite: 00 Harness at a glance, "Harness: what it is", "Harness: the main safety guarantees and their exact scope" and "Harness: known limits". Course: Basic 06 · A prompt cannot stop a dangerous action: a harness can (https://smarshu.com/writing/basic-06-prompt-cannot-stop).
 
-### P5. What does a person still have to do, and what does the agent do alone?
+Wrong if: it reassures beyond the Guide ("the agent cannot do anything unsafe"); it drops the limits.
 
-- The person: says what they want, confirms the requirement, approves the plan and the write-back, approves git writes and held outside calls, gives more checks or waives them, commits, accepts or closes a task that changes no repository (`gate.json` L131-L144); the board closes a written-back task without waiting for the commit (`modules/task/accept.py` L186-L218).
-- The agent alone: asks, opens the task, writes `REQ.md`, `PLAN.md` and code in the task folder, fetches files, runs the checks, the dry run, and the write-back once approved (`core/tasks.py` L1-L8; `modules/task/task.py` L911-L957).
-- Code enforces the gates between them; text (skills, instructions, hook lines) only asks the agent (`AGENTS.md` L42-L64; `modules/task/handler.py` L88-L121).
-- Closing is the person's: the agent is told never to close a task and the gate refuses `task close` on its command line; the command itself has no person check, so a script is not stopped (`gate.json` L138-L144; `modules/task/commands.py` L123-L133).
+### Q4. What is a task, and how is it different from a chat session?
 
-Cite: 00 Harness at a glance, "Harness: what is enforced by code, what is asked of the model by text, and what is left to a person". Course: The book 5.3 Two gates: where a person approves (https://smarshu.com/book/read/5-3-two-approvals.html).
+Layer 2 · broad.
 
-### P6. How do I start a task and give the agent my requirement documents?
+- A task is one piece of work kept as a folder, `.workspace/sandbox/tasks/<task name>/`, with `TASK.md`, `REQ.md`, `PLAN.md`, the results and the state file `.task/task.json`, written by harness code; the edit tools and a terminal command that names it are refused on it (`.harness/engine/core/tasks.py` L1-L37; `.harness/policies/gate.json` L24-L34).
+- A session is one Copilot chat and lives as long as the chat; Copilot keeps it under `~/.copilot/session-state/<id>/` and compacts it at about 80% of its context (`.harness/engine/core/copilot_events.py` L1; `.harness/policies/task.json` L3).
+- They point at each other: the session's `active_task`, the task's `session_id`. A session holds at most one task; opening another leaves the first open (`.harness/engine/modules/task/task.py` L140-L218).
+- Any later session can pick the task up from its files; a subagent inherits its parent's task; a subagent or an admin session cannot open one (`.harness/engine/core/state.py` L252-L303; `.harness/engine/modules/task/tasklife.py` L126-L135).
 
-- Say what you want in the chat or with **New task**; the agent asks with numbered options, then runs `harness task new <name> --kind <kind>`, which makes the folder with the tier's files (`SKILL.md` L35-L65; `modules/task/tasklife.py` L163-L174, L39-L45).
-- Drop the documents on the task's **Intake** tab (paired browser): the original goes to `REQ/originals/`, the text to `REQ/` as Markdown and CSV, with a report of what was left out; no AI (`modules/task/intake.py` L1-L10; `modules/task/boardserve.py` L2023-L2026).
-- Trim, **Create INTAKE.md**, send the **Tell the agent** message; terminal equivalents `harness task intake convert/paste/init` (`core/messages.en.json` L1315-L1316, L1356-L1357; `modules/task/commands.py` L318-L336).
-- Read `REQ.md` on **Requirement** and press **Confirm requirement**, typing the code (`modules/task/task.py` L570-L612).
+Should cite: 11 Task, "Task: what it is" and "Task: how it differs from a chat session". Course: The book · 5.1 Manage tasks, not chats (https://smarshu.com/book/read/5-1-tasks.html).
 
-Cite: 21 Start a task and give it the requirement, "Start a task: steps". Course: The book 5.2 The agent writes the requirement, the person confirms it (https://smarshu.com/book/read/5-2-requirements.html).
+### Q5. What kinds of tasks are there, and how does each one end?
 
-### P7. How does a task move from one stage to the next? Is that controlled by a skill or by code?
+Layer 2 · detail.
 
-- Both: the skill `harness-my-task` and the hook's next-step text tell the agent the order; code holds the gates (`SKILL.md` L73-L97; `core/messages.en.json` L14-L15).
-- The stage is derived each time from files and state, not stored or set by the agent (`modules/task/taskstages.py` L1-L15, L56-L67).
-- Gates in code: plan refused while the "User confirmed" line of `REQ.md` is not filled in (a text line the agent can write; no `REQ.md` or no line is not checked) (`modules/task/task.py` L443-L451, L551-L567; `modules/task/taskreview.py` L88-L110); for the chat that holds the task, `DEV/` closed to edit tools until the plan is approved, a chat with no task is not bound, and the write-back approval still covers what reaches a repository (`modules/gate/handler.py` L64-L84); dry run needs an approved plan and enough review passes, promote the approval of the same digest (`modules/task/task.py` L911-L944; `modules/task/taskreview.py` L563-L568).
-- A person holds the keys at each gate; the agent cannot close (`gate.json` L131-L144).
+- Kinds: `qa`, `rca`, `design`, `dev`, `test`, `kb`, `other`; the kind says what "done" means. Tiers `light`, `medium`, `full` say which files the folder has; `qa` is light, `rca`, `design` and `other` medium, `dev`, `test` and `kb` full (`.harness/engine/core/tasks.py` L19-L23; `.harness/engine/modules/task/tasklife.py` L39-L45).
+- A task that changes a repository (`dev`, `kb`): requirement confirmed, plan approved, code in `DEV/`, write-back approved, files written to a new branch of each target repository without a commit (a registered knowledge base: one commit on its base branch). The board closes the task once the agent has stopped and nothing else waits, without waiting for the commit; the person commits the branch (`.harness/engine/modules/task/task.py` L984-L1024; `.harness/engine/modules/task/promote_target.py` L1-L14; `.harness/engine/modules/task/accept.py` L184-L218).
+- A task whose result stays in the folder (analysis, design, test, question): the result is written there (an analysis or design at the root, test results in `TEST/`, a Q&A answer in `TASK.md`), the agent delivers it with a summary (`task deliver`), and the person presses **Accept and close** (`.harness/engine/modules/task/accept.py` L1-L11, L45-L68, L167-L181).
+- Closing is the person's: the gate refuses `task close` on the agent's command line, though the command itself has no person check (`.harness/policies/gate.json` L138-L144; `.harness/engine/modules/task/commands.py` L123-L133).
 
-Cite: 11 Task, "Task: how it moves from one stage to the next"; 00 Harness at a glance, "Harness: common questions". Course: The book 5.3 Two gates: where a person approves.
+Should cite: 11 Task, "Task: what it is" and "Task: how it works"; or 00 Harness at a glance, "Harness: the parts and how a piece of work flows through them". Course: The book · 5.1 Manage tasks, not chats.
 
-### P8. How are dangerous commands blocked?
+Wrong if: it says the write-back commits to the code repository (only a registered knowledge base gets a commit).
 
-- The gate (a PreToolUse hook module) reads every terminal command before it runs; deny beats ask beats allow (`modules/gate/handler.py` L96-L146; `core/events.py` L77-L93).
-- Rules in `.harness/policies/gate.json`: writes to guardrail files refused (L34-L86); a deny list: `rm -rf` of root/home/current folder, download piped to a shell, `mkfs`/`dd`, `sudo`/`runas`, recursive `chmod`, `docker rm`, `kubectl delete`, `terraform apply/destroy` (L87-L129); person-only harness commands refused (L130-L143); an ask list for deletes, git history rewrites, network, installs (L145-L181).
-- Git writes need the person's `approve-command` code once; `push`, `clean`, `filter-branch`, `filter-repo`, `update-ref`, `prune`, `reset --hard`, `branch -D`, force never approved, when target repositories are set up (`modules/gate/gitcmd.py` L22-L37, L272-L282; `modules/gate/handler.py` L761-L770).
-- Commands inside `bash -c`/`pwsh -Command` and scripts writing guardrail files are checked too (`modules/gate/handler.py` L119-L126; `modules/gate/scriptcheck.py` L1-L11).
-- Limits: it reads text, not a sandbox; the ask list is only Copilot's confirmation, absent under Allow all (`modules/gate/terminal.py` L1-L5; `docs/02-features.md` L50; `modules/task/chatnew.py` L25-L26).
+### Q6. What does the board show, and what does "waiting for you" mean?
 
-Cite: 00 Harness at a glance, "Harness: how dangerous commands are blocked". Course: Basic 06 · A prompt cannot stop a dangerous action: a harness can.
+Layer 2 · detail.
 
-### P9. Can the agent approve its own plan?
+- The board is a page served by `harness task board` on this computer only (127.0.0.1): every task, what it waits for, and the buttons for approvals, which work only from the browser paired with the board (`.harness/engine/modules/task/boardserve.py` L1-L17).
+- It picks one state per task from facts, first that holds: closed, paused, working, waiting, then quiet (held by a session, nothing to do) or no session (`.harness/engine/modules/task/tasklife.py` L840-L853). Working is read from the age of the session's hook log, five minutes by default (`.harness/engine/modules/task/tasklife.py` L774-L803).
+- "Waiting for you": the next move is the person's and the agent is not in the middle of a turn. The reason is the first that holds, in order of how much it blocks: a question; a write-back stopped halfway (**Recover the repository**); the plan; the write-back; checks used up; to accept; the requirement (`full` tier); a held outside call; a run or test handed over; the commit; an approval the agent has not been told of; autorun stopped; the agent stopped; a cancelled turn (`.harness/engine/modules/task/tasklife.py` L276-L336).
+- "The agent stopped" is the Stop hook's mark when the agent ends its turn; the person's next message clears it (`.harness/engine/modules/task/handler.py` L398-L411, L210-L211). The task page shows the reason at the top with a button for the answer.
 
-- No, by the ways the harness gives it: the gate refuses on the agent's command line `task confirm-req`, `approve-plan`, `approve-promote`, `recover`, `review set/extend/waive/dismiss`, `test runner`, `pause`, `resume`, `offwork`, `onwork`, `autorun on`, `task board` (not `--once`), `approve-command`, `approve-action`, `admin on`, `doctor --accept`, read as the shell reads them (`gate.json` L131-L137; `modules/gate/harnesscmd.py` L1-L8). It does not refuse `task allow --conn`/`--links` (pattern has only the retired `allow --env`); only that command's terminal check, with no code, stands in the way (`modules/task/tasklife.py` L541-L546; `modules/task/commands.py` L358-L366).
-- The command needs a person at their own terminal and a typed code; the board's Terminal window gives no keyboard input for a code (`core/approval.py` L28-L58; `docs/04-reference.md` L9).
-- On the board, approvals go through the paired browser's buttons with the typed code; the agent cannot start the board server or call its port (`modules/task/boardserve.py` L11-L16, L819-L830; `modules/gate/handler.py` L559-L564).
-- The code is six capitals of a sha256 of `PLAN.md`; the file is re-checked under the lock; a changed plan is not approved (`core/approval.py` L17-L25; `modules/task/task.py` L460-L471; `core/tasks.py` L159-L164).
-- Exceptions: the requirement's confirmation line is text the agent can write; the approval records are in `.task/`, which a script the agent runs is not checked for (`modules/task/taskreview.py` L88-L110; `modules/gate/scriptcheck.py` L1-L11).
+Should cite: 11 Task, "Task: what "waiting for you" means"; 00 Harness at a glance, "Harness: the parts and how a piece of work flows through them". Course: The book · 5.1 Manage tasks, not chats.
 
-Cite: 11 Task, "Task: who approves, and why the agent cannot approve its own plan". Course: The book 5.3 Two gates: where a person approves.
+Wrong if: it cites or recommends the file 21 Start a task and give it the requirement (it is not in the knowledge; 11 now names the tutorials instead).
 
-### P10. What happens if the requirement changes after I approved the plan?
+### Q7. How does a task move from one stage to the next? Is that controlled by a skill or by code, and where in the code?
 
-- The approval keeps a digest of What to do, What not to do and Done when; a change there makes the plan count as not approved (`core/tasks.py` L117-L164).
-- For the chat that holds the task, the gate refuses edit-tool writes to `DEV/` and tells the agent to stop and ask for a new confirmation and approval (`modules/gate/handler.py` L80-L84; `core/messages.en.json` L397).
-- The person confirms the requirement and approves the plan again with one code (`--with-req`, or **Approve plan**); dry run and write-back need the plan approved as it is now; the work in `DEV/` stays (`modules/task/task.py` L444-L469, L915, L993).
-- The agent is told by text to change `REQ.md` first; a change only said in the chat changes nothing in code (`core/messages.en.json` L108).
-- In an open task the requirement is just changed in `REQ.md` (`core/messages.en.json` L108). After a write-back, the same goal is a new round (`task open`) (`modules/task/task.py` L174-L183, L234-L251). Only when a closed task of a kind without write-back is opened again is the agent told that a changed requirement is a forked task (`modules/task/tasklife.py` L189-L192; `core/messages.en.json` L17).
+Layer 3 · detail.
 
-Cite: 11 Task, "Task: what happens when the requirement changes after the plan was approved". Course: The book 5.2 The agent writes the requirement, the person confirms it.
+- Both: the hook's next-step line and the skill `harness-my-task` tell the agent the order of work; code holds the gates; a person holds the keys (`.harness/engine/core/messages.en.json` L14-L15; `.github/skills/harness-my-task/SKILL.md` L73-L97).
+- The stage is not stored or set by the agent: it is worked out each time from the files and the state, so a task whose requirement changed falls back by itself. For `dev` and `kb`: requirement, plan, developing, write-back, done (`.harness/engine/modules/task/taskstages.py` L1-L15, L56-L67).
+- Requirement to plan: `task approve-plan` refuses while `REQ.md` is the bare template, its "User confirmed" line is not filled in, or what it asks changed; `--with-req` confirms and approves with one code. The line is text the agent can write, and a missing `REQ.md` or line is not checked (`.harness/engine/modules/task/task.py` L428-L469, L551-L567; `.harness/engine/modules/task/taskreview.py` L88-L110).
+- Plan to developing: for the chat that holds the task, the gate refuses the edit tools any write under `DEV/` until the plan is approved as it is now, for the requirement as it is now; a chat with no task is not bound (`.harness/engine/modules/gate/handler.py` L80-L84; `.harness/engine/core/tasks.py` L152-L164).
+- Developing to write-back: `task promote --dry-run` needs an approved plan and, when checks are on, enough passes; `task promote` needs the person's approval of the same digest (`.harness/engine/modules/task/task.py` L911-L928, L941-L944; `.harness/engine/modules/task/taskreview.py` L563-L568).
+- Where: `.harness/engine/modules/task/task.py` (approvals, promote), `taskstages.py` (stages), `.harness/engine/modules/gate/handler.py` (write scope), as the code map of 11 Task lists them.
 
-### P11. I closed VS Code yesterday. Can a new chat continue the same task, and how?
+Should cite: 11 Task, "Task: how it moves from one stage to the next" (and its "related files" code map); 00 Harness at a glance, "Harness: common questions". Course: The book · 5.3 Two gates: where a person approves (https://smarshu.com/book/read/5-3-two-approvals.html).
 
-- Yes: the task lives in its folder, not in the chat (`core/tasks.py` L1-L37).
-- In a new chat say "go on with" and the task's name; a session without a task is told the open tasks, and the agent runs `harness task open <name>` (`modules/task/handler.py` L124-L137; `core/messages.en.json` L107; `SKILL.md` L58-L65).
-- `task open` makes the new session the holder (`sessions[]`, `session_id`, `active_task`) and tells it to read `TASK.md` first (`modules/task/task.py` L174-L209; `modules/task/tasklife.py` L155-L160).
-- Or press **Go on in a new chat** on the task page; what was said only in the old chat does not come along (`core/messages.en.json` L2145-L2146).
+Wrong if: it says only code, or only the skill; it drops that the requirement's confirmation is a text line.
 
-Cite: 11 Task, "Task: how a new chat continues the same task". Course: The book 5.1 Manage tasks, not chats.
+### Q8. How does the gate block dangerous commands, and where are its rules?
 
-### P12. Where is a task's record kept, and what is in it?
+Layer 3 · detail · guarantees.
 
-- In `.workspace/sandbox/tasks/<name>/` on the person's computer, ignored by git (`core/tasks.py` L19-L37; `.gitignore` L27-L30).
-- Files by tier: `TASK.md`, `REQ.md`, `REQ/`, `REF/`, `LOG.md`, `TODO.md`, `DEV/`, `TEST/`, plus `PLAN.md` and command-owned `.task/`, `REVIEW/`, `SNAPSHOT/`, `OUTBOX/`, `READ/` (code fetched only to read with `task fetch --read`, since 1.7.42), diffs (`modules/task/tasklife.py` L39-L45; `gate.json` L24-L34; `core/tasks.py` L30).
-- `.task/task.json`: status, kind, tier, round, session_id and sessions[] (last 100), req and plan digests, promote state, waiting, review, events[] (last 200), rounds[], chat (`modules/task/task.py` L37-L40, L165-L190, L469).
-- At close: the chat's rounds in `.task/transcript.jsonl` and a report in `.workspace/reports/tasks/<name>/report.md` (`modules/task/task.py` L386-L398; `modules/task/chatrounds.py` L1-L10).
+- The gate is a hook module that reads every terminal command before it runs and answers allow, ask or deny; a deny from any module wins over an ask, an ask over an allow (`.harness/engine/core/events.py` L77-L93).
+- The rules are in `.harness/policies/gate.json`, itself a guardrail file (`.harness/policies/gate.json` L1-L23); the checks are in `.harness/engine/modules/gate/handler.py` (L96-L146).
+- What it refuses: writes to guardrail files, harness-owned task files, `.git` or a target repository's folder (`.harness/policies/gate.json` L35-L87); a git write, when target repositories are set up, until the person approves that exact command with `harness approve-command` and its code, for one run within 10 minutes, and `push`, `clean`, `filter-branch`, `filter-repo`, `update-ref`, `prune`, `reset --hard`, `branch -D` and any force never (`.harness/engine/modules/gate/gitcmd.py` L22-L37, L272-L282; `.harness/policies/gate.json` L184-L186); the harness commands only a person may run (`.harness/policies/gate.json` L131-L144); a script that writes a guardrail file, as best effort (`.harness/engine/modules/gate/scriptcheck.py` L1-L11); the deny list: recursive delete of root, home or current folder, a download piped to a shell, formatting a disk, `sudo`, recursive permission changes, `docker rm`, `kubectl delete`, `terraform apply` and `destroy` (`.harness/policies/gate.json` L88-L130), also inside `bash -c` and `pwsh -Command` (`.harness/engine/modules/gate/handler.py` L119-L126). It also refuses reading the secrets file and requests to the board's port (`.harness/engine/modules/gate/handler.py` L612-L629, L719-L723).
+- Calls to listed outside systems are judged by what they do; the ask list (deletes, history rewrites, network, installs) goes to Copilot's confirmation (`.harness/engine/modules/gate/handler.py` L130-L132; `.harness/policies/gate.json` L146-L182).
+- A refusal tells the agent what to do instead, and to stop retrying when it repeats (`.harness/policies/gate.json` L187-L189).
+- Limits: it reads text and is not a sandbox; the ask list is only a reminder, absent under Allow all; git writes need approval only when target repositories are set up (`.harness/engine/modules/gate/terminal.py` L1-L5; `docs/02-features.md` L50; `.harness/engine/modules/gate/handler.py` L761-L770).
 
-Cite: 11 Task, "Task: where its record is kept, and what is in it". Course: The book 5.1 Manage tasks, not chats.
+Should cite: 00 Harness at a glance, "Harness: how dangerous commands are blocked" and "Harness: known limits". Course: Basic 06 · A prompt cannot stop a dangerous action: a harness can.
 
-### P13. Can the agent write files outside its task folder?
+### Q9. How does the approval code work, and why can't the agent approve its own plan?
 
-- With its VS Code edit tools, not while its chat holds an open task: writes outside the folder are refused; `REQ/`, `REF/`, `INBOX/` always; `DEV/` until the plan is approved (`modules/gate/handler.py` L64-L88). A tool the harness does not list as an edit tool (an unlisted file-writing MCP server) gets no path check (`adapters/tool_kinds.json`; `modules/gate/handler.py` L724-L734).
-- For every chat, edit tools are refused on command-owned files, `.git` and target repositories, and on guardrail files except in an admin chat, where only `.harness/runtime/**`, `admin_locked_paths` and the integrity-list folder stay closed (`modules/gate/handler.py` L38-L61; `core/guardrails.py` L21-L61).
-- Its terminal commands are not confined to the folder: only writes that name a guardrail, command-owned, `.git` or target path in full or after a `cd` in the same line, and scripts found (best effort) to write guardrail files, are refused; the terminal's real working folder is not used (`modules/gate/handler.py` L96-L118; `modules/gate/terminal.py` L65-L117; `modules/gate/scriptcheck.py` L1-L11).
-- A session holding no task, or a closed one, is not confined by the edit-tool check (`modules/gate/handler.py` L67-L72).
+Layer 3 · detail · guarantees.
 
-Cite: 11 Task, "Task: what the agent may write". Course: The book 5.1 Manage tasks, not chats.
+- The code is the first six characters, in capitals, of a sha256 of what is approved: `PLAN.md` for the plan, `REQ.md` for the requirement, the write-back plan for a write-back (`.harness/engine/core/approval.py` L17-L25).
+- The gate refuses the approval commands on the agent's command line, read the way the shell reads them (`.harness/policies/gate.json` L131-L137; `.harness/engine/modules/gate/harnesscmd.py` L1-L8).
+- Each command needs a person at their own terminal, with a keyboard and a screen, and a typed code; the board's Terminal window gives no keyboard input for a code (`.harness/engine/core/approval.py` L28-L58; `docs/04-reference.md` L9).
+- On the board, the paired browser's buttons run the same function with the code the person types; the agent cannot start the board server, and its requests to the board's port are refused (`.harness/engine/modules/task/boardserve.py` L11-L16, L819-L830; `.harness/engine/modules/gate/handler.py` L559-L564).
+- `task approve-plan` checks `PLAN.md` again under the task's lock, so a plan changed while the person read it is refused; the approval is compared with the files before each edit-tool write to `DEV/` (`.harness/engine/modules/task/task.py` L460-L471; `.harness/engine/core/tasks.py` L159-L164).
+- The exceptions the answer must keep: the requirement's confirmation is a text line the agent can write (`.harness/engine/modules/task/taskreview.py` L88-L110); the approval records are in `.task/task.json`, and a script the agent runs is checked only for guardrail paths (`.harness/engine/modules/gate/scriptcheck.py` L1-L11); `task allow --conn` and `--links` are not refused by the gate (`.harness/policies/gate.json` L136; `.harness/engine/modules/task/tasklife.py` L541-L546).
 
-### P14. What does "waiting for you" on the board mean, and what should I do?
+Should cite: 11 Task, "Task: who approves, and why the agent cannot approve its own plan". Course: The book · 5.3 Two gates: where a person approves.
 
-- The task's next move is the person's and its agent is not in the middle of a turn: the board's state "waiting" (`modules/task/tasklife.py` L840-L853; `modules/task/web/board.js` L329).
-- The reason is told from facts in order: a question, a failed write-back, the plan, the write-back, checks used up, to accept, the requirement (full tier), a held outside call, a handed-over run, commit, an approval not yet told to the agent, autorun stopped, the agent stopped, a cancelled turn (`modules/task/tasklife.py` L276-L336).
-- "waits for you" alone: the Stop hook marked that the agent ended its turn; reply, and the next message clears it (`modules/task/handler.py` L398-L411, L210-L211).
-- What to do: the task page puts the reason first as a card with the button (Confirm requirement, Approve plan, Approve promote, Accept and close, Send to agent...).
+Wrong if: it says the agent can never approve anything, without the exceptions.
 
-Cite: 21 Start a task and give it the requirement, "Start a task: what "waiting for you" means and what to do"; 11 Task, "Task: what "waiting for you" means". Course: none needed; if one, The book 5.1 Manage tasks, not chats.
+### Q10. Why isn't a rule in the prompt or in `AGENTS.md` enough to keep the agent safe?
 
-### P15. How is the knowledge base built?
+Layer 4 · broad · guarantees.
 
-- The right answer says the Harness Guide does not cover how the knowledge base is built yet, and makes nothing up. It may say that the Guide's overview names the knowledge base only as something the team brings and the agent is told to read.
+- Text (`AGENTS.md`, `.github/instructions/`, skills, the lines the hook adds to every prompt) asks the model, which can ignore it; code (the hooks and the command line) enforces what must hold; a person decides what cannot be taken back (`AGENTS.md` L42-L64; `.harness/engine/modules/task/handler.py` L88-L121).
+- The Guide's own example: opening a task is only asked by text, and the code does not force it (`AGENTS.md` L46-L47); keeping `DEV/` closed until the plan is approved is code (`.harness/engine/modules/gate/handler.py` L64-L88).
+- The text rules are not even protected: `AGENTS.md`, `.github/instructions/`, `.github/skills/` and `.github/agents/` are neither guardrail paths nor in the integrity list, while the code rules are guardrail files checked against the list the person accepted (`.harness/engine/core/guardrails.py` L11-L19; `.harness/policies/gate.json` L4-L19; `.harness/engine/integrity.py` L18-L26).
+- So text is still used, to tell the model the order of work; code sets the gates; a person holds the keys.
 
-Cite: none (00 Harness at a glance, "Harness: related files", says it is not covered). Course: none.
+Should cite: 00 Harness at a glance, "Harness: what is enforced by code, what is asked of the model by text, and what is left to a person" and "Harness: common questions" ("Can the agent change the harness's own rules?"). Course: Basic 06 · A prompt cannot stop a dangerous action: a harness can.
 
+Wrong if: it says text rules are useless or are not used.
+
+### Q11. Why does the harness keep the work in tasks instead of in the chat?
+
+Layer 4 · broad.
+
+- A chat lives as long as the chat, and Copilot compacts it as its context fills, at about 80%; a task's files do not depend on the chat (`.harness/policies/task.json` L3; `.harness/engine/core/copilot_events.py` L1).
+- So the work is kept on disk: requirement, plan, results and state outlive the chats that do them, and any later chat picks the task up by name and reads the handover note `TASK.md` first (`.harness/engine/core/tasks.py` L1-L37; `.harness/engine/modules/task/handler.py` L124-L137; `.harness/engine/modules/task/task.py` L174-L209; `.harness/engine/modules/task/tasklife.py` L155-L160).
+- What was said only in the old chat, and is in no task file, does not come along; that is why the agent is told to write a changed requirement into `REQ.md` first (`.harness/engine/core/messages.en.json` L2145-L2146, L108).
+- The state is a file that harness code writes, so the gates are checked against facts, not against what the chat says; the stage is worked out from the files (`.harness/policies/gate.json` L24-L34; `.harness/engine/modules/task/taskstages.py` L1-L15).
+
+Should cite: 11 Task, "Task: what it is", "Task: how it differs from a chat session" and "Task: how a new chat continues the same task". Course: The book · 5.1 Manage tasks, not chats.
+
+### Q12. What is the idea behind the approval gates, and where does a person hold the keys?
+
+Layer 4 · detail.
+
+- The pattern of every row of the code/text/person table: code sets the gates a piece of work must pass, text tells the model how to get there, and a person holds the keys at each gate (`AGENTS.md` L42-L64).
+- Two gates for a task that changes a repository: the plan, whose approval opens `DEV/` to the edit tools, and the write-back, whose approval covers the exact digest: branch, base commit of each repository, sha256 of every file (`.harness/engine/modules/task/task.py` L428-L475, L941-L944; `.harness/engine/modules/gate/handler.py` L80-L84; `.harness/engine/modules/task/promote_target.py` L112-L116). The requirement is confirmed with a code too, but that confirmation is a text line the agent can write (`.harness/engine/modules/task/task.py` L570-L612; `.harness/engine/modules/task/taskreview.py` L88-L110).
+- The key is bound to what the person read: the code comes from a sha256 of the file, a file changed after the person read it gets a new code, and a change to what `REQ.md` asks (What to do, What not to do, Done when) undoes the plan's approval (`.harness/engine/core/approval.py` L17-L25; `.harness/engine/modules/task/task.py` L460-L471; `.harness/engine/core/tasks.py` L117-L164).
+- The other keys a person holds: git writes (`approve-command`), held outside calls, more checks or waiving them, accepting or closing, the commit (`.harness/policies/gate.json` L131-L144).
+
+Should cite: 00 Harness at a glance, "Harness: what is enforced by code, what is asked of the model by text, and what is left to a person"; 11 Task, "Task: how it moves from one stage to the next" and "Task: who approves, and why the agent cannot approve its own plan". Course: The book · 5.3 Two gates: where a person approves.
+
+### Q13. I maintain a data pipeline repository. How do I start a task and give the agent my requirement documents?
+
+How-to · detail. Tests the short answer, the tutorial pointer, and that the answer uses nothing of the asker's own work.
+
+- Short answer, a few sentences: start the board (**Start Harness**, or `harness task board` in your own terminal) and use the browser it pairs (`docs/01-quickstart.md` L20, L87-L97); say in one sentence what you want done and in which repository, in the chat or with **New task**, and the agent asks, then opens a task (`.harness/engine/modules/task/chatnew.py` L1-L8; `.github/skills/harness-my-task/SKILL.md` L29-L65); drop the documents on the task's **Intake** tab, and confirm the `REQ.md` the agent writes with **Confirm requirement** and the code (`.harness/engine/modules/task/intake.py` L1-L10; `.harness/engine/modules/task/task.py` L570-L598).
+- Then: the steps on screen are in the harness tutorial **1 A day with the harness**, in `AI Exploration/3 Courses/Harness tutorials/`.
+
+Should cite: 00 Harness at a glance, "Harness: how a person uses it day to day". Tutorial: 1 A day with the harness. Course: none needed.
+
+Wrong if: it writes a long step-by-step guide instead of naming the tutorial; it makes an example from the asker's own repository, mail, chats or files (the first pilot's P2 did); it cites or recommends the file 21 Start a task and give it the requirement.
+
+### Q14. The agent says my command was refused. How do I get it run?
+
+How-to · detail.
+
+- Short answer: the gate refused the command before it ran, and its reason tells the agent what to do instead (`.harness/engine/modules/gate/handler.py` L96-L146; `.harness/policies/gate.json` L187-L189). If the command is really needed, run it yourself in your own terminal. A git write, when target repositories are set up, waits for you to approve that exact command with `harness approve-command` and its code, for one run within 10 minutes; `push`, `clean`, `filter-branch`, `filter-repo`, `update-ref`, `prune`, `reset --hard`, `branch -D` and any force are never approved (`.harness/engine/modules/gate/handler.py` L132-L141; `.harness/engine/modules/gate/gitcmd.py` L22-L37, L272-L282; `.harness/policies/gate.json` L184-L186).
+- Then: the harness tutorial **2 When the agent is stopped**, in `AI Exploration/3 Courses/Harness tutorials/`.
+
+Should cite: 00 Harness at a glance, "Harness: what is enforced by code, what is asked of the model by text, and what is left to a person" (row "Writes and dangerous commands") and "Harness: how dangerous commands are blocked". Tutorial: 2 When the agent is stopped. Course: none needed.
+
+Wrong if: it suggests a way round the gate (admin mode, changing `gate.json`, switching hooks off, a script); it writes a long guide instead of naming the tutorial.
+
+### Q15. How does autorun work? Can a task run on its own overnight?
+
+Not covered.
+
+- The right answer says "The Harness Guide does not cover this yet." It may add only what the Guide says in passing: `task autorun on` is one of the commands the gate refuses on the agent's command line, so only a person can switch it on (00, "Harness: the main safety guarantees and their exact scope"; `.harness/policies/gate.json` L131-L137), and "autorun stopped" is one of the reasons a task waits for you (11, "Task: what "waiting for you" means"; `.harness/engine/modules/task/tasklife.py` L276-L336). It names no tutorial: autorun is not in the first five.
+- For the grader only, so that a made-up answer can be spotted: autorun works down `TODO.md` and needs an approved plan, unticked steps and `[review]=n`; it is switched on in a terminal with a typed code (`docs/04-reference.md` L100; `AGENTS.md` L54). None of this is in the Guide: an answer that says it did not get it from the Guide.
+
+Should cite: none. Course: none.
+
+Wrong if: it explains how autorun works or when it stops; it points to a tutorial as if one covered autorun.

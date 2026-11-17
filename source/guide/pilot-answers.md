@@ -1,12 +1,120 @@
 # Pilot answers
 
-Paste the agent's answer to each question (one new chat per question), then fill the three short columns. Round 1: knowledge `pdf/`. Round 2: knowledge `docx/`. Plain text is fine; a screenshot of the answer is fine too.
+One round, knowledge `pdf/` only (`00 Harness at a glance`, `11 Task`). Ask each question of `questions.md` in a new chat, paste the answer under its heading below, then fill its row of the table. Plain text is fine; a screenshot of the answer is fine too.
 
-- **Cited:** the files the answer shows as references.
+- **Cited:** the files and sections the answer shows as references.
 - **Links:** were the GitHub and course links in the answer, and did they open? (yes / some / no)
-- **Notes:** anything odd: made-up facts, missing condition, wrong file, picture mentioned or not.
+- **Learn more:** the course link or, for a how-to question, the tutorial it named.
+- **Own work:** did it use anything of the asker's own work, mail, chats or files? (no / yes: what)
+- **Grade:** right / mostly right / partly right / wrong, against the key points of `questions.md`.
 
 ## Round 1 · pdf
+
+Setup seen: 
+
+| # | Layer | Cited | Links | Learn more | Own work | Grade |
+|---|---|---|---|---|---|---|
+| Q1 | 1 · harness | | | | | |
+| Q2 | 1 · harness | | | | | |
+| Q3 | 1 · harness | | | | | |
+| Q4 | 2 · features | | | | | |
+| Q5 | 2 · features | | | | | |
+| Q6 | 2 · features | | | | | |
+| Q7 | 3 · design | | | | | |
+| Q8 | 3 · design | | | | | |
+| Q9 | 3 · design | | | | | |
+| Q10 | 4 · ideas | | | | | |
+| Q11 | 4 · ideas | | | | | |
+| Q12 | 4 · ideas | | | | | |
+| Q13 | how-to | | | | | |
+| Q14 | how-to | | | | | |
+| Q15 | not covered | | | | | |
+
+### Q1 · What is this harness, and what problem does it solve?
+Answer:
+
+Notes:
+
+### Q2 · Where does the harness run, and what does our team have to bring to it?
+Answer:
+
+Notes:
+
+### Q3 · Is the harness a sandbox? What does it protect against, and what not?
+Answer:
+
+Notes:
+
+### Q4 · What is a task, and how is it different from a chat session?
+Answer:
+
+Notes:
+
+### Q5 · What kinds of tasks are there, and how does each one end?
+Answer:
+
+Notes:
+
+### Q6 · What does the board show, and what does "waiting for you" mean?
+Answer:
+
+Notes:
+
+### Q7 · How does a task move from one stage to the next? Is that controlled by a skill or by code, and where in the code?
+Answer:
+
+Notes:
+
+### Q8 · How does the gate block dangerous commands, and where are its rules?
+Answer:
+
+Notes:
+
+### Q9 · How does the approval code work, and why can't the agent approve its own plan?
+Answer:
+
+Notes:
+
+### Q10 · Why isn't a rule in the prompt or in `AGENTS.md` enough to keep the agent safe?
+Answer:
+
+Notes:
+
+### Q11 · Why does the harness keep the work in tasks instead of in the chat?
+Answer:
+
+Notes:
+
+### Q12 · What is the idea behind the approval gates, and where does a person hold the keys?
+Answer:
+
+Notes:
+
+### Q13 · I maintain a data pipeline repository. How do I start a task and give the agent my requirement documents?
+Answer:
+
+Notes:
+
+### Q14 · The agent says my command was refused. How do I get it run?
+Answer:
+
+Notes:
+
+### Q15 · How does autorun work? Can a task run on its own overnight?
+Answer:
+
+Notes:
+
+## Overall
+
+- Did it answer at the depth of the question (layers 1 to 4)?
+- Did the how-to answers stay short and name the right tutorial?
+- Did it say "does not cover this yet" for Q15 and make nothing up?
+- Did clicking a citation open the right file?
+
+## Old pilot (2026-11-16, before the goal changed)
+
+The first pilot asked how to use the harness as well as how it works, with the old questions P1–P15 (in git, commit 74cab51). Paused after P2 when the goal changed. Kept as it was written.
 
 Setup seen 2026-11-16: knowledge held both `pdf` and `docx` folders (SharePoint), Cloud files on, Outlook, Teams, connectors and web search off. P1 and P2 were asked with both folders in; from P2 on, only `pdf` (P2 asked again).
 
@@ -72,93 +180,3 @@ Grade (main): **partly right; two process failures.**
 - Scope lost: step 8 says the workflow "includes independent checks"; the Guide says they run only when the person asked for them. The dry run is dropped from the flow.
 - **Off-Guide content:** it built an example from the asker's own work context (a real company ETL package and data problem), which the instructions forbid ("answer only from the Guide files").
 - **Format broke:** cited `.docx` files, and gave no code links, no course link, no screenshot, saying the excerpts do not contain them. In the DOCX build every URL is a hyperlink behind link text (pandoc), so text extraction may drop the URL; the PDF has the URL in the text layer.
-
-### P3 · What is a task, and how is it different from a chat session?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P4 · Is it safe to let the agent work on our code? What stops it from going wrong?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P5 · What does a person still have to do, and what does the agent do alone?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P6 · How do I start a task and give the agent my requirement documents?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P7 · How does a task move from one stage to the next? Is that controlled by a skill or by code?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P8 · How are dangerous commands blocked?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P9 · Can the agent approve its own plan?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P10 · What happens if the requirement changes after I approved the plan?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P11 · I closed VS Code yesterday. Can a new chat continue the same task, and how?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P12 · Where is a task's record kept, and what is in it?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P13 · Can the agent write files outside its task folder?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P14 · What does "waiting for you" on the board mean, and what should I do?
-Answer:
-
-Cited: · Links: · Notes:
-
-### P15 · How is the knowledge base built?
-Answer:
-
-Cited: · Links: · Notes:
-
-## Round 2 · docx
-
-Only the questions where round 1 went wrong, plus P1, P4 and P8.
-
-### P1
-Answer:
-
-Cited: · Links: · Notes:
-
-### P4
-Answer:
-
-Cited: · Links: · Notes:
-
-### P8
-Answer:
-
-Cited: · Links: · Notes:
-
-## Overall
-
-- Did the agent read the text of the files? 
-- Did clicking a citation open the right file?
-- PDF or DOCX: which worked better, and why?

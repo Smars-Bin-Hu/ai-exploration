@@ -1,15 +1,18 @@
-# Harness Guide: Markdown sources -> the knowledge files of the M365 Copilot agent, as text-based A4 PDF and as DOCX.
-# Run from anywhere:  python3 source/guide/build.py [name ...]     (no names: every source file)
+# Harness Guide: Markdown sources -> the knowledge files of the M365 Copilot agent, as text-based A4 PDF (PDF only: in the pilot a DOCX copy lost every link).
+# Run from anywhere:  python3 source/guide/build.py [name ...]     (no names: every source file that is Guide knowledge)
 # Needs pandoc, Google Chrome, and playwright-core from ~/Developer/smarshu.com.
 # Input:  source/guide/pages/<name>.md (format: see RULES.md), pictures in source/guide/img/ and fig/.
-# Output: AI Exploration/2 Ask the Harness Guide/Knowledge/{pdf,docx}/<file>; previews in source/guide/_pages/<name>/.
+# Output: AI Exploration/2 Ask the Harness Guide/Knowledge/pdf/<file>.pdf; previews in source/guide/_pages/<name>/.
+# Not knowledge: the pages in NOT_KNOWLEDGE stay in source/guide/pages/ for the harness tutorials and are never built into Knowledge/.
 # Exit 1 when a check fails (check.py).
 import os, re, sys, json, glob, subprocess, html
 import check
 
 H = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(os.path.dirname(H))
 KNOWLEDGE = os.path.join(ROOT, 'AI Exploration', '2 Ask the Harness Guide', 'Knowledge')
-OUT = {'pdf': os.path.join(KNOWLEDGE, 'pdf'), 'docx': os.path.join(KNOWLEDGE, 'docx')}
+OUT = {'pdf': os.path.join(KNOWLEDGE, 'pdf')}
+# How-to pages: the Guide answers "how do I" with a short answer and the name of a harness tutorial (AI Exploration/3 Courses/Harness tutorials/).
+NOT_KNOWLEDGE = {'21-start-a-task'}
 HARNESS_REPO = 'https://github.com/Smars-Bin-Hu/copilot-agentic-harness'
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
@@ -87,19 +90,20 @@ def build(name):
          '--resource-path', H, '--metadata', f'title={meta["title"]}', '--metadata', 'pagetitle=' + meta['title'], '-o', html_path,
          '--variable', 'title='])  # the title is written as the first heading by expand()
     for d in OUT.values(): os.makedirs(d, exist_ok=True)
-    pdf = os.path.join(OUT['pdf'], meta['file'] + '.pdf'); docx = os.path.join(OUT['docx'], meta['file'] + '.docx')
+    pdf = os.path.join(OUT['pdf'], meta['file'] + '.pdf')
     layout = to_pdf(name, html_path, pdf, os.path.join(H, '_pages', name))
-    run(['pandoc', mdx, '-f', 'markdown', '-t', 'docx', '--resource-path', H, '--metadata', 'title=', '-o', docx])
     problems = check.run(name, meta, body, refs, layout, H)
     return meta, layout, problems
 
 def main(names):
-    names = names or sorted(os.path.splitext(os.path.basename(p))[0] for p in glob.glob(os.path.join(H, 'pages', '*.md')))
+    if set(names) & NOT_KNOWLEDGE:
+        raise SystemExit(f'not Guide knowledge (kept for the harness tutorials): {", ".join(sorted(set(names) & NOT_KNOWLEDGE))}')
+    names = names or sorted(n for n in (os.path.splitext(os.path.basename(p))[0] for p in glob.glob(os.path.join(H, 'pages', '*.md'))) if n not in NOT_KNOWLEDGE)
     total_pages, bad = 0, []
     for n in names:
         meta, layout, probs = build(n)
         total_pages += layout['pages']
-        print(f'{n}: {layout["pages"]} pages -> {meta["file"]}.pdf / .docx' + ('' if not probs else f'  FAIL ({len(probs)})'))
+        print(f'{n}: {layout["pages"]} pages -> {meta["file"]}.pdf' + ('' if not probs else f'  FAIL ({len(probs)})'))
         bad += [f'{n}: {p}' for p in probs]
     files = len(glob.glob(os.path.join(OUT['pdf'], '*.pdf')))
     bad += check.totals(files, total_pages if len(names) == files else None)
