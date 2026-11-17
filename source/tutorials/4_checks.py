@@ -40,12 +40,14 @@ PAGES = [
         text='When the work is written, the agent runs `harness task review start` and calls the reviewer.'),
    dict(pic=(B + 'run.png', (73, 299, 2144, 483)),
         text='Task **waits for your run**? No check starts until you give the result of that run.'),
-   dict(pic=(B + 'run.png', (73, 1440, 2144, 2040)),
-        text='Do the run. Paste the result under **Give the results here**, or give it in the chat.'),
+   dict(pic=(B + 'run.png', (73, 1440, 1150, 1830)),
+        text='Do the run. Paste the result under **Give the results here** (or give it in the chat).'),
+   dict(pic=(B + 'run.png', (73, 2280, 560, 2425)),
+        text='Press **Save and send to the agent**. No chat? **Save to the task**, then paste its message in chat.'),
   ],
   notes='Sources: messages.en.json review.start.next (one sentence, no reasoning), desk.review.hint ("The agent cannot change an answer"); taskreview.py L6-8, record L412-436; '
         'not_ready L320-329, mark_run L338-356, start L359-373 (refused, no check used, while the person’s run is not back or a handoff is open); '
-        'messages.en.json review.runs_missing, review.runs_marked, review.handoff_open, task.waiting.run, desk.wait.run.form; docs/02-features.md L102-103.'),
+        'messages.en.json review.runs_missing, review.runs_marked, review.handoff_open, task.waiting.run, desk.wait.run.form, desk.inbox.title, desk.inbox.send, desk.inbox.save, desk.inbox.done; web/desk.js L978 (send if a chat is bound, else save); boardserve.py L2018 (saved only on that button); docs/02-features.md L102-103.'),
 
  # ---- Read the results --------------------------------------------------------------------------------------
  dict(group='Read the results', steps=[
