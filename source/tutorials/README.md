@@ -1,6 +1,6 @@
 # Harness tutorials
 
-Picture-book slidedocs for a colleague who has the harness installed and now opens tasks of their own: one step per page, a screenshot and at most about 60 words. English, plain words. Same engine and look as *Install the harness* (`source/install/`, `source/tools/deck.py`).
+Picture-book slidedocs for a colleague who has the harness installed and now opens tasks of their own: every small step has its own screenshot and one short line, up to four steps a page, no heading on the page. English, plain words. Same engine and look as *Install the harness* (`source/install/`, `source/tools/deck.py`).
 
 ## Build
 
@@ -14,7 +14,7 @@ From the repo root:
 
 Needs Chrome, and playwright-core from `~/Developer/smarshu.com`. Each deck gives two files: the PowerPoint master `source/tutorials/<slug>.pptx` and the PDF in `AI Exploration/3 Courses/Harness tutorials/`. Page images to look at are in `source/tutorials/_build/<slug>/pages/` (not in git). Once a `.pptx` is edited by hand it is the newer one: export its PDF from PowerPoint and do not rebuild over it.
 
-The build prints `WARNING` when a page has more than about 60 words, a caption longer than one line, or text that runs below the page, and `overflow [...]` lists any text box whose text does not fit. It stops on a screenshot that does not exist, and on a deck (other than the sample) with no closing page.
+The build prints `WARNING` when a page has more than about 60 words, a step's line more than 20, a caption longer than one line, or text that runs below the page, and `overflow [...]` lists any text box whose text does not fit. It stops on a screenshot that does not exist, and on a deck (other than the sample) with no closing page.
 
 ## The decks
 
@@ -32,17 +32,36 @@ The titles and file names are set in `DECKS` at the top of `build.py`, so a text
 
 ## The text file
 
-One Python file per deck, `source/tutorials/<slug>.py`, with three names:
+One Python file per deck, `source/tutorials/<slug>.py`, with these names:
 
 - `COVER`: a dict, or `None` for no cover. Keys: `sub` (one or two sentences under the title), `how` (optional extra lines). The build puts the title, the kicker *Harness tutorials · n*, the harness version (1.7.45) and the line on bold and Courier there itself.
+- `CONTENTS`: optional. `True` (or `dict(title='...')`) puts a contents page after the cover: one row per group, with its steps and the page it starts on, filled in by the build.
 - `PAGES`: a list of pages, in order (below).
 - `CLOSING`: the last page. Keys: `title`, `text` (blocks), optional `kicker` (default *What next*). The build adds, on every deck, the line that points to `AI Exploration/0 MUST READ.pdf` for where to go next. No deck draws its own map of the folder.
 
 A one-page deck, such as `0_must_read`, sets `COVER = None` and `PAGES = []`, and writes its page as `CLOSING`.
 
-### Page kinds
+### Steps pages (the picture-book page)
 
-Every page has `kicker` (the small orange line, e.g. `'Step 3 · Answer its questions'`) and `title` (a short heading). Optional on any page: `notes`, the speaker notes, where you list the sources you checked (file and line in harness 1.7.45). The kind follows from the keys:
+A page of 1 to 4 small numbered steps, each one screenshot and one short line. It has no kicker and no title. The step numbers run on through the deck. The build tries every way to put the pictures in rows or columns and keeps the one where they are largest: two wide pictures side by side or stacked, three or four in a grid, a tall one beside short ones. The whole arrangement sits in the middle of the page.
+
+```python
+A = '.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/docs/images/'
+
+dict(group='Approve', steps=[
+  dict(pic=A + 'task-plan.png', text='Read the plan.'),
+  dict(pic=(A + 'task-intake.png', (0, 0, 1160, 900)), text='A crop: left, top, right, bottom in pixels.'),
+  dict(shot='The Copilot chat in VS Code after the plan is approved', text='The agent starts the work.'),
+ ], notes='Sources: ...')
+```
+
+- Each step: `pic` (a path, or `(path, crop box)`) or `shot` (what to capture on the company computer: a dashed box in the picture's place, shaped 16:10 unless you give `aspect=width/height`), and `text`, one short line (the build warns above 20 words).
+- `group`: optional, a short name for what the steps do, such as *Start*, *Give the requirement*, *Approve*, *Follow*, *Finish*, *Next day*. It shows as a small orange label at the top left, not a title. Set it on the first page of a group: the pages after it keep it until another `group` is set. Older page kinds can carry `group` too, and then count in the contents.
+- `notes`: as on any page.
+
+### Older page kinds
+
+These still work, and a deck can mix them with steps pages. Every such page has `kicker` (the small orange line, e.g. `'Step 3 · Answer its questions'`) and `title` (a short heading). Optional on any page: `notes`, the speaker notes, where you list the sources you checked (file and line in harness 1.7.45). The kind follows from the keys:
 
 | Kind | Keys | Layout |
 | --- | --- | --- |
@@ -88,4 +107,4 @@ CLOSING = dict(title='You are done for today',
   text=['Tomorrow, open the board: the task waits where it stopped.'])
 ```
 
-`sample.py` is a working file of two pages: one with a screenshot, one with a placeholder. Its words are a test of the layout, not checked against the harness.
+`sample.py` is a working file: a contents page, steps pages of 2, 3 and 4 shots (one a placeholder, one cropped), then one page of each older kind with a picture or placeholder. Its words are a test of the layout, not checked against the harness.

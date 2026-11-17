@@ -172,21 +172,78 @@ TOP, BOTTOM = 1.75, 6.85
 TX, TW = 0.75, 4.75           # the text column of a page with a picture
 PX, PW = 5.85, W - 0.75 - 5.85  # the picture
 
+# ---- a steps page: 1-4 numbered small steps, each a screenshot and one short line, laid out to make the pictures large ----
+CAP, GAPX, GAPY = 14, 0.35, 0.28   # the size of a step's line; the gaps between cells
+SX, SW, SBOT = 0.75, 11.83, 6.82   # the area of a steps page (the footer is at 7.0)
+SHOT_ASPECT = 1.6                  # a placeholder's shape, width / height, unless the step gives one
+
+def splits(n):
+    """Every way to cut n items, in order, into consecutive groups."""
+    if n == 0: yield []; return
+    for k in range(1, n + 1):
+        for rest in splits(n - k): yield [k] + rest
+
+def place(mode, parts, asp, caps, top):
+    """Cells (x, y, w, h of the picture) for one arrangement, or None. mode 'rows': each group a row, pictures in a row
+    share a height; 'cols': each group a column, pictures in a column share a width. caps: the height of each step's line."""
+    H_ = SBOT - top; cells = [None] * len(asp); i = 0; groups = []
+    for k in parts: groups.append(list(range(i, i + k))); i += k
+    if mode == 'rows':
+        raw = [(SW - GAPX * (len(g) - 1)) / sum(asp[j] for j in g) for g in groups]
+        capr = [max(caps[j] for j in g) for g in groups]
+        room = H_ - sum(capr) - GAPY * (len(groups) - 1)
+        if room <= 0: return None
+        s = min(1, room / sum(raw)); y = top
+        for g, h0, c in zip(groups, raw, capr):
+            h = h0 * s; rw = sum(asp[j] * h for j in g) + GAPX * (len(g) - 1); x = SX + (SW - rw) / 2
+            for j in g: cells[j] = (x, y, asp[j] * h, h); x += asp[j] * h + GAPX
+            y += h + c + GAPY
+    else:
+        raw = []
+        for g in groups:
+            room = H_ - sum(caps[j] for j in g) - GAPY * (len(g) - 1)
+            if room <= 0: return None
+            raw.append(room / sum(1 / asp[j] for j in g))
+        s = min(1, (SW - GAPX * (len(groups) - 1)) / sum(raw))
+        x = SX + (SW - sum(raw) * s - GAPX * (len(groups) - 1)) / 2
+        for g, w0 in zip(groups, raw):
+            w = w0 * s; y = top
+            for j in g: cells[j] = (x, y, w, w / asp[j]); y += w / asp[j] + caps[j] + GAPY
+            x += w + GAPX
+    return cells
+
+def step_line(num, text): return [[('a', f'{num}  ')] + runs(text)]
+def cap_h(num, text, w): return text_h(step_line(num, text), w, CAP, 0) + 0.1
+
+def arrange(asp, lines, top):
+    """The arrangement whose pictures are largest (by the product of their areas), the step lines measured at their widths."""
+    import math
+    best = None
+    for mode in ('rows', 'cols'):
+        for parts in splits(len(asp)):
+            if mode == 'cols' and len(parts) == len(asp) and len(asp) > 1: continue  # the same as one row
+            caps = [0.45] * len(asp)
+            for _ in range(2):  # guess the line heights, then measure them at the widths they got
+                cells = place(mode, parts, asp, caps, top)
+                if not cells: break
+                caps = [cap_h(n, t, c[2]) for (n, t), c in zip(lines, cells)]
+            cells = cells and place(mode, parts, asp, caps, top)
+            if not cells or min(c[2] for c in cells) < 1.2: continue
+            score = sum(math.log(c[2] * c[3]) for c in cells)
+            if not best or score > best[0]: best = (score, cells, caps)
+    if not best: raise SystemExit('a steps page has no room for its pictures: use fewer steps or shorter lines')
+    _, cells, caps = best
+    dy = (SBOT - max(c[1] + c[3] + k for c, k in zip(cells, caps))) / 2  # centre the whole arrangement up and down
+    return [(x, y + dy, w, h) for x, y, w, h in cells], caps
+
+def group_label(text):
+    return T(SX, 0.42, 8, 0.3, [[text]], 10, C['accent'], SANS, bold=True, caps=True, spacing=1.5)
+
 def make(slug, X, imgs):
     num, title = DECKS[slug]
     title = getattr(X, 'TITLE', title)
     D = TutorialDeck(getattr(X, 'FOOTER', 'Harness tutorials · ' + title))
     warn = []
-
-    cv = getattr(X, 'COVER', None)
-    if cv is not None:
-        how = [f'Harness version {VERSION}. One step per page.',
-               '**Bold** is what you see on the screen. `Courier` is what you type.'] + list(cv.get('how', []))
-        D.page([T(0.9, 1.9, 10, 0.4, [[cv.get('kicker', 'Harness tutorials' + (f' · {num}' if num else ''))]], 13, C['accent'], SANS, bold=True, caps=True, spacing=2),
-                T(0.9, 2.4, 11.5, 1.2, [[cv.get('title', title)]], 54, C['ink'], SERIF, ls=1.0),
-                T(0.9, 3.65, 10.5, 1.3, [runs(cv.get('sub', ''))], 20, C['muted'], SERIF),
-                R(0.9, 5.15, 11.5, 0.06, fill=C['accent'], radius=False),
-                T(0.9, 5.4, 11.5, 1.3, [runs(s) for s in how], 13, C['ink'], SERIF, space=5)], footer=False)
 
     pages = list(getattr(X, 'PAGES', []))
     cl = getattr(X, 'CLOSING', None)
@@ -194,9 +251,79 @@ def make(slug, X, imgs):
         raise SystemExit(f'{slug}.py has no CLOSING: every deck ends with a closing page that points to {MUST_READ}.')
     if cl is not None:
         pages.append(dict(cl, kind='closing'))
+    kinds = [pg.get('kind') or ('steps' if 'steps' in pg else 'pic' if 'pic' in pg else 'shot' if 'shot' in pg else 'text') for pg in pages]
 
-    for n, pg in enumerate(pages, start=len(D.pages) + 1):
-        kind = pg.get('kind') or ('pic' if 'pic' in pg else 'shot' if 'shot' in pg else 'text')
+    # before drawing: the page number of each page, the first step number of each steps page, the group of each page
+    cv = getattr(X, 'COVER', None)
+    contents = getattr(X, 'CONTENTS', None)
+    first = 1 + (cv is not None) + bool(contents)
+    starts, groups, step, group = [], [], 1, None
+    for pg, kind in zip(pages, kinds):
+        starts.append(step)
+        if kind == 'steps':
+            if not 1 <= len(pg['steps']) <= 4: raise SystemExit(f'a steps page has {len(pg["steps"])} steps; give 1 to 4')
+            step += len(pg['steps'])
+        if kind != 'closing': group = pg.get('group', group)
+        groups.append(group if kind != 'closing' else None)
+
+    if cv is not None:
+        how = [f'Harness version {VERSION}.' + (' Follow the numbered steps in order.' if 'steps' in kinds else ' One step per page.'),
+               '**Bold** is what you see on the screen. `Courier` is what you type.'] + list(cv.get('how', []))
+        D.page([T(0.9, 1.9, 10, 0.4, [[cv.get('kicker', 'Harness tutorials' + (f' · {num}' if num else ''))]], 13, C['accent'], SANS, bold=True, caps=True, spacing=2),
+                T(0.9, 2.4, 11.5, 1.2, [[cv.get('title', title)]], 54, C['ink'], SERIF, ls=1.0),
+                T(0.9, 3.65, 10.5, 1.3, [runs(cv.get('sub', ''))], 20, C['muted'], SERIF),
+                R(0.9, 5.15, 11.5, 0.06, fill=C['accent'], radius=False),
+                T(0.9, 5.4, 11.5, 1.3, [runs(s) for s in how], 13, C['ink'], SERIF, space=5)], footer=False)
+
+    if contents:  # one row per group: its name, its steps, the page it starts on
+        rows = []
+        for name in dict.fromkeys(g for g in groups if g):  # each group once, in order
+            idx = [i for i, g in enumerate(groups) if g == name and kinds[i] == 'steps']
+            a = starts[idx[0]] if idx else None
+            b = starts[idx[-1]] + len(pages[idx[-1]]['steps']) - 1 if idx else None
+            rows.append((name, a, b, first + groups.index(name)))
+        if len(rows) > 7: warn.append(f'the contents has {len(rows)} groups; more than 7 do not fit')
+        title = contents.get('title', 'Contents') if isinstance(contents, dict) else 'Contents'
+        els = [group_label(title)]
+        y, rh = 1.15, 0.72
+        for name, a, b, p in rows:
+            steps = '' if a is None else (f'Step {a}' if a == b else f'Steps {a}–{b}')
+            els += [R(SX, y, SW, 0.012, fill=C['light'], radius=False),
+                    T(SX, y + 0.14, 7.2, 0.5, [[name]], 24, C['ink'], SERIF, ls=1.0),
+                    T(8.1, y + 0.24, 2.6, 0.35, [[steps]], 12, C['muted'], SANS, spacing=0.5),
+                    T(SX + SW - 1.2, y + 0.14, 1.2, 0.5, [[f'{p:02d}']], 24, C['accent'], SERIF, align='r', ls=1.0)]
+            y += rh
+        els.append(R(SX, y, SW, 0.012, fill=C['light'], radius=False))
+        D.page(els)
+
+    for i, (pg, kind) in enumerate(zip(pages, kinds)):
+        n = first + i
+        if kind == 'steps':
+            top = 0.88 if groups[i] else 0.55
+            els = [group_label(groups[i])] if groups[i] else []
+            asp, lines, srcs = [], [], []
+            for k, st in enumerate(pg['steps']):
+                lines.append((starts[i] + k, st.get('text', '')))
+                if words(st.get('text', '')) > 20: warn.append(f'page {n}, step {starts[i] + k}: {words(st["text"])} words; keep it to one short line')
+                if 'pic' in st:
+                    path = imgs.get(*([st['pic']] if isinstance(st['pic'], str) else st['pic']))
+                    srcs.append(path)
+                    if path: iw, ih = Image.open(path).size; asp.append(iw / ih)
+                    else: asp.append(SHOT_ASPECT)
+                elif 'shot' in st:
+                    srcs.append(None); asp.append(st.get('aspect', SHOT_ASPECT))
+                else:
+                    raise SystemExit(f'page {n}, step {starts[i] + k}: give pic (a screenshot) or shot (what to capture)')
+            cells, caps = arrange(asp, lines, top)
+            for st, (x, y, w, h), (num, t), c, path in zip(pg['steps'], cells, lines, caps, srcs):
+                if 'pic' in st:
+                    if path: els.append(P(path, x, y, w, h, border=True))
+                else:
+                    els += [R(x, y, w, h, line=GREY, dash=True),
+                            T(x + 0.25, y + h / 2 - 0.45, w - 0.5, 0.9, [[('m', '[Company: screenshot]')], [('m', st['shot'])]],
+                              12 if w > 4 else 10.5, GREY, SERIF, align='c', space=3)]
+                els.append(T(x, y + h + 0.1, w, c - 0.1, step_line(num, t), CAP, C['ink'], SERIF))
+            D.page(els, notes=pg.get('notes')); continue
         text = list(pg.get('text', []))
         nw = count_words(text)
         if nw > WORD_LIMIT: warn.append(f'page {n} ({pg.get("title", "")!r}): {nw} words, more than ~{WORD_LIMIT}')
@@ -255,7 +382,8 @@ def build(slug):
     D, warn = make(slug, X, imgs)
     if imgs.missing:
         raise SystemExit(f'{slug}: missing screenshots (no file, and no copy in {os.path.relpath(img_dir, ROOT)}):\n  ' + '\n  '.join(imgs.missing))
-    if ASK:  # the first pass asked for the heights of its text boxes: measure them, then lay the pages out again
+    for _ in range(4):  # a pass asked for the heights of its text boxes: measure them, then lay the pages out again
+        if not ASK: break
         measure(D, scratch); D, warn = make(slug, X, imgs)
     pptx_path = os.path.join(pptx_dir, f'{slug}.pptx')
     pdf_path = os.path.join(out_dir, f'{num} {title}.pdf' if num else f'{title}.pdf')
