@@ -2,6 +2,9 @@
 """The demo workspace behind the board screenshots of the tutorials: harness 1.7.45, a made-up code repository and made-up tasks.
 
   python3 source/tutorials/shots/demo.py build [--fresh]   unpack 1.7.45 (git archive of ~/Developer/DE-agentic-harness), make repos/orders-service and the tasks
+  python3 source/tutorials/shots/demo.py extra             add the states of the tour and tutorials 2 to 5 to a workspace built before (build does it too)
+  python3 source/tutorials/shots/demo.py pack on|off       the demo tool pack and its connection on or off (capture.mjs turns it on for the outside screens)
+  python3 source/tutorials/shots/demo.py hold              the held outside call of answer-ticket-t7 made again (it lives 10 minutes; the pack must be on)
   python3 source/tutorials/shots/demo.py start             start its board on 127.0.0.1:8845 in the background (`harness task board`, in a pseudo terminal)
   python3 source/tutorials/shots/demo.py pair              a new pairing link for a board that runs (a second `harness task board`, as a person would start it)
   python3 source/tutorials/shots/demo.py stop              stop the board
@@ -20,7 +23,6 @@ answer) is made from the board by capture.mjs --make-chat.
 
 from __future__ import annotations
 
-import io
 import json
 import os
 import re
@@ -600,7 +602,483 @@ Keep stock counts for a short time (a separate task), or move the import out of 
     task_md(name, "rca", "medium", "waiting for the user to accept", "The RCA is written.", "The user accepts the task.")
     cli("task", "deliver", "--task", name, "--summary", "The root cause: the Monday price list import kept the stock service busy, and each order line waits for one stock call. The evidence and two ways out are in RCA.md.")
     stop(session)
+    extra()
     print(f"built: {H}")
+
+
+# --- more states, for the tour and the tutorials 2 to 5 (demo.py extra adds them to a workspace built before) -----------------------
+
+KB = H / "knowledge-base"
+SHOP = REPOS / "shop-dw"
+
+SHOP_FILES = {
+    "Shop/Shop.sqlproj": "<Project Sdk=\"Microsoft.Build.Sql\"><PropertyGroup><Name>Shop</Name></PropertyGroup></Project>\n",
+    "Shop/dbo/Tables/order_lines.sql": "CREATE TABLE dbo.order_lines (\n    order_id INT NOT NULL,\n    sku CHAR(6) NOT NULL,\n    item_count INT NOT NULL,\n    price DECIMAL(9, 2) NOT NULL\n);\n",
+    "Shop/dbo/Tables/orders.sql": "CREATE TABLE dbo.orders (\n    order_id INT NOT NULL PRIMARY KEY,\n    total DECIMAL(11, 2) NOT NULL,\n    loaded_at DATETIME2 NOT NULL\n);\n",
+    "Shop/dbo/Tables/summary.sql": "CREATE TABLE dbo.summary (\n    day DATE NOT NULL PRIMARY KEY,\n    order_count INT NOT NULL,\n    total DECIMAL(13, 2) NOT NULL\n);\n",
+    "Shop/dbo/Tables/stock.sql": "CREATE TABLE dbo.stock (\n    sku CHAR(6) NOT NULL PRIMARY KEY,\n    on_hand INT NOT NULL\n);\n",
+    "Shop/dbo/Stored Procedures/usp_load_orders.sql": "CREATE PROCEDURE dbo.usp_load_orders\nAS\nBEGIN\n    -- one row per order, from its lines\n    INSERT INTO dbo.orders (order_id, total, loaded_at)\n    SELECT l.order_id, SUM(l.item_count * l.price), SYSDATETIME()\n    FROM dbo.order_lines AS l\n    WHERE NOT EXISTS (SELECT 1 FROM dbo.orders AS o WHERE o.order_id = l.order_id)\n    GROUP BY l.order_id;\nEND\nGO\n",
+    "Shop/dbo/Stored Procedures/usp_build_summary.sql": "CREATE PROCEDURE dbo.usp_build_summary\nAS\nBEGIN\n    DELETE FROM dbo.summary WHERE day = CAST(SYSDATETIME() AS DATE);\n    INSERT INTO dbo.summary (day, order_count, total)\n    SELECT CAST(o.loaded_at AS DATE), COUNT(*), SUM(o.total)\n    FROM dbo.orders AS o\n    WHERE o.loaded_at >= CAST(SYSDATETIME() AS DATE)\n    GROUP BY CAST(o.loaded_at AS DATE);\nEND\nGO\n",
+    "Shop/dbo/Stored Procedures/usp_count_stock.sql": "CREATE PROCEDURE dbo.usp_count_stock\nAS\nBEGIN\n    UPDATE s SET on_hand = s.on_hand - l.item_count\n    FROM dbo.stock AS s\n    JOIN dbo.order_lines AS l ON l.sku = s.sku;\nEND\nGO\n",
+    "jobs/Shop_Orders.sql": "EXEC msdb.dbo.sp_add_job @job_name = N'Shop_Orders', @enabled = 1;\nEXEC msdb.dbo.sp_add_jobstep @job_name = N'Shop_Orders', @step_name = N'Load orders', @subsystem = N'TSQL', @database_name = N'Shop', @command = N'EXEC dbo.usp_load_orders';\nEXEC msdb.dbo.sp_add_jobstep @job_name = N'Shop_Orders', @step_name = N'Summary', @subsystem = N'TSQL', @database_name = N'Shop', @command = N'EXEC dbo.usp_build_summary';\nEXEC msdb.dbo.sp_add_jobschedule @job_name = N'Shop_Orders', @name = N'Hourly', @freq_type = 4, @freq_interval = 1, @freq_subday_type = 8, @freq_subday_interval = 1;\n",
+    "jobs/Shop_Stock.sql": "EXEC msdb.dbo.sp_add_job @job_name = N'Shop_Stock', @enabled = 1;\nEXEC msdb.dbo.sp_add_jobstep @job_name = N'Shop_Stock', @step_name = N'Count stock', @subsystem = N'TSQL', @database_name = N'Shop', @command = N'EXEC dbo.usp_count_stock';\nEXEC msdb.dbo.sp_add_jobschedule @job_name = N'Shop_Stock', @name = N'Nightly', @freq_type = 4, @freq_interval = 1;\n",
+}
+
+FACTS = [
+    {"from": "job:Shop_Orders", "kind": "calls", "to": "sp:Shop.dbo.usp_load_orders"},
+    {"from": "sp:Shop.dbo.usp_load_orders", "kind": "writes", "to": "table:Shop.dbo.orders"},
+    {"from": "sp:Shop.dbo.usp_build_summary", "kind": "reads", "to": "table:Shop.dbo.orders"},
+]
+
+
+def git_repo(folder, files, message):
+    folder.mkdir(parents=True, exist_ok=True)
+    for relative, text in files.items():
+        path = folder / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    git = ["git", "-C", str(folder)]
+    if not (folder / ".git").exists():
+        run(git + ["init", "-q", "-b", "main"], cwd=DEMO)
+        run(git + ["config", "user.name", "Demo Developer"], cwd=DEMO)
+        run(git + ["config", "user.email", "dev@example.com"], cwd=DEMO)
+    run(git + ["add", "-A"], cwd=DEMO)
+    run(git + ["commit", "-qm", message], cwd=DEMO)
+
+
+def edit_dev(name, relative, old, new):
+    path = TASKS / name / "DEV" / relative
+    text = path.read_text(encoding="utf-8")
+    if old not in text:
+        sys.exit(f"{name}: {old!r} is not in {relative}")
+    path.write_text(text.replace(old, new), encoding="utf-8")
+
+
+def pre(session, tool_name, tool_input):
+    """A tool call the agent is about to make: the gate's answer (allow, deny, or held)."""
+    return hook("PreToolUse", session, tool_name=tool_name, tool_input=tool_input)
+
+
+def read(session, path):
+    """The agent read a file: the gate let it through, and the read finished (a read of the knowledge base is kept for its Last read)."""
+    pre(session, "Read", {"path": str(path)})
+    hook("PostToolUse", session, tool_name="Read", tool_input={"path": str(path)}, tool_result={"result_type": "success", "text_result_for_llm": "(the file)"})
+
+
+def make_kb():
+    """A made-up SQL repository (shop-dw), and a knowledge base for it: the sample toolkit, the company's content, two domains listed."""
+    git_repo(SHOP, SHOP_FILES, "Shop data warehouse: tables, procedures and jobs")
+    kit = H / ".harness/examples/kb-toolkits/sqlserver"
+    files = {
+        "README.md": "# Knowledge base\n\nWhat our code does, learned from the code. Made up for a demo.\n\n## Domains\n\n| Domain | What it does | Entry points | Status |\n| --- | --- | --- | --- |\n"
+                     "| orders | Loads orders from their lines and builds the daily summary | `job:Shop_Orders` | learned |\n"
+                     "| inventory | Counts stock against the order lines each night | `job:Shop_Stock` | not started |\n\n## Shared\n\nnone\n\n## Glossary\n\n[glossary.md](glossary.md)\n",
+        "glossary.md": "# Glossary\n\n| Term | Meaning |\n| --- | --- |\n| order line | one product of an order, with its count and price |\n| summary | one row per day: how many orders, and their total |\n",
+        "toolkit/toolkit.json": (kit / "toolkit.json").read_text(),
+        "toolkit/extract_sqlserver.py": (kit / "extract_sqlserver.py").read_text(),
+        "toolkit/facts.jsonl": "".join(json.dumps(fact) + "\n" for fact in FACTS),
+        "company/company.json": json.dumps({"schema_version": 1, "name": "Demo company", "skill_prefix": "demo"}, indent=2) + "\n",
+        "domains/.gitkeep": "",
+    }
+    git_repo(KB, files, "Knowledge base: toolkit, company content, the list of domains")
+    policy = H / ".harness/policies/target.override.json"
+    data = json.loads(policy.read_text())
+    data["repos"]["shop-dw"] = {"path": str(SHOP)}
+    data["repos"]["kb"] = {"path": "knowledge-base", "knowledge_base": True}
+    policy.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    # the toolkit is for shop-dw only (orders-service is Python), then the map, then a blind reading against it (kb audit)
+    kit_file = KB / "toolkit/toolkit.json"
+    kit_data = json.loads(kit_file.read_text())
+    kit_data["repos"] = ["shop-dw"]
+    kit_file.write_text(json.dumps(kit_data, indent=2) + "\n", encoding="utf-8")
+    cli("kb", "map", "--fresh")
+    answers = DEMO / "audit-answers.jsonl"
+    answers.write_text("".join(json.dumps(item) + "\n" for item in [
+        {"from": "job:Shop_Stock", "kind": "calls", "to": "dbo.usp_count_stock", "line": 2},
+        {"from": "job:Shop_Orders", "kind": "calls", "to": "dbo.usp_load_orders", "line": 2},
+        {"from": "job:Shop_Orders", "kind": "calls", "to": "dbo.usp_build_summary", "line": 3},
+        {"from": "sp:Shop.dbo.usp_count_stock", "kind": "writes", "to": "dbo.stock", "line": 4},
+        {"from": "sp:Shop.dbo.usp_count_stock", "kind": "reads", "to": "dbo.order_lines", "line": 6},
+        {"from": "sp:Shop.dbo.usp_build_summary", "kind": "writes", "to": "dbo.summary", "line": 4},
+        {"from": "sp:Shop.dbo.usp_build_summary", "kind": "reads", "to": "dbo.orders", "line": 7},
+        {"from": "sp:Shop.dbo.usp_load_orders", "kind": "writes", "to": "dbo.orders", "line": 5},
+        {"from": "sp:Shop.dbo.usp_load_orders", "kind": "reads", "to": "dbo.order_lines", "line": 7}]), encoding="utf-8")
+    scored = cli("kb", "audit", "--answers", str(answers))
+    signature = json.loads((H / ".harness/runtime/kbmap/shop-dw.json").read_text())["signature"]
+    rows = "".join(f"| {item['type']} | {item['objects']} | {item['recall']:.2f} | {item['precision']:.2f} |\n" for item in scored.get("types", []))
+    (KB / "toolkit/audit.md").write_text(f"# Audit of the map\n\nToolkit `sqlserver`, signature `{signature}`. A blind reading of every object, scored by `harness kb audit --answers`.\n\n"
+                                         f"| Type | Objects | Recall | Precision |\n| --- | --- | --- | --- |\n{rows}\nResult: pass\n", encoding="utf-8")
+    git_repo(KB, {}, "Toolkit for shop-dw, and its audit")
+
+
+ORDERS_DOMAIN = {
+    "domain.yaml": """schema_version: 1
+domain: orders
+description: Loads each order from its lines every hour, and builds the summary of the day.
+updated: 2026-11-17
+generated_by: generic-kb-learn-synthesize, harness 1.7.45
+sources:
+  - repo: shop-dw
+    branch: main
+    commit: {commit}
+entry_points: ["job:Shop_Orders"]
+boundaries:
+  - name: stock
+    note: usp_count_stock reads the same order lines; it belongs to the domain inventory.
+shared: []
+excluded: []
+files:
+  architecture: architecture.md
+open_questions:
+  - id: late-lines
+    level: unknown
+    note: What happens to a line that arrives after its order was loaded; the code does not say.
+""",
+    "architecture.md": """# Architecture: orders
+
+## Purpose
+
+Order lines come in; one row per order and one summary row per day come out.
+
+## Flows
+
+- Hourly: `job:Shop_Orders` runs `sp:Shop.dbo.usp_load_orders`, then `sp:Shop.dbo.usp_build_summary`.
+
+## Key data
+
+- `table:Shop.dbo.order_lines`: what comes in.
+- `table:Shop.dbo.orders`: one row per order, with its total.
+- `table:Shop.dbo.summary`: one row per day.
+
+## Where to start
+
+- RCA of a wrong total: `sp:Shop.dbo.usp_load_orders`.
+- A change to the summary: `sp:Shop.dbo.usp_build_summary`.
+
+## Traps
+
+- An order is loaded once: a line that comes later is never added to its total.
+
+## Limits
+
+- What sends the order lines is outside this repository.
+""",
+    "environment.md": "# Environment: orders\n\n| Environment | Seen | Object | Code then | Fact | From | Level |\n| --- | --- | --- | --- | --- | --- | --- |\n",
+    "requests.md": "# Requests: orders\n\n| Id | Object | Kind | Why | How to get it | Status |\n| --- | --- | --- | --- | --- | --- |\n"
+                   "| req-0001 | `job:Shop_Orders` | runtime | Whether the job is enabled in PROD, and its schedule | In PROD: `SELECT enabled FROM msdb.dbo.sysjobs WHERE name = 'Shop_Orders'` | open |\n",
+    "exam.md": "# Exam: orders\n\n1. A line arrives after its order was loaded. Is it in the total? No: an order is loaded once.\n",
+    "discovery/learn-plan.md": "# Learn plan: orders\n\nEntry point `job:Shop_Orders`. One batch: the job, two procedures, three tables.\n",
+    "objects/job.md": """# Jobs
+
+## job:Shop_Orders
+
+- What: the hourly load of orders and the summary.
+- Reads: none · Writes: none · Called by: none · Calls: sp:Shop.dbo.usp_build_summary, sp:Shop.dbo.usp_load_orders
+- Level: verified (read in shop-dw at {commit})
+
+Step 1 loads the orders (L2), step 2 builds the summary (L3). Runs hourly (L4).
+""",
+    "objects/sp.md": """# Procedures
+
+## sp:Shop.dbo.usp_load_orders
+
+- What: one row per new order, its total from its lines.
+- Reads: table:Shop.dbo.order_lines, table:Shop.dbo.orders · Writes: table:Shop.dbo.orders · Called by: job:Shop_Orders · Calls: none
+- Level: verified (read in shop-dw at {commit})
+
+Sums count times price of each line (L6). Skips an order already loaded (L8).
+
+Traps: a late line is never added.
+
+## sp:Shop.dbo.usp_build_summary
+
+- What: the summary row of today, made again.
+- Reads: table:Shop.dbo.orders · Writes: table:Shop.dbo.summary · Called by: job:Shop_Orders · Calls: none
+- Level: verified (read in shop-dw at {commit})
+
+Deletes today's row (L4), then counts and sums today's orders (L5-L9).
+""",
+    "objects/table.md": """# Tables
+
+## table:Shop.dbo.order_lines
+
+- What: the lines of each order as they come in.
+- Reads: none · Writes: none · Called by: sp:Shop.dbo.usp_load_orders · Calls: none
+- Level: verified (read in shop-dw at {commit})
+
+## table:Shop.dbo.orders
+
+- What: one row per order.
+- Reads: none · Writes: none · Called by: sp:Shop.dbo.usp_build_summary, sp:Shop.dbo.usp_load_orders · Calls: none
+- Level: verified (read in shop-dw at {commit})
+
+## table:Shop.dbo.summary
+
+- What: one row per day.
+- Reads: none · Writes: none · Called by: sp:Shop.dbo.usp_build_summary · Calls: none
+- Level: verified (read in shop-dw at {commit})
+""",
+    "objects/index.jsonl": "",
+}
+
+ORDERS_IDS = ["job:Shop_Orders", "sp:Shop.dbo.usp_build_summary", "sp:Shop.dbo.usp_load_orders", "table:Shop.dbo.order_lines", "table:Shop.dbo.orders", "table:Shop.dbo.summary"]
+
+
+def learn_orders():
+    """A knowledge base task that learns the domain orders and writes it back (committed on the knowledge base's main branch)."""
+    name = "learn-orders"
+    session = new_task(20, name, "kb", "Learn the domain orders of shop-dw from zero; the entry point is the job Shop_Orders.")
+    req_md(name, what="Learn the domain `orders` of `shop-dw` from its code, from the entry point `job:Shop_Orders`, and write it into the knowledge base.",
+           not_do="Do not learn the stock count: it is the domain inventory.", done_t="- [T1] Every object the job reaches has a card.\n- [T2] `harness kb cardcheck` passes.")
+    stop(session)
+    person("confirm-req", name)
+    prompt(session, "Confirmed.")
+    plan_md(name, files="- `kb/domains/orders/` (new): domain.yaml, architecture.md, the cards, the index.", steps="1. One batch: the job, two procedures, three tables.\n2. Architecture.\n3. Write back.",
+            check="`kb cardcheck`, `kb check`.", risks="none")
+    stop(session)
+    person("approve-plan", name)
+    prompt(session, "Approved.")
+    commit = run(["git", "-C", str(SHOP), "rev-parse", "--short", "HEAD"], cwd=DEMO).stdout.strip()
+    folder = TASKS / name / "DEV/kb/domains/orders"
+    for relative, text in ORDERS_DOMAIN.items():
+        path = folder / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text.replace("{commit}", commit), encoding="utf-8")
+    where = f".workspace/sandbox/tasks/{name}/DEV/kb/domains/orders"
+    for item in ORDERS_IDS:
+        cli("kb", "index", "--path", where, "--id", item, "--level", "verified")
+    cli("kb", "stamp", "--path", where)
+    print("cardcheck:", json.dumps(cli("kb", "cardcheck", "--path", where, check=False))[:600])
+    todo_md(name, ["- [x] Batch 1: the job, two procedures, three tables", "- [x] Architecture", "- [x] Write back"])
+    cli("task", "diff", "--task", name)
+    cli("task", "promote", "--dry-run", "--task", name)
+    stop(session)
+    person("approve-promote", name)
+    prompt(session, "Approved. Write it back.")
+    cli("task", "promote", "--task", name)
+    task_md(name, "kb", "full", "done", "The domain orders is written back.", "none")
+    stop(session)
+
+
+def kb_card_task():
+    """A knowledge base task whose dry run waits for Approve promote; and, after it was learned, a change in shop-dw that makes two cards stale."""
+    name = "fix-orders-card"
+    session = new_task(21, name, "kb", "The card of usp_load_orders should say that a late order line is never added. Fix it in the knowledge base.")
+    req_md(name, what="The card of `sp:Shop.dbo.usp_load_orders` in the domain `orders` says, with its line, that a line which arrives after its order was loaded is never added to the total.",
+           not_do="No other card.", done_t="- [T1] The card says it, with the line (L8).")
+    stop(session)
+    person("confirm-req", name)
+    prompt(session, "Confirmed.")
+    for path in ("domains/orders/architecture.md", "domains/orders/objects/sp.md", "domains/orders/objects/index.jsonl"):
+        read(session, KB / path)  # what the board shows as "last read by a task"
+    plan_md(name, files="- `kb/domains/orders/objects/sp.md`: the card of usp_load_orders.", steps="1. Fetch the card.\n2. Add the sentence, with its line.\n3. Dry run.", check="Read the diff.", risks="none")
+    stop(session)
+    person("approve-plan", name)
+    prompt(session, "Approved.")
+    cli("task", "fetch", "kb/domains/orders/objects/sp.md", "--task", name)
+    edit_dev(name, "kb/domains/orders/objects/sp.md", "Traps: a late line is never added.", "Traps: a line that arrives after its order was loaded is never added to the total (L8: the order is skipped once it exists).")
+    todo_md(name, ["- [x] Fetch the card", "- [x] Add the sentence", "- [x] Dry run"])
+    cli("task", "diff", "--task", name)
+    cli("task", "promote", "--dry-run", "--task", name)
+    task_md(name, "kb", "full", "waiting for the user to approve the promote", "The dry run is done.", "The user approves the promote.")
+    stop(session)
+    # shop-dw moves on after the domain was learned: kb stale finds the cards learned from the old code
+    proc = SHOP / "Shop/dbo/Stored Procedures/usp_load_orders.sql"
+    proc.write_text(proc.read_text().replace("    GROUP BY l.order_id;", "      AND l.item_count > 0\n    GROUP BY l.order_id;"), encoding="utf-8")
+    git_repo(SHOP, {}, "usp_load_orders: leave out lines with no items")
+    cli("kb", "map")
+
+
+def gate_task():
+    """A development task at work whose agent tried things the gate refused: an edit of the code repository itself, a git push, a ticket deleted."""
+    name = "add-order-export"
+    session = through_plan(22, name, "Add a CSV export of the orders of one day to orders-service.", dict(
+        what="`orders-service` can export the orders of one day as CSV.", not_do="No change to how orders are stored.",
+        done_t="- [T1] `orders/export.py` writes the CSV.\n- [T2] A test of one day with two orders."),
+        dict(files="- `orders-service/orders/export.py` (new)\n- `orders-service/tests/test_export.py` (new)", steps="1. Write the export.\n2. Write the test.\n3. Dry run.",
+             check="[T1], [T2] in the diff.", risks="none"))
+    pre(session, "Edit", {"path": str(ORDERS / "orders/api.py"), "old_str": "from . import client", "new_str": "from . import client, export"})
+    pre(session, "Bash", {"command": "git -C ../repos/orders-service push origin main", "description": "push"})  # never approved
+    pre(session, "Bash", {"command": "git -C ../repos/orders-service checkout -b try-export", "description": "a branch to try"})  # the person may approve it (harness approve-command)
+    pre(session, "Bash", {"command": "demotracker --project DEMO delete T-12", "description": "delete the old ticket"})
+    pre(session, "Read", {"path": str(ORDERS / "orders/api.py")})
+    todo_md(name, ["- [ ] Write orders/export.py <- now", "- [ ] Write the test", "- [ ] Dry run of the write-back"])
+    task_md(name, "dev", "full", "in progress", "Writing the export.", "Write the test.")
+
+
+def checks_used_task():
+    """One independent check asked; three FAILs: the checks are used up and wait for the person."""
+    name = "check-coupon-codes"
+    session = session_id(23)
+    prompt(session, "Refuse a coupon code that is not 8 capital letters or digits, in orders-service. [review]=1", first=True)
+    cli("task", "new", name, "--kind", "dev", "--session-id", session)
+    req_md(name, what="`orders-service` refuses an order whose coupon code is not 8 capital letters or digits.", not_do="No change to prices.",
+           done_t="- [T1] `orders/api.py` checks the code against `^[A-Z0-9]{8}$`.\n- [T2] The refusal names the code.\n- [T3] A test sends a wrong code.")
+    stop(session)
+    person("confirm-req", name)
+    prompt(session, "Confirmed.")
+    plan_md(name, files="- `orders-service/orders/api.py`\n- `orders-service/tests/test_api.py`", steps="1. The check.\n2. The test.\n3. One independent check.", check="By the reviewer.", risks="none")
+    stop(session)
+    person("approve-plan", name)
+    prompt(session, "Approved.")
+    cli("task", "fetch", "orders-service/orders/api.py", "orders-service/tests/test_api.py", "--task", name)
+    edit_dev(name, "orders-service/orders/api.py", "def create_order(items, base_url):\n", "def create_order(items, base_url, coupon=None):\n")
+    edit_dev(name, "orders-service/orders/api.py", '    """Check stock for every item, then accept the order."""\n',
+             '    """Check stock for every item, then accept the order."""\n    if coupon is not None and len(coupon) != 8:\n        return {"ok": False, "error": "wrong coupon"}\n')
+    todo_md(name, ["- [x] The check", "- [ ] The test", "- [ ] One independent check <- now"])
+    api = f".workspace/sandbox/tasks/{name}/DEV/orders-service/orders/api.py"
+    findings = [f"VERDICT: FAIL\n- {api}:7 the code is only measured, not checked against capital letters or digits | basis: REQ.md [T1]\n- {api}:8 the refusal does not name the code | basis: REQ.md [T2]\n",
+                f"VERDICT: FAIL\n- {api}:8 the refusal does not name the code | basis: REQ.md [T2]\n",
+                f"VERDICT: FAIL\n- {api}:7 a code of 8 small letters passes | basis: REQ.md [T1]\n"]
+    fixes = [('len(coupon) != 8', 'not coupon.isalnum() or len(coupon) != 8'), ('"wrong coupon"', 'f"wrong coupon: {coupon}"'), (None, None)]
+    for verdict, (old, new) in zip(findings, fixes):
+        cli("task", "diff", "--task", name)
+        cli("task", "review", "start", "--task", name)
+        person("verdict", name, stdin=verdict)
+        prompt(session, "(the agent goes on after the check)")
+        if old:
+            edit_dev(name, "orders-service/orders/api.py", old, new)
+    task_md(name, "dev", "full", "waiting for the user: the checks are used up", "Three checks failed.", "The user decides: more checks, or waive them.")
+    stop(session)
+
+
+def outside_task():
+    """A task linked to a ticket of the demo tracker: a comment waits for the person's approval (a held outside call)."""
+    name = "answer-ticket-t7"
+    session = new_task(24, name, "qa", "Read demo ticket T-7, link it to this task, and comment on it: checked, the fix is on its branch.")
+    cli("task", "link", "add", "demo:T-7", "--task", name)
+    pre(session, "Bash", {"command": "demotracker --project DEMO get T-7", "description": "read the ticket"})
+    write(name, "TASK.md", (TASKS / name / "TASK.md").read_text().replace("<one sentence>", "The comment waits for the user's approval.").replace("<the one thing to do next>", "The user approves the comment."))
+    hold()
+
+
+def hold():
+    """The comment of answer-ticket-t7, held for the person. A held call lives 10 minutes (gate.json, approval_minutes), so capture.mjs calls this
+    again (with the pack on) before it takes the outside screens. The agent waits on it with `harness wait --approval`; the wait runs out, the agent
+    ends its turn, as the gate tells it to: the card then says the call waits for the person."""
+    session = session_id(24)
+    pre(session, "Bash", {"command": 'demotracker --project DEMO comment T-7 --text "Checked: the fix is on branch feature/raise_stock_timeout."', "description": "comment on the ticket"})
+    listing = ("import sys\nsys.path.insert(0, '.harness/engine')\nfrom pathlib import Path\nfrom core import approvals\n"
+               "print(' '.join(str(i.get('code')) for i in approvals.pending(Path('.').resolve(), 10, file=approvals.ACTIONS) if str(i.get('task', '')).endswith('answer-ticket-t7')))")
+    for code in run([sys.executable, "-c", listing]).stdout.split()[-1:]:
+        run([sys.executable, ".harness/engine/cli.py", "wait", "--approval", code, "--timeout", "10", "--task", "answer-ticket-t7"], check=False)
+    stop(session)
+
+
+def test_and_design_tasks():
+    name = "test-sku-check"
+    session = new_task(25, name, "test", "Test the SKU check of validate-sku-format on DEV and IST.")
+    write(name, "TEST-GUIDE.md", """
+# Test guide: test-sku-check
+
+Written for: Alex. Change under test: an order with a wrong SKU is refused, branch `feature/validate_sku_format` of `orders-service`, written back by task `validate-sku-format`.
+
+Order: DEV, then IST. Start the next only when the one before passed.
+
+## DEV
+
+Runner: person
+
+### Steps
+
+1. Send an order with the SKU `ab12`.
+
+   ```
+   curl -s -X POST http://orders-dev.example.test/orders -d '{"items": [{"sku": "ab12", "count": 1, "price": 1.0}]}'
+   ```
+
+   - Expect: `{"ok": false, "error": "wrong SKU: ab12"}`
+
+### Pass when
+
+- [ ] A wrong SKU is refused, and the refusal names it.
+
+### Send back
+
+- The output of step 1.
+
+## IST
+
+Runner: person
+
+### Steps
+
+1. The same order on IST.
+
+   ```
+   curl -s -X POST http://orders-ist.example.test/orders -d '{"items": [{"sku": "ab12", "count": 1, "price": 1.0}]}'
+   ```
+
+### Pass when
+
+- [ ] A wrong SKU is refused, and the refusal names it.
+
+### Send back
+
+- The output of step 1.
+""")
+    given = DEMO / "dev-result.txt"
+    given.write_text('{"ok": false, "error": "wrong SKU: ab12"}\n', encoding="utf-8")
+    cli("task", "test", "record", "--task", name, "--env", "DEV", "--given-file", str(given), "--run-by", "Alex, 2026-11-17",
+        "--row", "A wrong SKU is refused, and the refusal names it.::step 1 returned the refusal with the SKU::PASS", "--follow-up", "Run IST.")
+    stop(session)
+
+    name = "design-order-events"
+    session = new_task(26, name, "design", "Design how orders-service tells other services that an order was accepted.")
+    write(name, "DESIGN.md", """
+# Design: order events
+
+## Options
+
+| Option | How | For | Against |
+| --- | --- | --- | --- |
+| A. A table others read | `order_events`, read every minute | Simple | Readers poll; a minute late |
+| B. A message queue | one message per accepted order | At once; readers decoupled | A queue to run |
+
+## Proposal
+
+B, with the table of A kept for a replay.
+
+## Open
+
+- Who runs the queue.
+""")
+    stop(session)
+
+
+CONNECTIONS = {"connections": {"demo": {"type": "demotracker", "env": "none", "auth": "signin", "project": "DEMO", "label": "Demo tracker"}}}
+
+
+def pack(on):
+    """The demo tool pack (demotracker, a made-up ticket board that ships with the harness) and its connection, on or off for this company.
+    On, the board wants VS Code started with the pack's program folder: the VS Code that runs here was not, so the Enter screen says Not ready
+    and capture.mjs skips it. Off (the state the demo is left in), every line is green. The held call and the links stay in the tasks either way."""
+    tools = KB / "company/tools"
+    tools.mkdir(parents=True, exist_ok=True)
+    (tools / "packs.json").write_text(json.dumps({"use": ["demotracker"] if on else []}, indent=2) + "\n", encoding="utf-8")
+    if on:
+        (tools / "connections.json").write_text(json.dumps(CONNECTIONS, indent=2) + "\n", encoding="utf-8")
+    else:
+        (tools / "connections.json").unlink(missing_ok=True)
+    git = ["git", "-C", str(KB)]
+    run(git + ["add", "-A"], cwd=DEMO)
+    if run(git + ["diff", "--cached", "--quiet"], cwd=DEMO, check=False).returncode:
+        run(git + ["commit", "-qm", "Demo tracker pack " + ("on" if on else "off")], cwd=DEMO)
+    run([sys.executable, ".harness/engine/cli.py", "company", "sync"])
+
+
+def extra():
+    if not KB.exists():
+        make_kb()
+    if not (TASKS / "learn-orders").exists():
+        learn_orders()
+    pack(True)
+    for name, make in (("fix-orders-card", kb_card_task), ("add-order-export", gate_task), ("check-coupon-codes", checks_used_task),
+                       ("answer-ticket-t7", outside_task), ("test-sku-check", test_and_design_tasks)):
+        if not (TASKS / name).exists():
+            make()
+    pack(False)
+    print(f"extra states made in {H}")
 
 
 # --- the board ---------------------------------------------------------------------------------------------------------------------
@@ -668,6 +1146,12 @@ if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else ""
     if what == "build":
         build("--fresh" in sys.argv)
+    elif what == "extra":
+        extra()
+    elif what == "pack" and len(sys.argv) > 2 and sys.argv[2] in ("on", "off"):
+        pack(sys.argv[2] == "on")
+    elif what == "hold":
+        hold()
     elif what == "start":
         start_board()
     elif what == "pair":
