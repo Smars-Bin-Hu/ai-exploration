@@ -7,7 +7,7 @@
 # Kept from the fact-check (review/5_kb-r1.md) and the newcomer test (test/5_kb-*): a skill chip only fills the box (press
 # Send); the architecture step has no button (say `continue learn-<domain>`); which buttons open a Copilot chat;
 # report.md only once the task is closed, its KB section only if it read any; Last read by a task is a date per domain;
-# 1.7.45 cannot start an empty knowledge base. The task page does not list what a task read.
+# a team with none brings in a folder with README.md and an empty domains/ (1.7.45 has no button that makes an empty one). The task page does not list what a task read.
 
 B = 'source/tutorials/img/_board/'
 D = '.claude/loops/2026-11-17-ai-exploration-map/ref/harness-1.7.45/docs/images/'
@@ -60,16 +60,19 @@ PAGES = [
  # ---- Build it once -----------------------------------------------------------------------------------------
  dict(group='Build it once', steps=[
    dict(pic=(B + 'lobby.png', (44, 311, 2176, 383)),
-        text='None here? Import your team’s. 1.7.45 cannot start an empty knowledge base.'),
-   dict(pic=(B + 'kb-overview.png', (36, 200, 1500, 306)),
-        text='To build: these two steps done first, in the setup (**Change the setup**).'),
+        text='No knowledge base yet? First make a folder holding a `README.md` and an empty `domains/` folder.'),
+   dict(pic=(B + 'tour-setup-window.png', (80, 495, 1560, 615)),
+        text='The gear above the book (**Change the setup**) › **Knowledge base** › **Folder**: its path, **Save**.'),
    dict(shot='The knowledge base window, tab Overview, with Toolkit as the next step: “Next is the toolkit…” and the button Do the next step in a chat',
         aspect=16/5,
-        text='One person, once per code base: **Do the next step in a chat**. The agent leads.'),
+        text='It is now a git repository. Then build it from your code: **Do the next step in a chat**.'),
    dict(shot='VS Code: a Copilot chat with /harness-rookie-new-knowledgebase typed in the chat box, not sent', aspect=16/10,
         text='Or type `/harness-rookie-new-knowledgebase` in a Copilot chat. Later: “continue the knowledge base”.'),
   ],
-  notes='Sources: messages dock.kb.empty.go = "Import a knowledge base", ready.p.kb.short; setupjob.py L82-83 and L111 (a folder with no content is '
+  notes='Sources: messages dock.kb.empty.go = "Import a knowledge base", ready.p.kb.short; setupjob.py check (Folder: refused when it holds nothing but README.md, '
+        'setup.kb.nothing; KB_IGNORED; README.md wanted as the entry, setup.kb.noreadme), copy_folder (into knowledge-base/), repository() (kbsetup.init: git init, '
+        'one first commit on main, registered as kb with knowledge_base true; setup.kb.git); dock.js L535 (the gear is Change the setup), setup.save = "Save"; '
+        'the build (toolkit/, domains/) is then written into that repository by kb tasks; setupjob.py L82-83 and L111 (a folder with no content is '
         'not copied; Not yet makes nothing); kbsetup.py init (kb.init.empty: no content, no repository); targets.KB_IGNORED (a README alone is no content). '
         'dock.js nextButton() (targets/kb_repo: "Change the setup"; otherwise "Do the next step in a chat" starts harness-rookie-new-knowledgebase); '
         'SKILL.md harness-rookie-new-knowledgebase (Prerequisites; "continue the knowledge base"); road.md (about an hour of your time, once).'),
@@ -188,6 +191,6 @@ PAGES = [
 CLOSING = dict(title='The knowledge base, in short',
   text=[
    ('list', ['The agent reads the knowledge base before the code; the code stays the truth.',
-             'It is built once, step by step; 1.7.45 imports one but cannot start an empty one.',
+             'None yet? Bring in a folder with `README.md` and an empty `domains/` (Change the setup), then build it once, step by step.',
              'It changes only through a knowledge base task: you approve the plan and the write-back, one commit on its base branch. Push it yourself.']),
   ])
