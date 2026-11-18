@@ -20,7 +20,8 @@ class Rules:
     busy: float = 0.4         # added to dwell for a busy picture
     scene_gap: float = 1.4    # silence between scenes (at least dwell + lead)
     lead: float = 0.3         # a new picture starts fading in this long before its first word
-    min_hold: float = 2.2     # a picture stays at least this long (fade-in to next fade-in)
+    min_hold: float = 2.2     # a picture stays at least this long (fade-in to next fade-in) before a different picture
+    step_min_hold: float = 1.0  # a step of a figure or list stays at least this long before its next step
     head: float = 0.6         # the first word starts this long after the video starts
     tail: float = 1.2         # the last picture stays this long after the last word
     xfade: float = 0.5        # cross-dissolve between different pictures
@@ -77,16 +78,21 @@ def compute(sents, pics, r):
 
 
 def merge(sents, pics, r):
-    """Merges beats shorter than min_hold, shortest first, until none is left (or none can be merged).
-    A short picture followed by a later step of the same figure or list: the later step shows from the short one's start.
-    Otherwise, if the picture before it is in the same scene, the short one is skipped (the one before stays longer);
-    else the next one (same scene) shows from its start. Words are never moved or cut.
+    """Merges beats that are too short, shortest first, until none is left (or none can be merged). Too short: under
+    min_hold before a different picture; under step_min_hold before the next step of the same figure, list, loop,
+    timeline or formula (a step dissolve is gentle, so a step may go by quickly and stay on its own words).
+    A short picture is skipped when the picture before it is in the same scene (the one before stays longer, and a
+    later step never shows early); else the next one (same scene) shows from its start. Words are never moved or cut.
     -> (pics, layout, merges: [(dropped pic, kept pic, hold seconds, how)], short: pics that stay short)"""
     pics = [dict(p) for p in pics]
     merges, stuck = [], set()
     while True:
         lay = compute(sents, pics, r)
-        short = [i for i, hd in enumerate(lay['hold']) if hd < round(r.min_hold * r.fps) and id(pics[i]) not in stuck]
+        def need(i):
+            nx = pics[i + 1] if i + 1 < len(pics) else None
+            step = nx is not None and pics[i]['group'] and nx['group'] == pics[i]['group'] and nx['scene'] == pics[i]['scene']
+            return round((r.step_min_hold if step else r.min_hold) * r.fps)
+        short = [i for i, hd in enumerate(lay['hold']) if hd < need(i) and id(pics[i]) not in stuck]
         if not short:
             break
         i = min(short, key=lambda x: lay['hold'][x])
@@ -94,9 +100,7 @@ def merge(sents, pics, r):
         same_next = nxt is not None and nxt['scene'] == p['scene']
         same_prev = prv is not None and prv['scene'] == p['scene']
         secs = lay['hold'][i] / r.fps
-        if same_next and p['group'] and nxt['group'] == p['group']:
-            how, kept = 'later step shown from its start', nxt
-        elif same_prev:
+        if same_prev:
             how, kept = 'skipped, the picture before stays', prv
         elif same_next:
             how, kept = 'next picture shown from its start', nxt

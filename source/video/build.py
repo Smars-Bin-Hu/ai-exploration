@@ -640,7 +640,10 @@ def main():
                     '(a screenshot, a list of 4+ items, a figure with many words)')
     ap.add_argument('--scene-gap', type=float, default=R.scene_gap, help='seconds of silence between scenes (at least dwell + lead)')
     ap.add_argument('--lead', type=float, default=R.lead, help='a new picture starts fading in this many seconds before its first word')
-    ap.add_argument('--min-hold', type=float, default=R.min_hold, help='a picture stays at least this many seconds; shorter beats are merged')
+    ap.add_argument('--min-hold', type=float, default=R.min_hold, help='a picture stays at least this many seconds before a '
+                    'different picture; shorter beats are merged')
+    ap.add_argument('--step-min-hold', type=float, default=R.step_min_hold, help='a step of a figure or list stays at least '
+                    'this many seconds before its next step')
     ap.add_argument('--xfade', type=float, default=R.xfade, help='cross-dissolve seconds between different pictures (0: cut)')
     ap.add_argument('--step-xfade', type=float, default=R.step_xfade, help='cross-dissolve seconds between steps of one figure or list')
     ap.add_argument('--head', type=float, default=R.head, help='seconds before the first word')
@@ -825,7 +828,7 @@ def main():
 
     # 3. timeline, in frames: the timing rules are in timing.py
     rules = timing.Rules(fps=fps, gap=args.gap, dwell=args.dwell, busy=args.busy, scene_gap=args.scene_gap, lead=args.lead,
-                         min_hold=args.min_hold, head=args.head, tail=args.tail, xfade=args.xfade, step_xfade=args.step_xfade,
+                         min_hold=args.min_hold, step_min_hold=args.step_min_hold, head=args.head, tail=args.tail, xfade=args.xfade, step_xfade=args.step_xfade,
                          para_gap=args.para_gap)
     for p in shown:
         p['busy'] = busy(p['spec'])
@@ -948,7 +951,8 @@ def main():
         if s['how'] != 'aligned' and len(s['lines']) > 1:
             print(f'  {s["how"]:<12} line {s["line"]} ({s["matched"]:.0%} of words matched): {s["text"][:70]}')
     holds = lay['hold']
-    print(f'pictures: {len(shown)} shown, shortest hold {sec(min(holds)):.2f} s (min {args.min_hold} s), '
+    print(f'pictures: {len(shown)} shown, shortest hold {sec(min(holds)):.2f} s (min {args.min_hold} s, '
+          f'{args.step_min_hold} s before a next step), '
           f'{sum(1 for t in trans[1:] if t[1] == "dissolve")} dissolves, {sum(1 for t in trans[1:] if t[1] == "step")} step dissolves')
     for p, kept, secs, how in merges:
         print(f'  merged line {p["spec"]["line"]} ({p["spec"]["raw"][2:50]}, {secs:.2f} s): {how} (line {kept["spec"]["line"]})')
