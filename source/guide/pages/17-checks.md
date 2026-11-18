@@ -62,11 +62,11 @@ Autorun cannot be switched on without checks: `task autorun on` needs n of at le
 
 ## Independent checks: how they differ from self-checks
 
-A self-check is the author checking its own work inside its loop: running a test, a build or a linter and reading the result. In the harness it is asked by text, for example of the worker of autorun, which runs the check its step names {src:.github/agents/worker.agent.md#L25}; no code counts it. An independent check is made by another agent that has not seen the reasoning, and code counts it. A self-check gives feedback during the work; an independent check finds, afterwards, what the author's reasoning walked past. The data pipeline repositories the harness is built for cannot be run locally, so the reviewer checks by reading the work and the diff, not by running tests {src:docs/05-design.md#L202}.
+A self-check is the author checking its own work inside its loop: running a test, a build or a linter and reading the result. In the harness it is asked by text, for example of the worker of autorun, which runs the check its step names {src:.github/agents/worker.agent.md#L25}; no code counts it. An independent check is made by another agent that has not seen the reasoning, and code counts it. The data pipeline repositories the harness is built for cannot be run locally, so the reviewer checks by reading the work and the diff, not by running tests {src:docs/05-design.md#L202}.
 
 ## Independent checks: what is enforced by code, and what is only an instruction
 
-**Code:** only the person sets n, extends, waives or dismisses; the reviewer is let through only with checks on and a round open; the package and the verdict are written by the command line and the hook, where the agent's edit tools cannot reach; code reads the verdict, drops findings with no real place, counts the passes, holds the limit, refuses the dry run without the passes, and in autorun requires checks {src:.harness/engine/modules/task/handler.py#L278-L344} {src:.harness/engine/modules/task/taskreview.py#L359-L436} {src:.harness/policies/gate.json#L131-L137}. The reviewer's tool list, without edit tools, is applied by Copilot from the agent file.
+**Code:** only the person sets n, extends, waives or dismisses; the reviewer is let through only with checks on and a round open; the package and the verdict are written by the command line and the hook, where the agent's edit tools cannot reach; code reads the verdict, drops findings with no real place, counts the passes, holds the limit, refuses the dry run without the passes, and in autorun requires checks {src:.harness/engine/modules/task/handler.py#L278-L344} {src:.harness/engine/modules/task/taskreview.py#L359-L436} {src:.harness/policies/gate.json#L131-L137}. The reviewer's tool list, without edit tools, is applied by Copilot, not by the harness, from `.github/agents/reviewer.agent.md`, a file the gate does not guard: a terminal write, or the edit tools of a chat with no task, can change it {src:.harness/policies/gate.json#L4-L19}.
 
 **Text only:** that the call message holds only the package path (the hook adds the path but does not read the message); that the reviewer runs only read-only commands and writes no file through the terminal; that it does a full check, gives no fix, leaves `LOG.md` and `TODO.md` unread, and from the second check reports only what affects correctness; that the agent fixes the findings, checks after its last change, and stops at the limit {src:.github/skills/harness-my-task/SKILL.md#L115-L120} {src:.github/agents/reviewer.agent.md#L27-L57}.
 
@@ -84,17 +84,17 @@ The **person** sets the number of checks, gives more, waives them or dismisses o
 
 ## Independent checks: where in the source
 
-Under `.harness/engine/modules/task/` {src:.harness/engine/modules/task/taskreview.py#L1-L22}: `taskreview.py` (n, `review start`, the record of a verdict, the count, the limit, extend, waive, dismiss, the gate before the dry run); `reviewcheck.py` (numbered items, the script that drops findings); `tasksnap.py` (the result files, the digest, the snapshots); `handler.py` (the mark in a prompt, the subagent rule, the package path, the verdict, the Stop reminder); `autorun.py`. Also `.github/agents/reviewer.agent.md`, the policies `task.json` (`review`), `agents.json` and `gate.json`, and the tests `test_taskreview.py` and `test_reviewcheck.py`.
+Under `.harness/engine/modules/task/` {src:.harness/engine/modules/task/taskreview.py#L1-L22}: `taskreview.py` (start, record, count, limit, the person's commands, the dry-run gate); `reviewcheck.py` (the script that drops findings); `tasksnap.py` (result files, digest); `handler.py` (the mark, the subagent rule, the verdict, the Stop reminder); `autorun.py`. Also `.github/agents/reviewer.agent.md`, the policies `task.json`, `agents.json`, `gate.json`, and the tests `test_taskreview.py`, `test_reviewcheck.py`.
 
 ## Independent checks: common questions
 
-**Q: Can the agent switch checks on or off, or waive them?** No. The number comes only from the person's own words or the task page, and the gate refuses `task review set`, `extend`, `waive` and `dismiss` on the agent's command line {src:.harness/policies/gate.json#L131-L137}.
+**Q: Can the agent switch checks on or off, or waive them?** No: the gate refuses `task review set`, `extend`, `waive` and `dismiss` on the agent's command line {src:.harness/policies/gate.json#L131-L137}.
 
-**Q: Can the agent make the reviewer pass its work?** Its edit tools cannot write the package, the verdict file or the count; changing the work resets the count {src:.harness/policies/gate.json#L24-L34}. It could still put its reasoning into the call message, which only text forbids.
+**Q: Can the agent make the reviewer pass its work?** Its edit tools cannot write the package, the verdict file or the count; changing the work resets the count {src:.harness/policies/gate.json#L24-L34}. It could still put its reasoning into the call message, which only text forbids, or change the reviewer's agent file from the terminal, which no guardrail stops.
 
 **Q: Why passes in a row, each by a new reviewer?** One PASS may be luck; two reviewers have been seen to give different verdicts on the same work. The docs advise n = 1 day to day and 2 for an important change {src:docs/02-features.md#L91-L106}.
 
-**Q: What does a check cost?** One reviewer subagent call per check, up to n + 2 in a round; the task page warns that several rounds can be expensive {src:docs/07-release-notes.md#L1585}.
+**Q: What does a check cost?** One reviewer subagent call per check, up to n + 2 in a round plus what the person gives; each call is a model run on the reviewer's model {src:.harness/policies/task.json#L9-L13}.
 
 **Q: Do checks hold back an analysis or a design task?** They run on any kind with something to check, but only the write-back's dry run is gated: `task deliver` does not look at the passes, and the Stop hook reminds the agent once per prompt {src:.harness/engine/modules/task/accept.py#L1-L11}.
 
@@ -106,12 +106,11 @@ Under `.harness/engine/modules/task/` {src:.harness/engine/modules/task/taskrevi
 - **The script checks the form, not the judgment,** and only for a FAIL; a PASS's evidence lines are not checked {src:.harness/engine/modules/task/taskreview.py#L359-L436}.
 - **The call message is not read by code,** and only text keeps the reviewer's terminal to read-only commands {src:.github/agents/reviewer.agent.md#L27-L57}.
 - **Only the dry run of a write-back is gated.** For a task whose result stays in the folder, checks are a reminder {src:.harness/engine/modules/task/handler.py#L391-L420}.
+- **The reviewer's agent file is not guarded.** Its tools, model list and instructions are not a guardrail path, not in the integrity list and not in the script check, so a terminal write can change them; only the person's review of the change would notice {src:.harness/engine/integrity.py#L23-L26} {src:.harness/engine/modules/gate/scriptcheck.py#L1-L11}.
 - **The record is files,** and a script the agent writes and runs can change what the gate does not see {src:.harness/engine/modules/gate/scriptcheck.py#L1-L11}.
 - **An answer without a verdict line uses a check,** and a reviewer whose model is a class above the main model may not run at all {src:.harness/engine/modules/task/taskreview.py#L69-L85} {src:docs/03-configure.md#L316-L323}.
 
 ## Independent checks: related files
 
 - The typed codes behind extend, waive and dismiss, and every other approval: the file 14 Plans and approvals. The dry run and the write-back: the file 16 Write-back. Autorun: the file 20 Autorun. The task folder and its rounds: the file 11 Task. The idea of a second checker: the file 41 Ideas behind the harness.
-- To do it step by step (switch checks on, read a verdict, extend, waive or dismiss), see the harness tutorial "4 Independent checks" in `3 Courses/Harness tutorials/`.
-
-The rule that only the person switches checks on is in `AGENTS.md` {src:AGENTS.md#L52-L53}.
+- To do it step by step (switch checks on, read a verdict, extend, waive or dismiss), see the harness tutorial "4 Independent checks" in `3 Courses/Harness tutorials/` {src:AGENTS.md#L52-L53}.
