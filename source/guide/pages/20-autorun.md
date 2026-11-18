@@ -124,7 +124,7 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/autorun.py#L1-L23}: `
 
 ## Autorun: common questions
 
-**Q: Can a task run on its own overnight?** Yes, within the minutes (480 by default) and spend limit picked at Start and the caps on pushes and stalls; it stops at the write-back plan {src:.harness/engine/modules/task/autorun.py#L1-L23}.
+**Q: Can a task run on its own overnight?** Yes, if the board is served (`harness task board --serve`) and linked to VS Code, so it can wake the chat when it stops; within the minutes (480 by default), the spend limit and the caps on pushes and stalls; it stops at the write-back plan. Without the served board, a chat that stops after 8 Stop-hook blocks or on an error waits, run still on, for the person's message {src:.harness/engine/modules/task/autorun.py#L310-L450} {src:.harness/engine/modules/task/autorun_relay.py#L1-L14}.
 
 **Q: Can the agent switch autorun on, or write back by itself?** No: the gate refuses `task autorun on` and `task approve-promote` on its command line, and both need a typed code. The agent may only switch it off, with a reason {src:.harness/policies/gate.json#L131-L137}.
 
