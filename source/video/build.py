@@ -169,6 +169,16 @@ class Voice:
             self.short_words = tts_say.SHORT_WORDS
             if self.checked:
                 self.settings += ('checked', tts_say.CHECK_VERSION)
+            # pronunciation fixes: only the text the model hears changes, the script and subtitles keep the original
+            self.pron = []
+            pf = self.script.parent / 'pronounce.tsv'
+            if pf.exists():
+                for line in pf.read_text(encoding='utf-8').splitlines():
+                    if line.strip() and not line.startswith('#') and '\t' in line:
+                        a, b = line.split('\t', 1)
+                        self.pron.append((re.compile(r'(?<![\w-])' + re.escape(a.strip()) + r'(?![\w-])'), b.strip()))
+                if self.pron:
+                    self.settings += ('pron', hashlib.sha1(pf.read_bytes()).hexdigest()[:12])
         else:
             die(f'--voice must be say, say:<voice name> or tts:<model>, not {args.voice}')
 
@@ -179,6 +189,11 @@ class Voice:
         if k:
             return sents[k - 1]['text'], ''
         return '', sents[k + 1]['text'] if k + 1 < len(sents) else ''
+
+    def spoken(self, text):
+        for rx, rep in getattr(self, 'pron', []):
+            text = rx.sub(rep, text)
+        return text
 
     def key(self, text, around=('', '')):
         return h(text, *self.settings) if not any(around) else h(text, 'with', *around, *self.settings)
@@ -199,7 +214,7 @@ class Voice:
                     list(ex.map(one, range(len(items))))
             else:
                 batch = Path(td) / 'lines.tsv'
-                batch.write_text(''.join(f'{raws[i]}\t{it[0]}' + (f'\t{it[2][0]}\t{it[2][1]}' if len(it) > 2 and any(it[2]) else '')
+                batch.write_text(''.join(f'{raws[i]}\t{self.spoken(it[0])}' + (f'\t{self.spoken(it[2][0])}\t{self.spoken(it[2][1])}' if len(it) > 2 and any(it[2]) else '')
                                          + '\n' for i, it in enumerate(items)), encoding='utf-8')
                 r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
                                     '--seed', str(self.seed), '--batch', str(batch)])
@@ -356,7 +371,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('video', help='folder name under source/courses/, e.g. basic-01')
     ap.add_argument('--scenes', help='scenes file to read instead of source/courses/<video>/scenes.md')
-    ap.add_argument('--voice', default='tts:qwen3', help='say (macOS, Samantha), say:<voice>, or tts:<model> (source/video/tts/say.py)')
+    ap.add_argument('--voice', default='tts:vibevoice', help='say (macOS, Samantha), say:<voice>, or tts:<model> (source/video/tts/say.py)')
     ap.add_argument('--rate', type=int, help='say only: words per minute')
     ap.add_argument('--ref', default=str(ROOT / '.claude/loops/voice/ref/ref-13s.wav'),
                     help='tts only: reference voice wav; its words in the .txt next to it')

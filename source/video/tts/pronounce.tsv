@@ -1,0 +1,7 @@
+# How the voice should say a word: the script and subtitles keep the left side; only the text sent to the TTS model changes.
+# word<TAB>spoken as   (whole words, case-sensitive)
+Claude	Clawed
+M365	M three sixty-five
+CI-CD	C I C D
+SQL Server	sequel server
+DEV	dev
