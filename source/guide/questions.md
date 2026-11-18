@@ -348,7 +348,7 @@ Layer 2 · use · detail.
 
 - The task page's analysis and the report (`report.md` and `report.html`, written when the task closes) show working time, waiting time, prompts, tools and the usage Copilot recorded (Credits, premium requests) (`.harness/engine/modules/task/task_report.py:1-5`; `.harness/policies/task.json:21-24`).
 - The usage is read from Copilot's own session record, `~/.copilot/session-state/<id>/events.jsonl`, numbers only; the hook log alone has no usage (`.harness/engine/core/copilot_events.py:1-11`; `.harness/engine/core/copilot_events.py:154-166`).
-- The board puts a warning tag on a working task whose Credits reach twice the median of closed tasks of the same kind (with at least 3 of them) (`.harness/engine/modules/task/health.py:11`; `.harness/engine/modules/task/health.py:28`).
+- The board puts a warning tag on an open task (working or not) whose Credits reach twice the median of closed tasks of the same kind (with at least 3 of them) (`.harness/engine/modules/task/health.py:11`; `.harness/engine/modules/task/health.py:28`).
 - Autorun's run card shows spend against its limit, read from the same record (`.harness/engine/modules/task/autorun_spend.py:1-5`). Agent Performance Review breaks down where time and Credits went, computed by code, not estimated by the model (`.harness/engine/modules/task/perfreview.py:1-15`).
 
 Should cite: 22 Cost and usage. Course: The book · 6.2 A report a person can read in five minutes (https://smarshu.com/book/read/6-2-task-report.html).
@@ -423,7 +423,7 @@ Layer 3 · safety · detail.
 - The code is the first six characters, in capitals, of a sha256 of what is approved: `PLAN.md` for the plan, `REQ.md` for the requirement, the write-back plan for a write-back; with the requirement not yet confirmed, one code over both files (`.harness/engine/core/approval.py:17-25`; `.harness/engine/modules/task/task.py:423-425`).
 - The gate refuses the approval commands on the agent's command line, read the way the shell reads them, so quotes, variables and `xargs` do not hide them (`.harness/policies/gate.json:131-137`; `.harness/engine/modules/gate/harnesscmd.py:1-8`).
 - Each command needs a person at a terminal with a keyboard and a screen and a typed code; the board's Terminal window counts as the person only for commands that ask no code, since it gives no keyboard input (`.harness/engine/core/approval.py:28-58`).
-- On the board, only the paired browser's buttons run the same function with the code the person types; the agent cannot start the board, and its requests to the board's port are refused (`.harness/engine/modules/task/boardserve.py:6-16`; `.harness/engine/modules/gate/handler.py:580-587`).
+- On the board, only the paired browser's buttons run the same function with the code the person types; the agent cannot start the board, and its requests to the board's port are refused (`.harness/engine/modules/task/boardserve.py:6-16`; `.harness/engine/modules/gate/handler.py:148-150`; `.harness/engine/modules/gate/handler.py:773-777`).
 - The exceptions to keep: the requirement's confirmation is a text line the agent can write (`.harness/engine/modules/task/taskreview.py:88-110`); the approval records are in `.task/task.json`, and a script the agent runs is checked only for guardrail paths (`.harness/engine/modules/gate/scriptcheck.py:1-11`).
 
 Should cite: 14 Plans and approvals; 11 Task ("Task: who approves, and why the agent cannot approve its own plan"). Course: The book · 5.3 Two gates: where a person approves.
@@ -477,7 +477,7 @@ Layer 3 · code · detail.
 - Only a person at a terminal starts it; the gate refuses `task board` (except `--once`) on the agent's command line (`.harness/engine/modules/task/boardserve.py:6-7`; `.harness/policies/gate.json:136`).
 - It listens on 127.0.0.1 only, answers only to that Host and Origin, and every POST needs the `X-Harness-Board` header (`.harness/engine/modules/task/boardserve.py:8-9`).
 - Approvals need the paired browser: a random code kept in memory, traded once for an HttpOnly, SameSite=Strict cookie; the approval runs the same function as the terminal command, with the code the person types (`.harness/engine/modules/task/boardserve.py:11-16`).
-- The port is kept in `.harness/runtime/board-serve.json`, and the gate refuses an agent's request to it (`.harness/engine/modules/task/boardserve.py:17`; `.harness/engine/modules/gate/handler.py:580-587`).
+- The port is kept in `.harness/runtime/board-serve.json`, and the gate refuses an agent's request to it (`.harness/engine/modules/task/boardserve.py:17`; `.harness/engine/modules/gate/handler.py:148-150`; `.harness/engine/modules/gate/handler.py:773-777`).
 
 Should cite: 12 The board; 32 Code map. Course: The book · 5.3 Two gates: where a person approves.
 
