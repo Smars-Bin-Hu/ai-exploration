@@ -10,7 +10,7 @@ CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture
    'Not installed yet? First **AI Exploration/4 Install the harness/**.',
    ('steps', [
     '**A day with the harness**: read it first. One task, start to your commit.',
-    '**A tour of the harness**: look through once, to see what the harness can do.',
+    '**A tour of the harness**: after 1, look through once to see what it can do.',
     '**When the agent is stopped**: open it the first time the agent stops.',
     '**Independent checks**: only when you turn checks on.',
     '**Outside systems and connections**: only if your company has tool packs.',
