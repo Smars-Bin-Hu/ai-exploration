@@ -246,7 +246,7 @@ I built a standard framework that turns a codebase into a knowledge base.
 A set of tools studies your codebase,
 @ fig kb-build step=3
 finds the hidden dependencies between files,
-@ fig kb-build step=4
+@ board/real-kb-card crop=0.3,0.08,0.65,0.49 box=0.305,0.32,0.64,0.095 text="A card: what it reads, what it writes, who calls it"
 and writes them up as cards.
 @ fig kb-build step=5
 When it's done, it produces a summary file and an index.
@@ -254,7 +254,7 @@ When it's done, it produces a summary file and an index.
 So the agent doesn't have to reread the code every time.
 @ fig kb-build step=7
 It just loads the summary and a few cards,
-@ tutorials/6_kb/kb-go-on-docs box=0.025,0.315,0.95,0.4 text="The knowledge base: 5 domains, 74 cards"
+@ board/real-kb-summary crop=0.29,0.09,0.53,0.62 box=0.3,0.225,0.5,0.25 text="The summary file of a domain: purpose, flows, key data"
 and it gets a rough picture of your codebase.
 @ board/kb-lookup crop=0,0.03,0.7,0.42 box=0.015,0.2,0.45,0.245 text="Look up: who uses it, what it uses, which file"
 And when it needs more, the index takes it straight to the right file.
@@ -270,9 +270,9 @@ It holds everything from the task's whole life.
 The plan, the history log, the status,
 @ fig task-folder step=5
 the requirement doc, the test scripts, the changed code,
-@ board/tour-tab-files crop=0,0.31,0.75,0.69 box=0.03,0.475,0.27,0.52 text="The Files tab: the whole task folder"
+@ board/real-files-top crop=0.02,0.58,0.26,0.41 box=0.035,0.677,0.235,0.305 text="A real task folder: the diff, the commit message, the plans, …"
 and anything else the agent produces along the way.
-@ board/go-on-new-chat box=0.13,0.72,0.8,0.2 text="A new chat picks the task up from its files"
+@ board/real-files-top crop=0.29,0.08,0.7,0.5 box=0.295,0.165,0.68,0.105 text="TASK.md: a new session reads this first"
 So if a session dies, a new one just scans the folder and carries on right away.
 @ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=3
 Third: people only use the agent to change code, and still handle the tests, the CI-CD pipeline and the tickets themselves.
@@ -280,13 +280,13 @@ Third: people only use the agent to change code, and still handle the tests, the
 And you don't dare give it access to your servers, in case it does something dangerous, like dropping a table.
 @ fig tool-pack step=1
 Give the agent access to your dev and test environments,
-@ fig tool-pack step=2
+@ board/real-agent-actions-dev crop=0.04,0.27,0.92,0.19 box=0.045,0.298,0.91,0.148 text="In a real task: the agent edits code and tests in DEV, then tests a copy"
 and it can build things, write its own test scripts, run them, and fix what fails.
 @ fig tool-pack step=3
 To keep that safe, here's what I do.
 @ fig tool-pack step=4
 With a standard tool pack, the agent gets read-only access to the lower environments.
-@ board/outside-held-card box=0.045,0.845,0.72,0.1 text="A write waits for a person and a typed code"
+@ board/real-sql-held crop=0.12,0.795,0.78,0.2 box=0.135,0.966,0.735,0.026 text="An UPDATE on shop-qat waits for a person and a typed code"
 Anything that writes or executes needs a person to approve it.
 @ board/outside-tools-packs crop=0,0,1,0.56 box=0.027,0.405,0.946,0.12 text="The sqlserver tool pack ships with the harness"
 Take Microsoft's SQL Server.
@@ -296,7 +296,7 @@ I've tested my harness against thousands of injected dangerous commands.
 Between a blacklist, a whitelist,
 @ fig guard-layers step=3
 a human making the call, and the account's own permissions,
-@ board/stop-agent-actions box=0.04,0.495,0.92,0.49 text="What the gate stopped, kept on the task's record"
+@ board/real-sql-live crop=0.09,0,0.81,1 box=0.1,0.12,0.8,0.4 text="DROP and TRUNCATE refused, the UPDATE held"
 the agent's access stays safe.
 @ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=4
 Fourth: when it finishes a task, it's usually sure it got it right.
@@ -304,7 +304,7 @@ Fourth: when it finishes a task, it's usually sure it got it right.
 I bring in an independent reviewer as a subagent.
 @ fig reviewer step=2
 It reviews everything the agent did on the task
-@ board/review crop=0,0.57,1,0.43 box=0.035,0.805,0.93,0.185 text="Each round: a verdict and its reasons"
+@ board/real-review crop=0.04,0.565,0.78,0.42 box=0.05,0.585,0.34,0.06 text="PASS, and each point cites a line and the requirement"
 and gives a test verdict.
 @ board/checks-used-review crop=0,0.46,1,0.54 box=0.04,0.79,0.92,0.2 text="Caught: capital letters and digits were never checked"
 In practice, the reviewer catches lots of cases the main agent never thought of.
@@ -313,13 +313,13 @@ Fifth: where did the time and money go, and how do you spend less?
 @ fig task-report step=1
 The plan, the logs, the steps it took.
 None of it gets recorded.
-@ board/tour-report crop=0,0.03,1,0.37 box=0.012,0.17,0.975,0.2 text="Task analysis: the whole task in numbers"
+@ board/real-report crop=0,0.075,1,0.26 box=0.012,0.178,0.975,0.152 text="A real task: 2 min 3 s of work, 73.9 Credits"
 I built a report panel that shows the numbers for the whole task.
-@ board/tour-report crop=0,0.78,1,0.2 box=0.035,0.805,0.93,0.15 text="Where the time went"
+@ board/real-report crop=0,0.85,1,0.15 box=0.03,0.885,0.94,0.05 text="Agent working 2 min 3 s, waiting for you 8 min 49 s"
 Where the time went,
-@ board/tour-performance crop=0,0.37,1,0.32 box=0.01,0.39,0.98,0.28 text="Credits, prompt by prompt"
+@ board/real-report-prompts crop=0.02,0.53,0.66,0.46 box=0.43,0.6,0.245,0.375 text="Credits by stage: the requirement took 48%"
 where the money went,
-@ board/stop-agent-actions crop=0,0.36,1,0.64 box=0.655,0.385,0.305,0.09 text="Blocked and failed calls, counted"
+@ board/real-sql-report crop=0.02,0.13,0.96,0.31 box=0.035,0.135,0.17,0.024 text="Another task's report: 3 of 5 tool calls failed"
 which tool calls failed.
 @ fig task-report step=2
 It's all there at a glance.

@@ -9,8 +9,8 @@
 | --- | --- |
 | 口播句（一口气一行） | 175 行，1786 词，约 12 分钟（按 150 词/分钟） |
 | 画面变化（不是 `↑` 的行） | 161 次，平均约 4.5 秒换一次；同一画面最多停 3 行 |
-| 要新画的图（`@ fig`） | 21 张，共 103 个步骤；上屏 103 次，其中 4 次是复用前面画过的步骤 |
-| 用到的截图 | 17 处，15 张不同的截图（全是 `board/...` 和 `tutorials/...`，id 都在 catalog.md 里；不用旧文章的幻灯片） |
+| 要新画的图（`@ fig`） | 21 张，共 103 个步骤；上屏 101 次，其中 4 次是复用前面画过的步骤（kb-build step 4、tool-pack step 2 换成了真实截图，不上屏） |
+| 用到的截图 | 19 处，17 张不同的截图（全是 `board/...`，id 都在 catalog.md 里；第 5 场用 2026-11-18 真实任务的 `board/real-*`；不用旧文章的幻灯片） |
 | 用到的模板 | 41 处：list 12、timeline 7、card 6、logos 6、loop 4、big 3、formula 2、quote 1 |
 
 几条约定：
@@ -174,11 +174,11 @@
 | 122 | I built a standard framework that turns a codebase into a knowledge base. | `@ fig kb-build step=1` | 代码库 → 知识库 → 左边代码库（一堆文件），箭头，右边一个空的知识库书架。 |
 | 123 | A set of tools studies your codebase, | `@ fig kb-build step=2` | 一套工具读代码 → 扳手/放大镜图标在文件上扫过。 |
 | 124 | finds the hidden dependencies between files, | `@ fig kb-build step=3` | 找隐藏依赖 → 文件之间亮起青色虚线连线。 |
-| 125 | and writes them up as cards. | `@ fig kb-build step=4` | 写成卡片 → 连线收拢成一张张卡片，进到书架。 |
+| 125 | and writes them up as cards. | `@ board/real-kb-card crop=0.3,0.08,0.65,0.49 box=0.305,0.32,0.64,0.095 text="A card: what it reads, what it writes, who calls it"` | 写成卡片 → 真实卡片 sp.md（演示工作区里准备好的知识库）：一个存储过程读哪些表、写哪张表、被哪个作业调用，框出这一行。 |
 | 126 | When it's done, it produces a summary file and an index. | `@ fig kb-build step=5` | 总结和目录 → 书架顶上一份 SUMMARY，旁边一份 INDEX。 |
 | 127 | So the agent doesn't have to reread the code every time. | `@ fig kb-build step=6` | 不用每次重读代码 → agent 出现，指向代码库的箭头打叉。 |
 | 128 | It just loads the summary and a few cards, | `@ fig kb-build step=7` | 只加载总结和几张卡 → agent 拿走 SUMMARY 和两张卡（青色箭头）。 |
-| 129 | and it gets a rough picture of your codebase. | `@ tutorials/6_kb/kb-go-on-docs box=0.025,0.315,0.95,0.4 text="The knowledge base: 5 domains, 74 cards"` | 大概了解代码库 → 真实知识库总览：5 个领域、74 张卡、每个领域学到哪。 |
+| 129 | and it gets a rough picture of your codebase. | `@ board/real-kb-summary crop=0.29,0.09,0.53,0.62 box=0.3,0.225,0.5,0.25 text="The summary file of a domain: purpose, flows, key data"` | 大概了解代码库 → 真实总结文件 architecture.md：Purpose、Flows、Key data，框出前两节。 |
 | 130 | And when it needs more, the index takes it straight to the right file. | `@ board/kb-lookup crop=0,0.03,0.7,0.42 box=0.015,0.2,0.45,0.245 text="Look up: who uses it, what it uses, which file"` | 目录直达文件 → 真实「Look up」：一个存储过程被谁用、用了谁、在哪个文件。 |
 | 131 | Second: how do you keep its memory from one session to the next? | `@ list "How my harness handles them" "It doesn't know your systems\|folder-search" "Memory across sessions\|history" "Tests, pipelines, tickets · server access\|server" "Sure it got it right\|badge-check" "Time and money, not recorded\|receipt" lit=2` | 第 2 条亮。 |
 | 132 | If a session dies, how does a new one pick up the task? | `@ fig task-folder step=1` | 会话断了怎么接 → 会话 A 打叉，会话 B 一脸问号。 |
@@ -186,32 +186,32 @@
 | 134 | It holds everything from the task's whole life. | `@ fig task-folder step=3` | 全生命周期 → 文件夹下一条时间轴：需求 → 计划 → 动手 → 检查 → 结束。 |
 | 135 | The plan, the history log, the status, | `@ fig task-folder step=4` | 第一批文件 → PLAN.md、LOG.md、TASK.md（状态）飞进文件夹。 |
 | 136 | the requirement doc, the test scripts, the changed code, | `@ fig task-folder step=5` | 第二批 → REQ.md、TEST/、DEV/ 飞进去。 |
-| 137 | and anything else the agent produces along the way. | `@ board/tour-tab-files crop=0,0.31,0.75,0.69 box=0.03,0.475,0.27,0.52 text="The Files tab: the whole task folder"` | 还有别的产物 → 真实「Files」页：REQ/、REF/、DEV/、TEST/、LOG.md 一整棵树。 |
-| 138 | So if a session dies, a new one just scans the folder and carries on right away. | `@ board/go-on-new-chat box=0.13,0.72,0.8,0.2 text="A new chat picks the task up from its files"` | 新会话接着做 → 真实按钮「Go on in a new chat」，旁边一行「picks the task up from its files」。 |
+| 137 | and anything else the agent produces along the way. | `@ board/real-files-top crop=0.02,0.58,0.26,0.41 box=0.035,0.677,0.235,0.305 text="A real task folder: the diff, the commit message, the plans, …"` | 还有别的产物 → 真实任务 refuse-zero-count 的「Files」页，顶层文件：CHANGES.diff、COMMIT-MESSAGE.md、LOG.md、PLAN.md、PROMOTE-PLAN.diff、REQ.md、TASK.md、TODO.md，整列框出。 |
+| 138 | So if a session dies, a new one just scans the folder and carries on right away. | `@ board/real-files-top crop=0.29,0.08,0.7,0.5 box=0.295,0.165,0.68,0.105 text="TASK.md: a new session reads this first"` | 新会话接着做 → 同一页打开 TASK.md，框出「The handover file. A new session reads this file first」；下面是状态和下一步。 |
 | 139 | Third: people only use the agent to change code, and still handle the tests, the CI-CD pipeline and the tickets themselves. | `@ list "How my harness handles them" "It doesn't know your systems\|folder-search" "Memory across sessions\|history" "Tests, pipelines, tickets · server access\|server" "Sure it got it right\|badge-check" "Time and money, not recorded\|receipt" lit=3` | 第 3 条亮。 |
 | 140 | And you don't dare give it access to your servers, in case it does something dangerous, like dropping a table. | `@ big "DROP TABLE" "the one command nobody wants an agent to run" icon=database-zap` | 怕删表 → 大字「DROP TABLE」。 |
 | 141 | Give the agent access to your dev and test environments, | `@ fig tool-pack step=1` | 开放开发、测试环境 → agent 连向 DEV、TEST 两个环境方块；PROD 灰着、上锁。 |
-| 142 | and it can build things, write its own test scripts, run them, and fix what fails. | `@ fig tool-pack step=2` | 自己闭环 → DEV 旁一个小循环亮起：build → 写测试 → run → fix。 |
+| 142 | and it can build things, write its own test scripts, run them, and fix what fails. | `@ board/real-agent-actions-dev crop=0.04,0.27,0.92,0.19 box=0.045,0.298,0.91,0.148 text="In a real task: the agent edits code and tests in DEV, then tests a copy"` | 自己闭环 → 真实任务的「Agent actions」：agent 改 DEV 里的 api.py 和 test_api.py，再把代码拷到 /tmp 去测（rm -rf 那一步 gate 问了人）。 |
 | 143 | To keep that safe, here's what I do. | `@ fig tool-pack step=3` | 安全怎么办 → 箭头外面罩上一层盾牌。 |
 | 144 | With a standard tool pack, the agent gets read-only access to the lower environments. | `@ fig tool-pack step=4` | 标准 tool pack、只读 → 箭头分成两条道：「read」畅通（青），「write / execute」前面一道门（橙）。 |
-| 145 | Anything that writes or executes needs a person to approve it. | `@ board/outside-held-card box=0.045,0.845,0.72,0.1 text="A write waits for a person and a typed code"` | 写和执行要人批 → 真实卡片：agent 要往工单系统写一条评论，停着等你输入批准码。 |
+| 145 | Anything that writes or executes needs a person to approve it. | `@ board/real-sql-held crop=0.12,0.795,0.78,0.2 box=0.135,0.966,0.735,0.026 text="An UPDATE on shop-qat waits for a person and a typed code"` | 写和执行要人批 → 真实 clean-shop-qat：一条 UPDATE dbo.stock 停着等人，卡片上是要跑的语句，框出「输入批准码 / Approve / Do not approve」。 |
 | 146 | Take Microsoft's SQL Server. | `@ board/outside-tools-packs crop=0,0,1,0.56 box=0.027,0.405,0.946,0.12 text="The sqlserver tool pack ships with the harness"` | 以 SQL Server 为例 → 真实「Tool packs」对话框，框出 sqlserver 这一包。 |
 | 147 | I've tested my harness against thousands of injected dangerous commands. | `@ fig guard-layers step=1` | 几千种危险命令 → 左边一串红色命令（DROP TABLE、TRUNCATE、DELETE … xp_cmdshell）涌向右边的数据库（SQL Server 标志），计数「thousands」。 |
 | 148 | Between a blacklist, a whitelist, | `@ fig guard-layers step=2` | 前两层 → 黑名单、白名单两道墙亮起，大部分红命令被挡下。 |
 | 149 | a human making the call, and the account's own permissions, | `@ fig guard-layers step=3` | 后两层 → 「人」和「账号权限」两道墙亮起，剩下的也被挡下。 |
-| 150 | the agent's access stays safe. | `@ board/stop-agent-actions box=0.04,0.495,0.92,0.49 text="What the gate stopped, kept on the task's record"` | 访问是安全的 → 真实「Agent actions」：4 个被拦下的调用（删工单、git checkout、git push、改目标库）和原因。 |
+| 150 | the agent's access stays safe. | `@ board/real-sql-live crop=0.09,0,0.81,1 box=0.1,0.12,0.8,0.4 text="DROP and TRUNCATE refused, the UPDATE held"` | 访问是安全的 → 真实 clean-shop-qat 的 Live：DROP TABLE、TRUNCATE TABLE 被 gate 拒绝，UPDATE 被扣下等人；下面是 agent 自己的说明。 |
 | 151 | Fourth: when it finishes a task, it's usually sure it got it right. | `@ list "How my harness handles them" "It doesn't know your systems\|folder-search" "Memory across sessions\|history" "Tests, pipelines, tickets · server access\|server" "Sure it got it right\|badge-check" "Time and money, not recorded\|receipt" lit=4` | 第 4 条亮。 |
 | 152 | I bring in an independent reviewer as a subagent. | `@ fig reviewer step=1` | 独立 reviewer 子 agent → 主 agent 一个机器人，旁边另一个独立的机器人「reviewer」，各自一个框（不同的上下文）。 |
 | 153 | It reviews everything the agent did on the task | `@ fig reviewer step=2` | 审全部 → 需求、计划、改动、测试结果四份东西流进 reviewer。 |
-| 154 | and gives a test verdict. | `@ board/review crop=0,0.57,1,0.43 box=0.035,0.805,0.93,0.185 text="Each round: a verdict and its reasons"` | 给出判定 → 真实「Review」页：round-002 PASS，round-001 FAIL 被框出，带理由。 |
+| 154 | and gives a test verdict. | `@ board/real-review crop=0.04,0.565,0.78,0.42 box=0.05,0.585,0.34,0.06 text="PASS, and each point cites a line and the requirement"` | 给出判定 → 真实 refuse-zero-count 的「Review」：round-001 PASS，每条理由引了 api.py 的行号和 REQ.md 的条目，框出判定。 |
 | 155 | In practice, the reviewer catches lots of cases the main agent never thought of. | `@ board/checks-used-review crop=0,0.46,1,0.54 box=0.04,0.79,0.92,0.2 text="Caught: capital letters and digits were never checked"` | 发现主 agent 没想到的 → 真实三轮 FAIL，框出「only measured, not checked against capital letters or digits」。 |
 | 156 | Fifth: where did the time and money go, and how do you spend less? | `@ list "How my harness handles them" "It doesn't know your systems\|folder-search" "Memory across sessions\|history" "Tests, pipelines, tickets · server access\|server" "Sure it got it right\|badge-check" "Time and money, not recorded\|receipt" lit=5` | 第 5 条亮。 |
 | 157 | The plan, the logs, the steps it took. | `@ fig task-report step=1` | 计划、日志、步骤 → 一张报表的轮廓，三块都是虚线空白。 |
 | 158 | None of it gets recorded. | ↑ | 空白上标「not recorded」。 |
-| 159 | I built a report panel that shows the numbers for the whole task. | `@ board/tour-report crop=0,0.03,1,0.37 box=0.012,0.17,0.975,0.2 text="Task analysis: the whole task in numbers"` | 报告面板 → 真实「Task analysis」顶上一排数字。 |
-| 160 | Where the time went, | `@ board/tour-report crop=0,0.78,1,0.2 box=0.035,0.805,0.93,0.15 text="Where the time went"` | 时间 → 同一页下面的「Where the time went」时间条。 |
-| 161 | where the money went, | `@ board/tour-performance crop=0,0.37,1,0.32 box=0.01,0.39,0.98,0.28 text="Credits, prompt by prompt"` | 钱 → 真实「Agent Performance Review」每个 prompt 的 Credits。 |
-| 162 | which tool calls failed. | `@ board/stop-agent-actions crop=0,0.36,1,0.64 box=0.655,0.385,0.305,0.09 text="Blocked and failed calls, counted"` | 失败的调用 → 「blocked by a hook」「tool calls failed」两个计数被框出。 |
+| 159 | I built a report panel that shows the numbers for the whole task. | `@ board/real-report crop=0,0.075,1,0.26 box=0.012,0.178,0.975,0.152 text="A real task: 2 min 3 s of work, 73.9 Credits"` | 报告面板 → 真实 refuse-zero-count 的「Task analysis」：2 min 3 s 干活、8 min 49 s 等人、73.9 Credits、2 个 premium request、97% cache。 |
+| 160 | Where the time went, | `@ board/real-report crop=0,0.85,1,0.15 box=0.03,0.885,0.94,0.05 text="Agent working 2 min 3 s, waiting for you 8 min 49 s"` | 时间 → 同一页「Where the time went」，框出 agent 干活 19% / 等你 81% 那条。 |
+| 161 | where the money went, | `@ board/real-report-prompts crop=0.02,0.53,0.66,0.46 box=0.43,0.6,0.245,0.375 text="Credits by stage: the requirement took 48%"` | 钱 → 同一任务的「Stages」表，框出 Credits 一栏：需求 35.7（48%）、开发 18.3、独立检查 11.9、promote 6.2。 |
+| 162 | which tool calls failed. | `@ board/real-sql-report crop=0.02,0.13,0.96,0.31 box=0.035,0.135,0.17,0.024 text="Another task's report: 3 of 5 tool calls failed"` | 失败的调用 → 另一个真实任务 clean-shop-qat 的报告，框出「3 of 5 tool calls failed」，下面是 Agent Performance Review 的 3。 |
 | 163 | It's all there at a glance. | `@ fig task-report step=2` | 一目了然 → 第 157 行那张轮廓被填满：时间条、钱、失败调用，青色。 |
 | 164 | There's a lot more, but no time to cover it all here. | `@ board/tour-lobby crop=0,0,1,0.62` | 还有很多 → 真实大厅：一屋子机器人，各自在等你或在干活。 |
 
@@ -356,7 +356,7 @@
 - step 1：代码库 → 箭头 → 空书架「knowledge base」。→ 第 122 行
 - step 2：工具图标（`scan-search`）扫过文件。→ 第 123 行
 - step 3：文件之间亮起青色虚线连线「hidden dependencies」。→ 第 124 行
-- step 4：连线收成卡片，一张张进书架。→ 第 125 行
+- step 4：连线收成卡片，一张张进书架。（第 125 行换成真实卡片截图，这一步不上屏；step 5 起它作为「说过的」出现）
 - step 5：书架顶上 SUMMARY，旁边 INDEX。→ 第 126 行
 - step 6：agent 出现，指向代码库的箭头打叉「no rereading」。→ 第 127 行
 - step 7：agent 拿走 SUMMARY 和两张卡（青色箭头）。→ 第 128 行
@@ -368,12 +368,12 @@
 - step 3：时间轴：requirement → plan → work → review → closed。→ 第 134 行
 - step 4：PLAN.md、LOG.md、TASK.md（status）飞进文件夹。→ 第 135 行
 - step 5：REQ.md、TEST/、DEV/ 飞进去。→ 第 136 行
-- （第 138 行直接用真实截图「Go on in a new chat」，不再加步。）
+- （第 137–138 行直接用真实任务的 Files 页：顶层文件、TASK.md，不再加步。）
 
 ### tool-pack（开放环境，但分道）
 布局：左边 agent，右边三个环境方块 DEV、TEST、PROD（PROD 灰色上锁），中间是连线。
 - step 1：agent 连向 DEV、TEST。→ 第 141 行
-- step 2：DEV 旁一个小循环：build → write tests → run → fix。→ 第 142 行
+- step 2：DEV 旁一个小循环：build → write tests → run → fix。（第 142 行换成真实 Agent actions 截图，这一步不上屏；step 3 起它作为「说过的」出现）
 - step 3：连线外罩上一个盾牌。→ 第 143 行
 - step 4：连线分两条道：「read」畅通（青），「write / execute」前一道门，门边一个「你」（橙），标「tool pack」。→ 第 144 行
 
@@ -405,7 +405,9 @@
 
 ## 截图要补的
 
-现有截图都用上了，但下面这些在演示工作区里重拍会更有说服力（按重要性排）：
+2026-11-18 已按下面 1–5 重拍（catalog.md「Real tasks」一节的 `board/real-*`），换进了第 125、129、137、138、142、145、150、154、159–162 行。还没有的：DEV 里先 FAIL 再 PASS 的一次测试，和有多个领域连线的 Map。
+
+原来的清单：现有截图都用上了，但下面这些在演示工作区里重拍会更有说服力（按重要性排）：
 
 1. **SQL Server 被拦下的危险命令**（第 147–150 行）：一个真实任务的「Agent actions」，里面是 sqlserver 包拦下的 DROP TABLE / TRUNCATE，和一条等人批准的写语句。现在只有 demotracker 和 git 的例子，而这段口播说的就是 SQL Server。
 2. **有真实数字的任务报告**（第 159–162 行）：`board/tour-report` 现在是 5 秒、credits 是「-」；`board/tour-performance` 每个 prompt 的条是空的；`tool calls failed` 是 0。需要一个真跑过 Copilot 的任务，时间、credits、失败调用都有值。
