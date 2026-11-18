@@ -124,6 +124,25 @@ Screens of the harness, a web board for GitHub Copilot agents; made-up demo data
 | board/tour-terminal | Terminal panel "doctor": harness doctor output, all [OK], errors 0 | Running harness doctor to check the install | 984x704 | also: tutorials/2_tour/tour-terminal |
 | board/tour-tools-local | Local dialog: programs (python), network proxy fields, MCP allow/do not allow | Local tool, network and MCP settings in detail | 1644x1090 |  |
 
+## Real tasks (2026-11-18)
+
+Board screens from real Copilot runs in the demo workspace (harness 1.7.45, made-up repos, a made-up Shop database in a local SQL Server container registered as shop-qat). Paths are scrubbed to ~/harness; footers cropped. 82.5 Credits spent in all.
+
+| id | what it shows | good for explaining | WxH | flag / also |
+| --- | --- | --- | --- | --- |
+| board/real-report | Report (Time and usage) of real task refuse-zero-count: 2 min 3 s working, 73.9 Credits, 2 premium requests, 97% cache read, 1 independent check passed, key points, where the time went | A task report with real numbers from a real Copilot run | 2080x2164 |  |
+| board/real-report-prompts | Same report, Every prompt (37.5 and 36.4 Credits, claude-sonnet-5) and Stages table (Requirement 35.7, Developing 18.3, Independent check 11.9, Promote 6.2 Credits; tokens in/out) | Where the credits of a real task went, by prompt and stage | 2080x1463 |  |
+| board/real-review | Results, Review of refuse-zero-count: Independent review 1, round-001 PASS, the reviewer findings citing api.py lines and REQ items, and saying it did not run pytest | What an independent reviewer subagent answers, and that it only reads | 2216x1676 |  |
+| board/real-agent-actions-dev | Records, Agent actions of refuse-zero-count, prompt 2: edits in DEV/orders-service, the test copy and rm -rf the gate asked about, the reviewer subagent (claude-sonnet-5.5) | The agent doing its own DEV work and self-test, with the gate watching each call | 2216x2239 |  |
+| board/real-files-top | Files tab of refuse-zero-count, subfolders folded: REQ/, REF/, DEV/, REVIEW/, SNAPSHOT/, TEST/ and the top files (CHANGES.diff, COMMIT-MESSAGE.md, LOG.md, PLAN.md, PROMOTE-PLAN.diff, REQ.md, TASK.md, TODO.md), TASK.md open | The task folder: one folder holds everything of a task | 2216x1572 |  |
+| board/real-sql-blocked | Records, Agent actions of clean-shop-qat: 2 blocked by a hook; sqlcmd DROP TABLE dbo.summary and TRUNCATE TABLE dbo.order_lines refused on shop-qat (qat), the UPDATE ... WHERE held | The SQL Server tool pack refusing destructive SQL, from a real agent run | 2216x1670 |  |
+| board/real-sql-held | Task page of clean-shop-qat: the agent reports two refused calls and one held; the held card (write, shop-qat qat, Shop, target dbo.stock, the UPDATE statement, Approve / Do not approve) | A write to a database waiting for the person, with the exact statement | 2216x2674 |  |
+| board/real-sql-live | Live tab of clean-shop-qat close up: Refused by the gate x2 (DROP, TRUNCATE), Held by the gate (UPDATE), then the agent summary of each call | What the agent sees and says when the gate refuses or holds | 2216x725 |  |
+| board/real-sql-report | Report of clean-shop-qat: key points (hook refused 2, held 1), Agent Performance Review 3, Gate blocks (2) table with Right to block / Wrong block verdict buttons | Gate blocks in the report, and judging a block as right or wrong | 2080x2115 |  |
+| board/real-kb-summary | Files tab of the prepared demo task learn-orders: the knowledge base domain files, architecture.md open (Purpose, Flows, Key data, Where to start, Traps). Prepared demo content, not a live Learn run | The summary file of a knowledge base domain | 2216x1219 |  |
+| board/real-kb-card | Same, objects/sp.md open: cards for usp_load_orders and usp_build_summary (what, reads/writes, called by, level verified at a commit, cited lines, traps). Prepared demo content | What a knowledge base card holds | 2216x1193 |  |
+| board/real-vscode-sessions | VS Code chat Sessions list (cropped): the two chats the board made, clean-shop-qat and refuse-zero-count (+78 -18) | Each board task is a Copilot chat in VS Code | 682x310 |  |
+
 ## Tutorial-only images (`source/tutorials/img/<slug>/`)
 
 Only images that exist nowhere else. Every other file in the tutorial folders is a byte-identical copy of a board image: use the `board/...` id (the copies are listed in its "also" column).
