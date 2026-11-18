@@ -38,7 +38,7 @@ OPTIONS = {
     'fig': {'step'},
 }
 LOGO_LABELS = {'github-copilot': 'GitHub Copilot', 'claude-code': 'Claude Code', 'codex': 'Codex', 'vscode': 'VS Code',
-               'claude': 'Claude', 'openai': 'OpenAI', 'github': 'GitHub', 'cursor': 'Cursor'}
+               'claude': 'Claude', 'openai': 'OpenAI', 'github': 'GitHub', 'cursor': 'Cursor', 'm365-copilot': 'M365 Copilot', 'sql-server': 'SQL Server'}
 
 
 def default_avatar():
