@@ -2,9 +2,33 @@
 
 Each spoken sentence of a video becomes one audio file, in the presenter's own voice, made on an Apple Silicon Mac with no paid API. This folder holds a small wrapper, `say.py`, that calls one of several open models, each installed in its own environment outside git.
 
-Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. The newest round comes first.
+Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. Round 5 keeps Kokoro's native English and swaps OpenVoice for a stronger voice converter, Seed-VC, because `kokoro-openvoice` did not sound like the presenter. The newest round comes first.
 
 Tested November 2026 on an M1 Pro with 32 GB, macOS, Python 3.12.
+
+## Round 5: Kokoro with a stronger voice converter (Seed-VC)
+
+`kokoro-openvoice` had the most natural English of round 2 but "is not my voice": OpenVoice changes the timbre only a little (likeness 0.806, against 0.968 for the presenter's own speech). Seed-VC (Plachtaa, `Plachta/Seed-VC`) is a zero-shot converter that rebuilds the whole spectrogram with a diffusion transformer, conditioned on the reference clip; Kokoro still decides the words, rhythm and melody. Used here: the v1 offline speech model (`DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned`, whisper-small content encoder, BigVGAN vocoder, 22 kHz), on the Apple GPU through MPS, fp16, 30 diffusion steps, `inference-cfg-rate` 0.7 (its defaults). **Licence: Seed-VC's code is GPL-3.0**, and its weights are best treated the same: fine for making our own narration internally, but its code must not be copied into anything we distribute. The audio it makes is not covered by the GPL. Whisper-small and BigVGAN are MIT.
+
+Same six sentences, whole sentence per call, reference `ref-13s.wav`, measured with `measure2.py` as in round 2:
+
+| Kokoro voice into Seed-VC | Likeness, mean (per sentence) | Real word errors in 84 words | Clipped samples |
+| --- | --- | --- | --- |
+| `am_michael` (as round 2) | 0.856 (0.89, 0.74, 0.91, 0.87, 0.84, 0.90) | 0 | 0 (47 before the peak limit below) |
+| **`am_fenrir`** (the preset) | **0.868** (0.87, 0.82, 0.88, 0.91, 0.85, 0.88) | **0** | 0 |
+| `am_eric` | 0.862 | 1: "CloudCode" | 0 |
+| `am_adam` | 0.869 | 0 ("2. It forgets.") | 0 |
+| `am_onyx` | **0.885** (0.90, 0.82, 0.90, 0.92, 0.89, 0.88) | 1: "Two" heard as "To" | 0 |
+| `am_fenrir`, 50 steps | 0.866 | 0 | 0 |
+| for comparison: `kokoro-openvoice` (round 2) | 0.806 (0.73 to 0.86) | 0 | 0 |
+
+So Seed-VC closes about a third of the gap to the true cloners (`vibevoice` 0.948 after round 3, `qwen3` 0.946), with Kokoro's English kept: no new word errors with `am_fenrir`. The choice of Kokoro voice moves likeness by up to 0.03; a deeper voice (`am_onyx`) converts closest but once said "To" for "Two". 50 diffusion steps bring nothing over 30 at 1.6 times the compute. A longer reference was not tried: the measure holds out every part of the 62 s recording except the 13 s reference, so a longer cut would be judged partly against itself, and Seed-VC's 30 s window holds reference and sentence together, so a 25 s reference would split each sentence into 5 s pieces.
+
+Speed is the cost: 2.1 to 2.4 s of compute per second of audio at 30 steps (3.5 to 3.8 when the machine was busier), against 0.27 for `kokoro-openvoice`; the reference's 13 s are part of every diffusion pass. Loading takes about 20 s once the weights are cached (about 3.5 GB in the cache: Seed-VC 0.8, whisper-small 1.8, BigVGAN 0.9, CAM++ 0.1). BigVGAN can overshoot full scale, so the backend scales a clip down to a 0.95 peak when it goes over.
+
+To listen to, in `.claude/loops/voice/test5/` (personal data, out of git), six sentences with 0.6 s between: `kokoro-seedvc.mp3` (`am_michael`, the direct counterpart of round 2's `kokoro-openvoice.mp3`), `kokoro-seedvc-am_fenrir.mp3` (the preset), `kokoro-seedvc-am_onyx.mp3` (most alike, one slip); single clips in the folders of the same names, and `kokoro-seedvc-am_eric/`, `-am_adam/`, `-am_fenrir-50/`.
+
+`say.py --model kokoro-seedvc` (and `build.py --voice tts:kokoro-seedvc`) uses `am_fenrir`, 30 steps; `--set voice=am_onyx`, `--set steps=50`, `--set cfg=0.7`, `--set ref_s=25` change that. It is not a checked model: no Demucs, Whisper or retakes, which Kokoro's clean takes did not need in this test.
 
 ## Round 3: VibeVoice without music, and reliable on short lines
 
@@ -105,7 +129,7 @@ Nine candidates, the same six sentences from `courses/basic-01/en.md`, one call 
 | `kokoro-cbvc` | Kokoro speaks; Chatterbox's own voice converter (S3Gen) swaps the timbre | defaults | Apache-2.0; MIT | `kvc` |
 | `kokoro` | Kokoro alone, stock voice, no cloning: the "native English" yardstick | voice `am_michael` | Apache-2.0 / Apache-2.0 | `kvc` |
 
-With voice conversion the words, rhythm and melody are Kokoro's (trained on native speakers) and only the timbre is the presenter's. Seed-VC, a stronger converter, was left out: GPL-3.0.
+With voice conversion the words, rhythm and melody are Kokoro's (trained on native speakers) and only the timbre is the presenter's. Seed-VC, a stronger converter, was left out here for its GPL-3.0 licence; round 5 tries it.
 
 ### Measured
 
@@ -212,6 +236,16 @@ uv pip install -p $T/kvc/.venv/bin/python --no-deps $T/kvc/src-openvoice
 # --no-deps: OpenVoice pins 2023 versions (numpy 1.22, gradio, faster-whisper) it does not need for
 # conversion; the small text packages above are what its import chain needs. Its watermarker (wavmark)
 # is stubbed out in the backend.
+
+# Kokoro with Seed-VC (round 5); Seed-VC is GPL-3.0. Weights (about 3.5 GB) go to the HF cache on first use.
+mkdir -p $T/seedvc && git clone --depth 1 https://github.com/Plachtaa/seed-vc.git $T/seedvc/src
+uv venv --python $PY $T/seedvc/.venv
+uv pip install -p $T/seedvc/.venv/bin/python "torch==2.6.0" "torchaudio==2.6.0" "numpy==1.26.4" "scipy==1.13.1" \
+  "librosa==0.10.2" "huggingface-hub>=0.28.1,<1" "munch==4.0.0" "einops==0.8.0" "descript-audio-codec==1.0.0" \
+  "transformers==4.46.3" soundfile pyyaml "hydra-core==1.3.2" accelerate pydub kokoro "misaki[en]" \
+  "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
+# Only what its offline inference needs from requirements-mac.txt (no gradio, funasr, modelscope or GUI); the
+# backend imports Seed-VC's modules from $T/seedvc/src.
 ```
 
 The model weights download the first time each model runs. Set `TTS_HOME` to use another folder than `.claude/loops/tts`.
@@ -243,7 +277,7 @@ python3 source/video/tts/say.py --model qwen3 --ref ref.wav --batch lines.tsv
 
 A batch line may also name the sentences around it, `output<TAB>sentence<TAB>before<TAB>after` (either may be empty); `vibevoice` speaks a line under 5 words together with one of them and cuts it out (round 3). `vibevoice` takes are always cleaned with Demucs, checked and retaken when flagged; `--retakes N` (default 3), `--keep-takes DIR` (every take, raw and cleaned), `--report FILE` (every measure, JSON), `--no-merge` and `--no-check` change that.
 
-Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 22 kHz for `kokoro-openvoice`, 24 kHz for the rest).
+Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 22 kHz for `kokoro-openvoice` and `kokoro-seedvc`, 24 kHz for the rest).
 
 `--ref-text "..."` overrides `ref.txt`. `--out` ending in `.mp3` or `.m4a` is converted with ffmpeg. `--seed` (default 1) makes a run repeatable; change it to get another take of a sentence. Timings go to stderr.
 
