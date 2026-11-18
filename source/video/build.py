@@ -456,7 +456,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('video', help='folder name under source/courses/, e.g. basic-01')
     ap.add_argument('--scenes', help='scenes file to read instead of source/courses/<video>/scenes.md')
-    ap.add_argument('--voice', default='tts:vibevoice', help='say (macOS, Samantha), say:<voice>, or tts:<model> (source/video/tts/say.py)')
+    ap.add_argument('--voice', default='tts:kokoro-seedvc', help='say (macOS, Samantha), say:<voice>, or tts:<model> (source/video/tts/say.py)')
     ap.add_argument('--rate', type=int, help='say only: words per minute')
     ap.add_argument('--ref', default=str(ROOT / '.claude/loops/voice/ref/ref-13s.wav'),
                     help='tts only: reference voice wav; its words in the .txt next to it')
