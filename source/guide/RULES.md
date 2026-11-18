@@ -75,7 +75,7 @@ Link the one or two that teach the idea behind the file, not every one that ment
 ---
 title: <Subject as a title, e.g. "Task">
 subject: <the word every heading starts with, e.g. "Task">
-layer: overview | concept | how-to
+layer: overview | concept | how-to | reference | idea
 file: <output name with an order number, e.g. "11 Task">
 harness_tag: 1.7.45
 course: <title> | <url>

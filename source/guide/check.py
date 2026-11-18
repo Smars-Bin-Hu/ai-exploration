@@ -12,7 +12,7 @@ MAX_FILES, MAX_PAGES, MIN_CAPTION_WORDS = 50, 300, 5
 BANNED = ['seamless', 'seamlessly', 'powerful', 'revolutionary', 'game-changer', 'cutting-edge', 'unlock', 'supercharge', 'leverage',
           'effortless', 'effortlessly', 'magic', 'magical', 'state-of-the-art', 'best-in-class', 'next-generation', 'empower',
           'transformative', 'incredible', 'amazing', 'world-class', 'ai-powered', '10x', 'simply', 'just works', 'under the hood']
-LAYERS = ('overview', 'concept', 'how-to')
+LAYERS = ('overview', 'concept', 'how-to', 'reference', 'idea')
 _lines = {}
 
 def file_lines(tag, path):
