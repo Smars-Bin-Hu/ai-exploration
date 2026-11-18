@@ -70,4 +70,4 @@ First you hunt down the code files you think matter, and paste them in.
 
 ## Outputs (not in git)
 
-`/Users/smars/Developer/ai-exploration/.claude/loops/video-out/<video>/`: `audio/` (one file per sentence), `frames/` (one PNG per `@`), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).
+`.claude/loops/video-out/<video>/` (in this repository): `audio/` (one file per sentence), `frames/` (one PNG per `@`), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).

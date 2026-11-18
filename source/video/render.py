@@ -18,7 +18,7 @@ ASSETS = ROOT / '.claude/loops/assets'
 FONTS, LOGOS = ASSETS / 'fonts', ASSETS / 'logos'
 ICONS = ASSETS / 'lucide/node_modules/lucide-static/icons'
 AVATARS = [ROOT / '.claude/loops/voice/avatar.jpg', ROOT / '.claude/loops/voice/avatar.png',
-           Path('/Users/smars/Developer/smarshu.com/public/portrait.jpg')]
+           ROOT.parent / 'smarshu.com/public/portrait.jpg']
 THEMES = {'dark': '', 'navy': 'theme-navy'}
 
 # the stage (figs.css .stage): where pictures may go, inside margins that keep the subtitles and the avatar clear

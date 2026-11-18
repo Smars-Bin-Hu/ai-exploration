@@ -12,10 +12,10 @@ const fs = require('fs');
 const path = require('path');
 
 function loadPlaywright() {
-  for (const p of ['playwright', 'playwright-core', '/Users/smars/Developer/smarshu.com/node_modules/playwright-core']) {
+  for (const p of ['playwright', 'playwright-core', require('path').resolve(__dirname, '../../../smarshu.com/node_modules/playwright-core')]) {
     try { return require(p); } catch (e) { /* next */ }
   }
-  throw new Error('no Playwright: needs playwright-core in /Users/smars/Developer/smarshu.com/node_modules');
+  throw new Error('no Playwright: needs playwright-core in ../smarshu.com/node_modules (next to this repository)');
 }
 
 async function launch(chromium) {
