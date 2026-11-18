@@ -1,6 +1,9 @@
 # Subtitles: each spoken line is one cue, timed as its audio clip. A line too long for two rows of ~42 characters
 # becomes several cues in a row, split at a clause break, its time shared by character count. All times are in frames.
 import re
+from pathlib import Path
+
+FONTS = Path(__file__).resolve().parent.parent.parent / '.claude/loops/assets/fonts'
 
 WIDTH, ROWS = 42, 2
 
@@ -80,11 +83,14 @@ def srt(cue_list, fps):
 
 
 def ass(cue_list, fps, width, height):
-    """An ASS file for burning in: white text on a dark translucent box, bottom centre, sized for 1080p."""
+    """An ASS file for burning in: white serif text on a dark translucent box, bottom centre, sized for 1080p.
+    The side margins keep it clear of the avatar (bottom right). Source Serif 4 comes from the fonts folder that build.py
+    hands to ffmpeg (fontsdir); without it, Georgia."""
     def t(f):
         cs = round(f * 100 / fps)
         return f'{cs // 360000}:{cs // 6000 % 60:02d}:{cs // 100 % 60:02d}.{cs % 100:02d}'
     esc = lambda s: s.replace('\\', '\\\\').replace('{', '(').replace('}', ')')
+    font = 'Source Serif 4' if (FONTS / 'SourceSerif4-Regular.ttf').exists() else 'Georgia'
     head = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {width}
@@ -94,7 +100,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,50,&H00FFFFFF,&H00FFFFFF,&HFF000000,&H40141414,0,0,0,0,100,100,0,0,4,14,0,2,120,120,48,1
+Style: Default,{font},52,&H00F3EDE6,&H00F3EDE6,&HFF000000,&H48101010,0,0,0,0,100,100,0,0,4,16,0,2,300,300,46,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

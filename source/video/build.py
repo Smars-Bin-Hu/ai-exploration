@@ -59,16 +59,32 @@ def pic_spec(line, no, scene_title):
     except ValueError as e:
         die(f'line {no}: cannot read the @ line ({e}): {line}')
     if not toks:
-        die(f'line {no}: an @ line needs a picture id or card "...": {line}')
-    spec = dict(line=no, raw=line, id=toks[0], box=None, crop=None, text='', kicker=None)
+        die(f'line {no}: an @ line needs a picture id, a template or fig: {line}')
+    spec = dict(line=no, raw=line, id=toks[0], kind='image', args=[], opts={}, box=None, crop=None, text='', kicker=None)
     rest = toks[1:]
-    if spec['id'] == 'card':
-        words = [t for t in rest if not t.startswith('kicker=')]
-        if not words:
-            die(f'line {no}: card needs its words in quotes: {line}')
-        spec['text'] = ' '.join(words)
-        k = [t for t in rest if t.startswith('kicker=')]
-        spec['kicker'] = k[0][7:] if k else kicker_from(scene_title)
+    if spec['id'] in render.OPTIONS:  # a template drawn in code, or a figure
+        kind = spec['kind'] = spec['id']
+        allowed = render.OPTIONS[kind]
+        for t in rest:
+            k, eq, v = t.partition('=')
+            if eq and k in allowed:
+                spec['opts'][k] = v
+            elif eq and re.fullmatch(r'[a-z]+', k):
+                die(f'line {no}: {kind} does not take {k}= (it takes {", ".join(sorted(allowed)) or "no options"}): {line}')
+            else:
+                spec['args'].append(t)
+        if kind == 'card':
+            if not spec['args']:
+                die(f'line {no}: card needs its words in quotes: {line}')
+            spec['text'] = ' '.join(spec['args'])
+            spec['kicker'] = spec['opts'].get('kicker', kicker_from(scene_title))
+        elif kind == 'fig':
+            if len(spec['args']) != 1:
+                die(f'line {no}: fig wants one name (the file figs/<name>.html) and maybe step=N: {line}')
+        else:
+            why = render.check(spec)
+            if why:
+                die(f'line {no}: {why}: {line}')
         return spec
     for t in rest:
         if t.startswith(('box=', 'crop=')):
@@ -85,6 +101,12 @@ def pic_spec(line, no, scene_title):
         else:
             die(f'line {no}: unknown part "{t}" (expected box=x,y,w,h, crop=x,y,w,h or text="..."): {line}')
     return spec
+
+
+def figs_dir(scenes_path):
+    """Hand-made figures: <scenes file's folder>/<scenes name>-figs/ if it exists (e.g. samples-figs/), else .../figs/."""
+    own = scenes_path.parent / f'{scenes_path.stem}-figs'
+    return own if own.is_dir() else scenes_path.parent / 'figs'
 
 
 def kicker_from(scene_title):
@@ -204,7 +226,8 @@ def main():
     ap.add_argument('--tts-python', help='tts only: python that runs tts/say.py (default: this one)')
     ap.add_argument('--jobs', type=int, help='say only: clips made at once (default 4)')
     ap.add_argument('--gap', type=float, default=0.35, help='seconds between sentences')
-    ap.add_argument('--scene-gap', type=float, default=0.8, help='seconds between scenes')
+    ap.add_argument('--pic-gap', type=float, default=0.9, help='seconds of silence when the picture changes (the new picture shows during it)')
+    ap.add_argument('--scene-gap', type=float, default=1.6, help='seconds of silence between scenes (the new picture shows during it)')
     ap.add_argument('--tail', type=float, default=1.0, help='seconds the last picture stays after the last sentence')
     ap.add_argument('--fps', type=int, default=25, choices=[25, 30, 50, 60])
     ap.add_argument('--fcpxml-version', default='1.10', choices=['1.10', '1.11'])
@@ -213,6 +236,11 @@ def main():
                     'another language <xx> reads source/courses/<video>/subs.<xx>.txt, one line per spoken line. '
                     'The first is burned into the mp4. Empty: no subtitles')
     ap.add_argument('--no-burn', action='store_true', help='do not burn subtitles into the rough mp4')
+    ap.add_argument('--frames-only', action='store_true', help='draw the pictures only (every @ line, no audio, no timeline) '
+                    'and copy them in order to <out>/<video>/NN-<line>.png, to look at a new look or template')
+    ap.add_argument('--theme', default='dark', choices=sorted(render.THEMES), help='background: dark (grey) or navy (smarshu.com)')
+    ap.add_argument('--avatar', help='round picture bottom right on every frame (default .claude/loops/voice/avatar.jpg or .png, '
+                    'else the smarshu.com portrait); none: no avatar')
     ap.add_argument('--out', default=str(ROOT / '.claude/loops/video-out'), help='output root')
     args = ap.parse_args()
     t0 = time.time()
@@ -230,7 +258,9 @@ def main():
 
     out = Path(args.out) / args.video
     adir, fdir = out / 'audio', out / 'frames'
-    adir.mkdir(parents=True, exist_ok=True); fdir.mkdir(parents=True, exist_ok=True)
+    fdir.mkdir(parents=True, exist_ok=True)
+    if not args.frames_only:
+        adir.mkdir(parents=True, exist_ok=True)
     fps = args.fps
 
     # 1. pictures: resolve every id first, so a missing image fails before anything is made
@@ -241,7 +271,12 @@ def main():
     for si, sc in enumerate(scenes):
         for kind, it in sc['items']:
             if kind == 'pic':
-                if it['id'] != 'card':
+                if it['kind'] == 'fig':
+                    src = figs_dir(scenes_path) / f'{it["args"][0]}.html'
+                    if not src.exists():
+                        missing.append(f'  line {it["line"]}: fig {it["args"][0]} -> {src.relative_to(ROOT) if src.is_relative_to(ROOT) else src} is missing')
+                    it['src'] = src
+                elif it['kind'] == 'image':
                     src, why = resolve(it['id'])
                     if why:
                         missing.append(f'  line {it["line"]}: {it["id"]}: {why}')
@@ -254,7 +289,7 @@ def main():
                 n_sent += 1
     if missing:
         die('pictures not found:\n' + '\n'.join(missing))
-    if not sentences:
+    if not sentences and not args.frames_only:
         die('the scenes file has no sentences')
 
     # a picture shows from the sentence after it; two @ lines with no sentence between: the earlier one never shows
@@ -271,24 +306,34 @@ def main():
     shown = [by_start[k] for k in sorted(by_start)]
 
     made_f, reused_f = [], []
-    for p in shown:
+    avatar = None if args.avatar == 'none' else Path(args.avatar).resolve() if args.avatar else render.default_avatar()
+    if avatar and not avatar.exists():
+        die(f'--avatar {avatar} does not exist')
+    todo_f = []
+    for p in (pics if args.frames_only else shown):
         s = p['spec']
-        if s['id'] == 'card':
-            key = h(render.RENDER_VERSION, 'card', s['text'], s['kicker'])
-        else:
-            key = h(render.RENDER_VERSION, s['raw'], s['src'], os.path.getmtime(s['src']))
-        p['frame'] = fdir / f'{key}.png'
-        p['name'] = (s['id'] if s['id'] != 'card' else 'card ' + s['text'])[:60]
-        if p['frame'].exists():
+        s.setdefault('kind', 'card')  # the title card made above
+        s.setdefault('args', [s.get('text', '')]); s.setdefault('opts', {})
+        p['frame'] = fdir / f'{h(render.inputs(s, args.theme, avatar))}.png'
+        p['name'] = (s['id'] if s['kind'] != 'card' else 'card ' + s['text'])[:60]
+        if p['frame'].exists() or any(q['frame'] == p['frame'] for q in todo_f):  # drawn before, or twice in this file
             reused_f.append(p); continue
-        tmp = p['frame'].with_suffix('.part.png')
-        if s['id'] == 'card':
-            render.card(tmp, s['text'], s['kicker'])
-        else:
-            full = s['src'].is_relative_to(ROOT / 'source/video/pages')
-            render.picture(tmp, s['src'], s['box'], s['text'], full_bleed=full, crop=s['crop'])
-        tmp.replace(p['frame'])
+        todo_f.append(p)
+    try:  # one browser for all of them
+        render.render([(p['spec'], p['frame'].with_suffix('.part.png')) for p in todo_f], theme=args.theme, avatar=avatar)
+    except RuntimeError as e:
+        die(str(e))
+    for p in todo_f:
+        p['frame'].with_suffix('.part.png').replace(p['frame'])
         made_f.append(p)
+    if args.frames_only:  # every @ line once, in order, under readable names next to frames/
+        for f in out.glob('[0-9][0-9]-*.png'):
+            f.unlink()
+        for i, p in enumerate(pics, 1):
+            slug = re.sub(r'[^a-z0-9]+', '-', p['spec']['raw'][1:].lower()).strip('-')[:40]
+            (out / f'{i:02d}-{slug}.png').write_bytes(p['frame'].read_bytes())
+        print(f'frames: {len(made_f)} made, {len(reused_f)} reused; {len(pics)} pictures in {out}')
+        return
 
     # 2. audio: one clip per sentence, cached by (text, voice settings)
     voice = Voice(args)
@@ -316,16 +361,24 @@ def main():
     meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
 
     # 3. timeline, in frames
-    gap, scene_gap, tail = (round(x * fps) for x in (args.gap, args.scene_gap, args.tail))
+    gap, pic_gap, scene_gap, tail = (round(x * fps) for x in (args.gap, args.pic_gap, args.scene_gap, args.tail))
+    new_pic = {p['at'] for j, p in enumerate(shown) if j}  # sentences that open with a new picture
     t = 0
     for i, s in enumerate(sentences):
+        s['pause'] = t  # where the silence before this sentence begins
         if i:
-            t += scene_gap if s['scene'] != sentences[i - 1]['scene'] else gap
+            if s['scene'] != sentences[i - 1]['scene']:
+                t += scene_gap
+            elif i in new_pic:
+                t += pic_gap
+            else:
+                t += gap
         s['start'] = t
         t += s['frames']
     total = t + tail
     for j, p in enumerate(shown):
-        p['start'] = sentences[p['at']]['start'] if j else 0
+        # a new picture appears when the silence before its sentence begins, so the eye has a moment
+        p['start'] = sentences[p['at']]['pause'] if j else 0
     for j, p in enumerate(shown):
         p['dur'] = (shown[j + 1]['start'] if j + 1 < len(shown) else total) - p['start']
 
@@ -420,7 +473,7 @@ def rough(mp4, frames, clips, total, fps, out, burn=None):
         if burn:  # subtitles drawn by libass from an .ass file sized for 1080p
             ass = Path(td) / 'subs.ass'
             ass.write_text(subs.ass(burn, fps, render.W, render.H), encoding='utf-8')
-            graph.append(f"[c]ass='{ass}'[v]")
+            graph.append(f"[c]ass='{ass}':fontsdir='{render.FONTS}'[v]")
         tmp = mp4.with_suffix('.part.mp4')
         r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-i', str(wav), '-filter_complex', ';'.join(graph),
                             '-map', '[v]', '-map', f'{len(frames)}:a', '-r', str(fps), '-c:v', 'libx264', '-preset', 'veryfast',
