@@ -78,3 +78,14 @@ First you hunt down the code files you think matter, and paste them in.
 ## Outputs (not in git)
 
 `.claude/loops/video-out/<video>/` (in this repository; `--out` for another root): `audio/` (one file per sentence, `align/` its word times), `frames/` (one PNG per `@`), `segments/` (the rough mp4's pieces: a still held, or a dissolve), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).
+
+## Checks before any voice is made
+
+Run `python3 source/video/lint_script.py <video>` after the English script is cut into scenes, and again after every edit. Each flag is either fixed in the script or kept on purpose (say why in a `//` line next to it):
+
+- **split-thought** — a sentence starting with But / So / Because / Though / Which… right after another sentence in the same paragraph: one thought cut in two, which TTS reads as two unrelated sentences. Join with a comma.
+- **short-alone** — a sentence under five words between two others: sounds clipped; join it to a neighbour.
+- **no-paragraphs / paragraphs** — no blank lines in a long scene, or far fewer paragraphs than the Chinese: nowhere to pause. Blank line = paragraph = where the voice pauses and the picture may rest.
+- **question** — a question without "?", or a "?" on a statement: the voice will not rise.
+
+The cold read (`ref/coldread-brief.md` in the loop folder) checks the same by ear; this script catches what it misses.
