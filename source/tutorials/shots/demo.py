@@ -390,26 +390,8 @@ def through_plan(number, name, words, req, plan, approve=True):
     return session
 
 
-def build(fresh):
-    if H.exists():
-        if not fresh:
-            sys.exit(f"{H} exists: use --fresh to make it again (the board is stopped first)")
-        stop_board()
-        shutil.rmtree(DEMO / "harness")
-        shutil.rmtree(REPOS, ignore_errors=True)
-    DEMO.mkdir(parents=True, exist_ok=True)
-    H.mkdir()
-    archive = subprocess.run(["git", "-C", str(HARNESS_GIT), "archive", VERSION], capture_output=True, check=True).stdout
-    subprocess.run(["tar", "-x", "-C", str(H)], input=archive, check=True)
-    REPOS.mkdir(exist_ok=True)
-    make_repo()
-    # the repository by name rather than by repos_root, so the Enter screen says "1 repository" and no folder of this computer
-    (H / ".harness/policies/target.override.json").write_text(json.dumps({"repos_root": "", "repos": {"orders-service": {"path": str(ORDERS)}}}, indent=2) + "\n", encoding="utf-8")
-    (H / ".harness/policies/user.override.json").write_text(json.dumps({"language": "en", "name": "Alex", "setup_done": True}, indent=2) + "\n", encoding="utf-8")
-    (DEMO / "opener.sh").write_text('#!/bin/sh\n# Stands in for the browser the board opens: it keeps the pairing link for capture.mjs.\nprintf \'%s\\n\' "$1" > "$(dirname "$0")/pair-url.txt"\n', encoding="utf-8")
-    (DEMO / "opener.sh").chmod(0o755)
-
-    # 1. Written back, then closed by the board: the Changes tab of a closed task, with the commit message.
+def task_raise_stock_timeout():
+    """1. Written back, then closed by the board: the Changes tab of a closed task, with the commit message (build makes it, and source/demo/demo.py)."""
     name = "raise-stock-timeout"
     session = through_plan(1, name, "Raise the timeout of the stock calls in orders-service from 5 to 10 seconds.", dict(
         what="Raise the timeout of the calls to the stock service in `orders-service` from 5 to 10 seconds. Orders fail at busy hours because the stock service answers in 6 to 8 seconds.",
@@ -442,7 +424,9 @@ and the calls gave up after 5.
     run(git + ["commit", "-qm", "Raise the stock call timeout to 10 seconds"], cwd=DEMO)
     run(git + ["checkout", "-q", "main"], cwd=DEMO)
 
-    # 2. The dry run is done: the Changes tab waits for Approve promote.
+
+def task_limit_order_items():
+    """2. The dry run is done: the Changes tab waits for Approve promote (build makes it, and source/demo/demo.py)."""
     name = "limit-order-items"
     session = through_plan(2, name, "Lower the item limit of an order in orders-service to 20.", dict(
         what="An order in `orders-service` may hold at most 20 items, not 50. The error says the limit.",
@@ -461,6 +445,75 @@ and the calls gave up after 5.
     cli("task", "promote", "--dry-run", "--task", name)
     task_md(name, "dev", "full", "waiting for the user to approve the promote", "The dry run is done.", "The user approves the promote on the task page.")
     stop(session)
+
+
+def task_cache_stock_counts():
+    """4. A run on DEV before the write-back: the task waits for your run, with the form (build makes it, and source/demo/demo.py)."""
+    name = "cache-stock-counts"
+    session = through_plan(4, name, "Keep the stock counts for 30 seconds in orders-service, so a busy hour asks the stock service less.", dict(
+        what="`orders-service` keeps each stock count it read for 30 seconds and asks the stock service again only after that.",
+        not_do="Do not keep counts across a restart.",
+        done_t="- [T1] `orders/client.py` keeps a count for 30 seconds.",
+        done_r="- [R1] DEV: run `load-test --orders 500` against orders-service on DEV; the stock service gets fewer than 100 calls."),
+        dict(files="- `orders-service/orders/client.py`: a small cache in memory.", steps="1. Fetch `client.py`.\n2. Add the cache.\n3. The user runs the load test on DEV.",
+             check="[T1] in the diff; [R1] by the user's run.", risks="An order may see a count up to 30 seconds old."))
+    cli("task", "fetch", "orders-service/orders/client.py", "--task", name)
+    edit(name, "orders/client.py", "import json\nimport urllib.request\n", "import json\nimport time\nimport urllib.request\n")
+    edit(name, "orders/client.py", 'def stock_of(sku: str, base_url: str) -> int:\n    """How many items of `sku` are in stock."""\n',
+         'KEPT = {}\nKEEP_SECONDS = 30\n\n\ndef stock_of(sku: str, base_url: str) -> int:\n    """How many items of `sku` are in stock (a count is kept for 30 seconds)."""\n'
+         '    kept = KEPT.get(sku)\n    if kept and time.monotonic() - kept[0] < KEEP_SECONDS:\n        return kept[1]\n')
+    todo_md(name, ["- [x] Fetch client.py", "- [x] Keep each count for 30 seconds", "- [ ] The user runs the load test on DEV [R1] <- now", "- [ ] Dry run of the write-back"])
+    cli("task", "diff", "--task", name)
+    cli("task", "handoff", "run", "--env", "DEV", "--what", "Run load-test --orders 500 against orders-service on DEV and send back how many calls the stock service got.", "--task", name)
+    task_md(name, "dev", "full", "waiting for the user's run on DEV", "The cache is written.", "The user runs the load test on DEV [R1].")
+    stop(session)
+
+
+def task_add_order_notes():
+    """6. The plan waits for Approve plan (build makes it, and source/demo/demo.py)."""
+    through_plan(6, "add-order-notes", "Let a customer add a short note to an order in orders-service.", dict(
+        what="An order in `orders-service` may carry a note from the customer, at most 200 characters. The confirmation repeats it.",
+        not_do="No change to totals or stock.",
+        done_t="- [T1] `create_order` takes an optional `note`.\n- [T2] A note longer than 200 characters is refused.\n- [T3] The answer carries the note."),
+        dict(files="- `orders-service/orders/api.py`: the `note` argument and its check.\n- `orders-service/tests/test_api.py`: two tests.",
+             steps="1. Fetch `api.py` and `test_api.py`.\n2. Add `note` to `create_order`, refuse more than 200 characters.\n3. Put the note in the answer.\n4. Add a test of a long note and of a short one.\n5. Dry run of the write-back.",
+             check="Each of [T1] to [T3] has a line in the diff and a test.",
+             risks="A client that sends `note` today gets it back in the answer: none is known."), approve=False)
+
+
+def task_fix_total_rounding():
+    """7. The requirement waits for Confirm requirement (build makes it, and source/demo/demo.py)."""
+    name = "fix-total-rounding"
+    session = new_task(7, name, "dev", "Order totals in orders-service are a cent off for some prices. Fix it.")
+    req_md(name, what="`pricing.total` in `orders-service` gives a total a cent too low for some prices, such as 19.99 (`int(19.99 * 100)` is 1998). It must round each price to whole cents.",
+           not_do="Do not change how prices are stored or sent.",
+           done_t="- [T1] `pricing.total` rounds each price to cents.\n- [T2] A test: two items at 19.99 make 3998.",
+           unclear="none")
+    task_md(name, "dev", "full", "waiting for the user to confirm the requirement", "The requirement is written.", "The user confirms REQ.md on the task page.")
+    stop(session)
+
+
+def build(fresh):
+    if H.exists():
+        if not fresh:
+            sys.exit(f"{H} exists: use --fresh to make it again (the board is stopped first)")
+        stop_board()
+        shutil.rmtree(DEMO / "harness")
+        shutil.rmtree(REPOS, ignore_errors=True)
+    DEMO.mkdir(parents=True, exist_ok=True)
+    H.mkdir()
+    archive = subprocess.run(["git", "-C", str(HARNESS_GIT), "archive", VERSION], capture_output=True, check=True).stdout
+    subprocess.run(["tar", "-x", "-C", str(H)], input=archive, check=True)
+    REPOS.mkdir(exist_ok=True)
+    make_repo()
+    # the repository by name rather than by repos_root, so the Enter screen says "1 repository" and no folder of this computer
+    (H / ".harness/policies/target.override.json").write_text(json.dumps({"repos_root": "", "repos": {"orders-service": {"path": str(ORDERS)}}}, indent=2) + "\n", encoding="utf-8")
+    (H / ".harness/policies/user.override.json").write_text(json.dumps({"language": "en", "name": "Alex", "setup_done": True}, indent=2) + "\n", encoding="utf-8")
+    (DEMO / "opener.sh").write_text('#!/bin/sh\n# Stands in for the browser the board opens: it keeps the pairing link for capture.mjs.\nprintf \'%s\\n\' "$1" > "$(dirname "$0")/pair-url.txt"\n', encoding="utf-8")
+    (DEMO / "opener.sh").chmod(0o755)
+
+    task_raise_stock_timeout()
+    task_limit_order_items()
 
     # 3. Two independent checks wanted: one FAIL, then two passes. The Review tab.
     name = "validate-sku-format"
@@ -510,25 +563,7 @@ and the calls gave up after 5.
     task_md(name, "dev", "full", "in progress", "Two checks passed.", "Dry run of the write-back.")
     stop(session)
 
-    # 4. A run on DEV before the write-back: the task waits for your run, with the form.
-    name = "cache-stock-counts"
-    session = through_plan(4, name, "Keep the stock counts for 30 seconds in orders-service, so a busy hour asks the stock service less.", dict(
-        what="`orders-service` keeps each stock count it read for 30 seconds and asks the stock service again only after that.",
-        not_do="Do not keep counts across a restart.",
-        done_t="- [T1] `orders/client.py` keeps a count for 30 seconds.",
-        done_r="- [R1] DEV: run `load-test --orders 500` against orders-service on DEV; the stock service gets fewer than 100 calls."),
-        dict(files="- `orders-service/orders/client.py`: a small cache in memory.", steps="1. Fetch `client.py`.\n2. Add the cache.\n3. The user runs the load test on DEV.",
-             check="[T1] in the diff; [R1] by the user's run.", risks="An order may see a count up to 30 seconds old."))
-    cli("task", "fetch", "orders-service/orders/client.py", "--task", name)
-    edit(name, "orders/client.py", "import json\nimport urllib.request\n", "import json\nimport time\nimport urllib.request\n")
-    edit(name, "orders/client.py", 'def stock_of(sku: str, base_url: str) -> int:\n    """How many items of `sku` are in stock."""\n',
-         'KEPT = {}\nKEEP_SECONDS = 30\n\n\ndef stock_of(sku: str, base_url: str) -> int:\n    """How many items of `sku` are in stock (a count is kept for 30 seconds)."""\n'
-         '    kept = KEPT.get(sku)\n    if kept and time.monotonic() - kept[0] < KEEP_SECONDS:\n        return kept[1]\n')
-    todo_md(name, ["- [x] Fetch client.py", "- [x] Keep each count for 30 seconds", "- [ ] The user runs the load test on DEV [R1] <- now", "- [ ] Dry run of the write-back"])
-    cli("task", "diff", "--task", name)
-    cli("task", "handoff", "run", "--env", "DEV", "--what", "Run load-test --orders 500 against orders-service on DEV and send back how many calls the stock service got.", "--task", name)
-    task_md(name, "dev", "full", "waiting for the user's run on DEV", "The cache is written.", "The user runs the load test on DEV [R1].")
-    stop(session)
+    task_cache_stock_counts()
 
     # 5. Working: the plan is approved, the TODO is half done (capture.mjs touches its session so the board shows it as working).
     name = "retry-stock-calls"
@@ -544,25 +579,8 @@ and the calls gave up after 5.
     task_md(name, "dev", "full", "in progress", "Retrying a timeout in stock_of.", "Add the test.")
     tool(session, f"edit .workspace/sandbox/tasks/{name}/DEV/orders-service/orders/client.py")
 
-    # 6. The plan waits for Approve plan.
-    through_plan(6, "add-order-notes", "Let a customer add a short note to an order in orders-service.", dict(
-        what="An order in `orders-service` may carry a note from the customer, at most 200 characters. The confirmation repeats it.",
-        not_do="No change to totals or stock.",
-        done_t="- [T1] `create_order` takes an optional `note`.\n- [T2] A note longer than 200 characters is refused.\n- [T3] The answer carries the note."),
-        dict(files="- `orders-service/orders/api.py`: the `note` argument and its check.\n- `orders-service/tests/test_api.py`: two tests.",
-             steps="1. Fetch `api.py` and `test_api.py`.\n2. Add `note` to `create_order`, refuse more than 200 characters.\n3. Put the note in the answer.\n4. Add a test of a long note and of a short one.\n5. Dry run of the write-back.",
-             check="Each of [T1] to [T3] has a line in the diff and a test.",
-             risks="A client that sends `note` today gets it back in the answer: none is known."), approve=False)
-
-    # 7. The requirement waits for Confirm requirement.
-    name = "fix-total-rounding"
-    session = new_task(7, name, "dev", "Order totals in orders-service are a cent off for some prices. Fix it.")
-    req_md(name, what="`pricing.total` in `orders-service` gives a total a cent too low for some prices, such as 19.99 (`int(19.99 * 100)` is 1998). It must round each price to whole cents.",
-           not_do="Do not change how prices are stored or sent.",
-           done_t="- [T1] `pricing.total` rounds each price to cents.\n- [T2] A test: two items at 19.99 make 3998.",
-           unclear="none")
-    task_md(name, "dev", "full", "waiting for the user to confirm the requirement", "The requirement is written.", "The user confirms REQ.md on the task page.")
-    stop(session)
+    task_add_order_notes()
+    task_fix_total_rounding()
 
     # 8. Documents for the Intake tab.
     name = "import-price-list"
