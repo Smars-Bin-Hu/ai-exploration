@@ -5,8 +5,8 @@
     .venv/bin/python source/video/build.py basic-01 --voice tts:qwen3 --ref .claude/loops/voice/ref/ref-13s.wav
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
-Writes .claude/loops/video-out/<video>/: audio/ (one wav per sentence), frames/ (one png per @ line),
-<video>.fcpxml and <video>-rough.mp4. Audio and frames are cached by what made them, so a rerun makes only what changed.
+Writes .claude/loops/video-out/<video>/: audio/ (one wav per sentence), frames/ (one png per @ line), avatar-<hash>.mov
+(the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio and frames are cached by what made them, so a rerun makes only what changed.
 """
 import argparse, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
 from concurrent.futures import ThreadPoolExecutor
@@ -15,7 +15,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(HERE))
-import render, fcpxml, subs  # noqa: E402
+import render, fcpxml, subs, avatar as speaker  # noqa: E402
 
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
@@ -239,8 +239,10 @@ def main():
     ap.add_argument('--frames-only', action='store_true', help='draw the pictures only (every @ line, no audio, no timeline) '
                     'and copy them in order to <out>/<video>/NN-<line>.png, to look at a new look or template')
     ap.add_argument('--theme', default='dark', choices=sorted(render.THEMES), help='background: dark (grey) or navy (smarshu.com)')
-    ap.add_argument('--avatar', help='round picture bottom right on every frame (default .claude/loops/voice/avatar.jpg or .png, '
-                    'else the smarshu.com portrait); none: no avatar')
+    ap.add_argument('--avatar', help='round picture bottom right (default .claude/loops/voice/avatar.jpg or .png, '
+                    'else the smarshu.com portrait); none: no avatar. It is a speaking overlay video over the stills '
+                    '(glow follows the voice), except with --avatar-static or --frames-only, where it is drawn into each still')
+    ap.add_argument('--avatar-static', action='store_true', help='draw the avatar into each still, no speaking overlay')
     ap.add_argument('--out', default=str(ROOT / '.claude/loops/video-out'), help='output root')
     args = ap.parse_args()
     t0 = time.time()
@@ -309,18 +311,19 @@ def main():
     avatar = None if args.avatar == 'none' else Path(args.avatar).resolve() if args.avatar else render.default_avatar()
     if avatar and not avatar.exists():
         die(f'--avatar {avatar} does not exist')
+    still_avatar = avatar if (args.avatar_static or args.frames_only) else None  # else the overlay video carries it
     todo_f = []
     for p in (pics if args.frames_only else shown):
         s = p['spec']
         s.setdefault('kind', 'card')  # the title card made above
         s.setdefault('args', [s.get('text', '')]); s.setdefault('opts', {})
-        p['frame'] = fdir / f'{h(render.inputs(s, args.theme, avatar))}.png'
+        p['frame'] = fdir / f'{h(render.inputs(s, args.theme, still_avatar))}.png'
         p['name'] = (s['id'] if s['kind'] != 'card' else 'card ' + s['text'])[:60]
         if p['frame'].exists() or any(q['frame'] == p['frame'] for q in todo_f):  # drawn before, or twice in this file
             reused_f.append(p); continue
         todo_f.append(p)
     try:  # one browser for all of them
-        render.render([(p['spec'], p['frame'].with_suffix('.part.png')) for p in todo_f], theme=args.theme, avatar=avatar)
+        render.render([(p['spec'], p['frame'].with_suffix('.part.png')) for p in todo_f], theme=args.theme, avatar=still_avatar)
     except RuntimeError as e:
         die(str(e))
     for p in todo_f:
@@ -409,18 +412,33 @@ def main():
 
     tl = json.dumps([[(str(c['path']), c['start'], c['dur']) for c in clips],
                      [(str(f['path']), f['start'], f['dur']) for f in frames], title, fps, total])
-    sig = h(tl, args.fcpxml_version, json.dumps(captions))
-    sig_mp4 = h(tl, json.dumps(burn), subs.ass([], fps, render.W, render.H))
+    # the speaking avatar: one overlay video for the whole timeline, made again only when the audio, its times or the avatar change
+    overlay, made_ov = None, []
+    if avatar and not still_avatar:
+        ok = h(speaker.STYLE, avatar, avatar.stat().st_mtime, fps, total, json.dumps([(str(c['path']), c['start']) for c in clips]))
+        ov = out / f'avatar-{ok}.mov'
+        if not ov.exists() or not speaker.preview_path(ov).exists():
+            t1 = time.time()
+            try:
+                info = speaker.make(ov, track=mix(clips, total, fps), rate=RATE, fps=fps, total=total,
+                                    sentence_starts=[c['start'] for c in clips], avatar_path=avatar)
+            except RuntimeError as e:
+                die(str(e))
+            made_ov.append(f'{ov.name} ({info["onsets"]} ripples, {ov.stat().st_size / 1e6:.1f} MB, {time.time() - t1:.1f} s)')
+        overlay = dict(path=ov, size=speaker.SIZE, centre=speaker.CENTRE)
+    sig = h(tl, args.fcpxml_version, json.dumps(captions), overlay and str(overlay['path']))
+    sig_mp4 = h(tl, json.dumps(burn), subs.ass([], fps, render.W, render.H), overlay and str(overlay['path']))
     fx, mp4 = out / f'{args.video}.fcpxml', out / f'{args.video}-rough.mp4'
     state_path = out / 'build-state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
-    made_out = made_subs[:]
+    made_out = made_subs[:] + made_ov
     if state.get('fcpxml') != sig or not fx.exists():
         fcpxml.write(fx, title=title, event=f'{args.video} (video pipeline)', fps=fps, width=render.W, height=render.H,
-                     pictures=frames, clips=clips, total=total, version=args.fcpxml_version, captions=captions)
+                     pictures=frames, clips=clips, total=total, version=args.fcpxml_version, captions=captions,
+                     overlay=overlay)
         state['fcpxml'] = sig; made_out.append(fx.name)
     if not args.no_mp4 and (state.get('mp4') != sig_mp4 or not mp4.exists()):
-        rough(mp4, frames, clips, total, fps, out, burn)
+        rough(mp4, frames, clips, total, fps, out, burn, overlay)
         state['mp4'] = sig_mp4; made_out.append(mp4.name)
     state_path.write_text(json.dumps(state, indent=1))
 
@@ -451,8 +469,8 @@ def main():
     print(f'done in {time.time() - t0:.1f} s')
 
 
-def rough(mp4, frames, clips, total, fps, out, burn=None):
-    """Stills plus one audio track, no transitions: a quick check that words and pictures line up."""
+def mix(clips, total, fps):
+    """The whole timeline's audio: 16-bit mono PCM at RATE, each clip at its start."""
     spf = RATE // fps
     track = bytearray(total * spf * 2)
     for c in clips:
@@ -460,6 +478,12 @@ def rough(mp4, frames, clips, total, fps, out, burn=None):
             data = w.readframes(w.getnframes())
         at = c['start'] * spf * 2
         track[at:at + len(data)] = data
+    return bytes(track)
+
+
+def rough(mp4, frames, clips, total, fps, out, burn=None, overlay=None):
+    """Stills plus one audio track, no transitions: a quick check that words and pictures line up."""
+    track = mix(clips, total, fps)
     with tempfile.TemporaryDirectory() as td:
         wav = Path(td) / 'track.wav'
         with wave.open(str(wav), 'wb') as w:
@@ -469,14 +493,22 @@ def rough(mp4, frames, clips, total, fps, out, burn=None):
         for i, f in enumerate(frames):
             ins += ['-loop', '1', '-framerate', str(fps), '-i', str(f['path'])]
             graph.append(f'[{i}:v]trim=end_frame={f["dur"]},setpts=PTS-STARTPTS,format=yuv420p[v{i}]')
-        graph.append(''.join(f'[v{i}]' for i in range(len(frames))) + f'concat=n={len(frames)}:v=1:a=0' + ('[c]' if burn else '[v]'))
+        n = len(frames)
+        graph.append(''.join(f'[v{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=0' + ('[s]' if overlay else '[c]' if burn else '[v]'))
+        if overlay:  # the speaking avatar over the stills, its centre where the static one was (from its colour|alpha preview)
+            ins += ['-i', str(speaker.preview_path(overlay['path']))]
+            z = overlay['size']
+            x, y = overlay['centre'][0] - z // 2, overlay['centre'][1] - z // 2
+            graph.append(f'[{n}:v]split[o1][o2];[o1]crop={z}:{z}:0:0[oc];[o2]crop={z}:{z}:{z}:0,format=gray[oa];'
+                         f'[oc][oa]alphamerge[ov];[s][ov]overlay=x={x}:y={y}:format=auto,format=yuv420p' + ('[c]' if burn else '[v]'))
+            n += 1
         if burn:  # subtitles drawn by libass from an .ass file sized for 1080p
             ass = Path(td) / 'subs.ass'
             ass.write_text(subs.ass(burn, fps, render.W, render.H), encoding='utf-8')
             graph.append(f"[c]ass='{ass}':fontsdir='{render.FONTS}'[v]")
         tmp = mp4.with_suffix('.part.mp4')
         r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-i', str(wav), '-filter_complex', ';'.join(graph),
-                            '-map', '[v]', '-map', f'{len(frames)}:a', '-r', str(fps), '-c:v', 'libx264', '-preset', 'veryfast',
+                            '-map', '[v]', '-map', f'{n}:a', '-r', str(fps), '-c:v', 'libx264', '-preset', 'veryfast',
                             '-tune', 'stillimage', '-crf', '26', '-c:a', 'aac', '-b:a', '128k',
                             '-movflags', '+faststart', str(tmp)], capture_output=True, text=True)
         if r.returncode:

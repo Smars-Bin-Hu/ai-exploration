@@ -43,7 +43,8 @@ body {
   display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
 /* The person, bottom right on every frame (added by shoot.cjs). */
-.avatar { position: fixed; right: 56px; bottom: 50px; width: 132px; height: 132px; border-radius: 50%;
+/* The same place and size as the speaking overlay (avatar.py CENTRE, R). */
+.avatar { position: fixed; right: 72px; bottom: 64px; width: 132px; height: 132px; border-radius: 50%;
   object-fit: cover; border: 3px solid var(--teal);
   box-shadow: 0 0 0 6px rgba(45, 212, 191, 0.10), 0 12px 30px rgba(0, 0, 0, 0.5); z-index: 100; }
 

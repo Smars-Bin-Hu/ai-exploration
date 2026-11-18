@@ -10,10 +10,14 @@ def _url(path):
     return 'file://' + quote(str(Path(path).resolve()))
 
 
-def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10', captions=()):
+def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10', captions=(), overlay=None):
     """pictures: [dict(path, name, start, dur)] in frames, contiguous from 0 to total.
     clips: [dict(path, name, start, dur)] in frames, absolute; each must fall inside one picture.
-    captions: [(lang, [(start, dur, rows)])]: SRT captions (role SRT?captionFormat=SRT.<lang>), one caption lane per language."""
+    captions: [(lang, [(start, dur, rows)])]: SRT captions (role SRT?captionFormat=SRT.<lang>), one caption lane per language.
+    overlay: dict(path, size, centre): a square video with alpha (the speaking avatar), the whole length, on the lane above the
+    caption lanes, above the
+    stills, at its own pixel size (adjust-conform none) with its centre moved to `centre` (x, y in pixels from the top left).
+    adjust-transform's position is relative to the frame's centre, in per cent of the frame height, y up."""
     unit = {25: (100, 2500), 30: (100, 3000), 50: (100, 5000), 60: (100, 6000)}[fps]
 
     def t(frames):
@@ -44,6 +48,13 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
 
     for p in pictures:
         asset(p['path'], p['name'])
+    if overlay:
+        sz = str(overlay['size'])
+        ET.SubElement(res, 'format', id='rov', frameDuration=t(1), width=sz, height=sz,
+                      colorSpace='1-1-1 (Rec. 709)')
+        a = ET.SubElement(res, 'asset', id='raov', name=Path(overlay['path']).stem, start='0s', duration=t(total),
+                          hasVideo='1', format='rov', videoSources='1')
+        ET.SubElement(a, 'media-rep', kind='original-media', src=_url(overlay['path']))
     for c in clips:
         asset(c['path'], c['name'], c['dur'])
 
@@ -59,6 +70,12 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
         v = ET.SubElement(spine, 'video', ref=ids[str(p['path'])], offset=t(p['start']), name=p['name'],
                           start='0s', duration=t(p['dur']))
         end = p['start'] + p['dur']
+        if overlay and p['start'] == 0:  # connected to the first still, running past it to the end
+            oc = ET.SubElement(v, 'asset-clip', ref='raov', lane=str(len(captions) + 1), offset='0s', name='speaking avatar', start='0s',
+                               duration=t(total))
+            px = lambda d: f'{d / height * 100:.4f}'.rstrip('0').rstrip('.')
+            ET.SubElement(oc, 'adjust-conform', type='none')
+            ET.SubElement(oc, 'adjust-transform', position=f'{px(overlay["centre"][0] - width / 2)} {px(height / 2 - overlay["centre"][1])}')
         while ci < len(clips) and clips[ci]['start'] < end:
             c = clips[ci]
             assert c['start'] >= p['start'], 'an audio clip starts before its picture'
