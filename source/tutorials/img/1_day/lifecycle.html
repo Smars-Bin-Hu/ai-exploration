@@ -1,0 +1,50 @@
+<!doctype html>
+<!-- The life of one development task, drawn for tutorial 1 (page 3). Render: node render-lifecycle.mjs (in the scratchpad), or any
+     headless Chrome screenshot of #pic at 2400 px wide. Facts: harness 1.7.45 docs/01-quickstart.md step 5; task.py approve_promote. -->
+<html><head><meta charset="utf-8"><style>
+ body{margin:0;background:#fff}
+ #pic{width:2400px;height:960px;position:relative;font-family:Georgia,serif;color:#141414;background:#fff}
+ .zone{position:absolute;top:30px;bottom:30px;border-radius:28px}
+ .folder{left:30px;width:1700px;background:#F2F1EC}
+ .repo{left:1790px;width:580px;background:#fff;border:4px solid #141414}
+ .zlabel{position:absolute;top:26px;left:40px;font:bold 30px Arial,sans-serif;letter-spacing:3px;color:#6B6B6B;text-transform:uppercase}
+ .zsub{position:absolute;top:70px;left:40px;font-size:34px;color:#6B6B6B;font-style:italic}
+ .stage{position:absolute;top:170px;width:470px;height:330px;background:#fff;border:3px solid #D6D6D2;border-radius:20px;box-sizing:border-box;padding:30px 32px}
+ .stage h2{margin:0 0 14px;font-size:50px;font-weight:bold}
+ .stage p{margin:0;font-size:36px;line-height:1.3}
+ code{font-family:'Courier New',monospace;font-weight:bold;font-size:34px}
+ .arrow{position:absolute;top:310px;height:10px;background:#141414}
+ .arrow:after{content:'';position:absolute;right:-6px;top:-17px;border-left:34px solid #141414;border-top:22px solid transparent;border-bottom:22px solid transparent}
+ .gate{position:absolute;top:545px;width:520px;text-align:center}
+ .key{width:96px;height:96px;margin:0 auto;border-radius:50%;background:#E8590C;color:#fff;font:bold 54px Arial,sans-serif;line-height:96px}
+ .gate b{display:block;margin-top:16px;font-size:40px;color:#E8590C}
+ .gate span{display:block;font-size:34px;color:#141414}
+ .stem{position:absolute;top:500px;width:4px;height:45px;background:#E8590C}
+ .legend{position:absolute;left:60px;bottom:60px;font-size:36px;color:#141414}
+ .legend .dot{display:inline-block;width:44px;height:44px;border-radius:50%;background:#E8590C;color:#fff;font:bold 28px Arial,sans-serif;text-align:center;line-height:44px;vertical-align:middle;margin-right:14px}
+ .wb{position:absolute;left:1658px;top:252px;font:bold 27px Arial,sans-serif;color:#E8590C;letter-spacing:1px}
+ .note{position:absolute;left:1850px;top:560px;width:470px;font-size:34px;line-height:1.3;color:#6B6B6B;font-style:italic}
+ .only{position:absolute;left:1090px;top:860px}
+</style></head><body><div id="pic">
+ <div class="zone folder"><div class="zlabel">The task folder</div><div class="zsub">the agent's memory; it outlives the chat</div></div>
+ <div class="zone repo"><div class="zlabel">Your repository</div><div class="zsub">only the write-back gets in</div></div>
+
+ <div class="stage" style="left:70px"><h2>1 Requirement</h2><p>You say what, in one sentence. The agent asks, then writes <code>REQ.md</code>.</p></div>
+ <div class="arrow" style="left:540px;width:70px"></div>
+ <div class="stage" style="left:630px"><h2>2 Plan</h2><p>The agent writes <code>PLAN.md</code>: the files, the steps, the checks.</p></div>
+ <div class="arrow" style="left:1100px;width:70px"></div>
+ <div class="stage" style="left:1190px"><h2>3 Work</h2><p>The agent changes copies in <code>DEV/</code>. <b>Changes</b> shows the diff.</p></div>
+ <div class="arrow" style="left:1660px;width:170px"></div>
+ <div class="stage" style="left:1850px"><h2>4 You commit</h2><p>New branch, files not committed. You commit, push, open the PR.</p></div>
+
+ <div class="stem" style="left:303px"></div>
+ <div class="gate" style="left:45px"><div class="key">1</div><b>Confirm requirement</b><span>you type a code</span></div>
+ <div class="stem" style="left:863px"></div>
+ <div class="gate" style="left:605px"><div class="key">2</div><b>Approve plan</b><span>you type a code</span></div>
+ <div class="stem" style="left:1423px"></div>
+ <div class="gate" style="left:1165px"><div class="key">3</div><b>Approve promote</b><span>you type a code</span></div>
+ <div class="wb">write-back</div>
+ <div class="note">A second task on this repository waits until you commit.</div>
+
+ <div class="legend"><span class="dot">1</span>You type a code on the board at these three points only.</div>
+</div></body></html>
