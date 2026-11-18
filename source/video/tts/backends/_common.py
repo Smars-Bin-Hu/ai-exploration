@@ -24,14 +24,17 @@ def write_wav(path, audio, sr):
 
 
 def run(job, load, speak):
-    """load() -> state; speak(state, text) -> (audio float array, sample rate)."""
+    """load() -> state; speak(state, text) -> (audio float array, sample rate). A speak() with a third parameter also
+    gets the batch item (its "seed", if it has one)."""
+    import inspect
+    with_item = len(inspect.signature(speak).parameters) >= 3
     t0 = time.perf_counter()
     state = load(job)
     print(f"[say] model loaded in {time.perf_counter() - t0:.1f} s", file=sys.stderr)
     total_c = total_a = 0.0
     for it in job["items"]:
         t = time.perf_counter()
-        audio, sr = speak(state, it["text"])
+        audio, sr = speak(state, it["text"], it) if with_item else speak(state, it["text"])
         compute = time.perf_counter() - t
         dur = write_wav(it["out"], audio, sr)
         total_c += compute

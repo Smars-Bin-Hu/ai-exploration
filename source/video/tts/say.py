@@ -7,6 +7,13 @@ One sentence:
 Many sentences, model loaded once (one "out<TAB>text" per line):
     python source/video/tts/say.py --model qwen3 --ref ref.wav --batch lines.tsv
 
+A batch line may name the sentences around it: "out<TAB>text<TAB>before<TAB>after" (either may be empty). For a
+checked model (vibevoice) a line under 5 words is then spoken together with its neighbour and cut out again.
+
+Checked models (vibevoice): every take goes through Demucs (vocals kept: removes the background music VibeVoice
+sometimes adds) and Whisper; a take with music left in it, too fast or slow for its words, or whose words do not
+match the text is retaken with another seed, up to --retakes times. See README.md, round 3.
+
 The reference transcript is read from --ref-text, or else from the file next to
 the reference with the same name and a .txt extension.
 
@@ -23,6 +30,7 @@ import os
 import shutil
 import subprocess
 import sys
+import re
 import tempfile
 from pathlib import Path
 
@@ -49,6 +57,18 @@ MODELS = {
 }
 
 
+# Models whose takes are cleaned and checked, and the limits a take must meet (README.md, round 3).
+CHECKED = {"vibevoice"}
+CHECK_VERSION = "c2"      # bump when cleaning, checks or merging change: build.py then remakes those clips
+SHORT_WORDS = 5           # a line with fewer words is spoken together with a neighbour, when the batch names one
+MUSIC_LEFT_DB = -25.0     # loudest 0.5 s of music still in the cleaned take, against the voice
+CPS = (5.0, 22.0)         # letters per second of voice; clean takes measured 6.7 to 12.7
+MAX_EDITS = 0.1           # word edits allowed, as a share of the words (at least 1; none in a short line)
+DEMUCS_PY = TTS_HOME / "demucs" / ".venv" / "bin" / "python"
+WHISPER_PY = TTS_HOME / "whisper" / "venv" / "bin" / "python"
+NUM = dict(zip("0 1 2 3 4 5 6 7 8 9 10".split(), "zero one two three four five six seven eight nine ten".split()))
+
+
 def _value(v):
     for cast in (int, float):
         try:
@@ -56,6 +76,151 @@ def _value(v):
         except ValueError:
             pass
     return v
+
+
+def _norm(w):
+    w = re.sub(r"[^a-z0-9]", "", w.lower())
+    return NUM.get(w, w)
+
+
+def _tokens(text):
+    return [t for t in (_norm(w) for w in text.split()) if t]
+
+
+def _edits(ref, hyp):
+    """Word-level edit distance (substitutions, deletions, insertions)."""
+    d = list(range(len(hyp) + 1))
+    for i, r in enumerate(ref, 1):
+        prev, d[0] = d[0], i
+        for j, h in enumerate(hyp, 1):
+            prev, d[j] = d[j], min(d[j] + 1, d[j - 1] + 1, prev + (r != h))
+    return d[len(hyp)]
+
+
+def _boundary(synth, first_n, words):
+    """Whisper words of the joined clip -> (t0, t1): from the end of the first sentence's last word to the start of the
+    second's first word, as far as the words can be matched; None if nothing matches."""
+    import difflib
+    toks = _tokens(synth)
+    hyp = [(_norm(w), s0, e0) for w, s0, e0 in words if _norm(w)]
+    sm = difflib.SequenceMatcher(None, toks, [h[0] for h in hyp], autojunk=False)
+    at = {}
+    for blk in sm.get_matching_blocks():
+        for k in range(blk.size):
+            at[blk.a + k] = hyp[blk.b + k]
+    before = [at[k][2] for k in range(first_n) if k in at]
+    after = [at[k][1] for k in range(first_n, len(toks)) if k in at]
+    if not before and not after:
+        return None
+    t0 = before[-1] if before else after[0] - 0.4
+    t1 = after[0] if after else before[-1] + 0.4
+    if t1 < t0 + 0.04:
+        t0, t1 = min(t0, t1) - 0.1, max(t0, t1) + 0.1
+    return round(max(t0 - 0.03, 0), 3), round(t1 + 0.03, 3)
+
+
+def _jobs(python, script, job):
+    """Run a helper script in its own env with a JSON job on stdin -> its JSON result lines."""
+    r = subprocess.run([str(python), str(script)], input=json.dumps(job), text=True, capture_output=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr[-2000:])
+        sys.exit(f"{Path(script).name} failed (exit {r.returncode})")
+    return [json.loads(x) for x in r.stdout.splitlines() if x.startswith("{")]
+
+
+def checked(a, items, job, python, backend, env_vars, tmp):
+    """Speak, clean (Demucs, vocals kept), check (Whisper, speed) and retake each flagged clip with another seed."""
+    for need in (DEMUCS_PY, WHISPER_PY):
+        if not need.exists():
+            sys.exit(f"{a.model} is checked, which needs {need.parent.parent} (see README.md); or give --no-check")
+    plan = []
+    for it in items:
+        text, n = it["text"], len(it["text"].split())
+        p = dict(it, synth=text, keep=None, first_n=0)
+        if n < SHORT_WORDS and not a.no_merge and (it.get("before") or it.get("after")):
+            if it.get("before"):  # the short line ends the joined clip, so it keeps its own falling end
+                p.update(synth=f'{it["before"]} {text}', keep="after", first_n=len(_tokens(it["before"])))
+            else:
+                p.update(synth=f'{text} {it["after"]}', keep="before", first_n=len(_tokens(text)))
+        plan.append(p)
+    takes = [[] for _ in items]
+    pending = list(range(len(items)))
+    for k in range(a.retakes + 1):
+        seed = a.seed + 101 * k
+        raws = {i: str(tmp / f"{i:04d}-t{k}-raw.wav") for i in pending}
+        cleans = {i: str(tmp / f"{i:04d}-t{k}-clean.wav") for i in pending}
+        sub = dict(job, items=[{"out": raws[i], "text": plan[i]["synth"], "seed": seed} for i in pending])
+        r = subprocess.run([str(python), str(HERE / "backends" / backend)], input=json.dumps(sub), text=True,
+                           env=env_vars)
+        if r.returncode:
+            sys.exit(r.returncode)
+        heard = {x["wav"]: x for x in _jobs(WHISPER_PY, HERE / "check.py", {"items": [{"wav": raws[i]} for i in pending]})}
+        dj = []
+        for i in pending:
+            d = {"wav": raws[i], "out": cleans[i], "trim": 0.1, "recheck": True}
+            if a.keep_takes:
+                d["raw_out"] = raws[i][:-8] + "-part.wav"
+            if plan[i]["keep"]:
+                win = _boundary(plan[i]["synth"], plan[i]["first_n"], heard[raws[i]]["words"])
+                if win:
+                    d["cut"] = [win[0], win[1], plan[i]["keep"]]
+            dj.append(d)
+        sep = {x["wav"]: x for x in _jobs(DEMUCS_PY, HERE / "demucs_clean.py", {"items": dj})}
+        still = []
+        for i, d in zip(pending, dj):
+            m, h = sep[raws[i]], heard[raws[i]]
+            words = h["words"]
+            if plan[i]["keep"] and "cut_at" in m:
+                c = m["cut_at"]
+                words = [w for w in words if ((w[1] + w[2]) / 2 < c) == (plan[i]["keep"] == "before")]
+            ref = _tokens(plan[i]["text"])
+            ed = _edits(ref, [t for t in (_norm(w[0]) for w in words) if t])
+            letters = len(re.sub(r"[^A-Za-z0-9]", "", plan[i]["text"]))
+            cps = letters / max(m["voice_s"], 0.05)
+            flags = []
+            if m["left_music_peak_db"] > MUSIC_LEFT_DB:
+                flags.append(f'music left {m["left_music_peak_db"]:+.0f} dB')
+            if not CPS[0] <= cps <= CPS[1]:
+                flags.append(f"{cps:.0f} letters/s")
+            if ed > (max(1, round(MAX_EDITS * len(ref))) if len(ref) >= SHORT_WORDS else 0):
+                flags.append(f"{ed} word edits")
+            if plan[i]["keep"] and "cut" not in d:
+                flags.append("no boundary found")
+            heard_text = " ".join(w[0] for w in words)
+            takes[i].append(dict(take=k, seed=seed, flags=flags, heard=heard_text, edits=ed, cps=round(cps, 1),
+                                 voice_s=m["voice_s"], music_db=m["music_db"], music_peak_db=m["music_peak_db"],
+                                 left_music_peak_db=m["left_music_peak_db"], cut_at=m.get("cut_at"),
+                                 full=raws[i], raw=d.get("raw_out"), clean=cleans[i]))
+            if flags:
+                still.append(i)
+        pending = still
+        if not pending:
+            break
+    report = []
+    for it, p, tk in zip(items, plan, takes):
+        ok = [t for t in tk if not t["flags"]]
+        best = ok[0] if ok else min(tk, key=lambda t: (t["edits"], len(t["flags"]), t["left_music_peak_db"]))
+        shutil.copyfile(best["clean"], it["out"])
+        if a.keep_takes:
+            kd = Path(a.keep_takes)
+            kd.mkdir(parents=True, exist_ok=True)
+            stem = Path(it["out"]).stem
+            for t in tk:  # raw: as the model made it (cut out of the joined clip for a short line); clean: as kept
+                for kind in ("raw", "clean") + (("full",) if p["keep"] else ()):
+                    dst = kd / f'{stem}-take{t["take"]}-seed{t["seed"]}-{kind}.wav'
+                    shutil.copyfile(t[kind], dst)
+                    t[kind] = str(dst)
+        line = f'[check] {Path(it["out"]).name}: take {best["take"]} of {len(tk)}'
+        line += " ok" if not best["flags"] else f' still flagged: {", ".join(best["flags"])}'
+        if p["keep"]:
+            line += f' (spoken with the {"sentence before" if p["keep"] == "after" else "sentence after"})'
+        for t in tk:
+            if t["flags"]:
+                line += f'\n[check]     take {t["take"]} seed {t["seed"]}: {", ".join(t["flags"])}; heard "{t["heard"][:80]}"'
+        print(line, file=sys.stderr)
+        report.append(dict(out=it["out"], text=it["text"], spoken=p["synth"], chosen=best["take"], takes=tk))
+    if a.report:
+        Path(a.report).write_text(json.dumps(report, indent=1), encoding="utf-8")
 
 
 def main():
@@ -69,6 +234,11 @@ def main():
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
                    help="model option, e.g. --set cfg_weight=0.3 (see the backend's docstring)")
+    p.add_argument("--no-check", action="store_true", help="checked models: no Demucs, no Whisper, no retakes")
+    p.add_argument("--no-merge", action="store_true", help="checked models: speak short lines on their own")
+    p.add_argument("--retakes", type=int, default=3, help="checked models: retakes of a flagged clip (default 3)")
+    p.add_argument("--keep-takes", metavar="DIR", help="checked models: keep every raw and cleaned take here")
+    p.add_argument("--report", metavar="FILE", help="checked models: write every take's measures here (JSON)")
     a = p.parse_args()
 
     ref = Path(a.ref).resolve()
@@ -82,8 +252,13 @@ def main():
     if a.batch:
         for line in Path(a.batch).read_text(encoding="utf-8").splitlines():
             if line.strip():
-                out, text = line.split("\t", 1)
-                items.append({"out": str(Path(out).resolve()), "text": text.strip()})
+                out, text, *around = line.split("\t")
+                it = {"out": str(Path(out).resolve()), "text": text.strip()}
+                if around:
+                    it["before"] = around[0].strip()
+                if len(around) > 1:
+                    it["after"] = around[1].strip()
+                items.append(it)
     elif a.text and a.out:
         items.append({"out": str(Path(a.out).resolve()), "text": a.text.strip()})
     else:
@@ -111,10 +286,14 @@ def main():
     job = {"model": base, "preset": a.model, "options": options, "ref": str(ref), "ref_text": ref_text,
            "seed": a.seed, "items": items}
     env_vars = dict(os.environ, PYTORCH_ENABLE_MPS_FALLBACK="1", TOKENIZERS_PARALLELISM="false")
-    r = subprocess.run([str(python), str(HERE / "backends" / backend)], input=json.dumps(job),
-                       text=True, env=env_vars)
-    if r.returncode:
-        sys.exit(r.returncode)
+    if base in CHECKED and not a.no_check:
+        checked(a, items, job, python, backend, env_vars, tmp)
+    else:
+        job["items"] = [{"out": it["out"], "text": it["text"]} for it in items]
+        r = subprocess.run([str(python), str(HERE / "backends" / backend)], input=json.dumps(job),
+                           text=True, env=env_vars)
+        if r.returncode:
+            sys.exit(r.returncode)
 
     for wav, out in convert:
         Path(out).parent.mkdir(parents=True, exist_ok=True)

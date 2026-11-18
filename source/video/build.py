@@ -160,14 +160,31 @@ class Voice:
             self.seed = args.seed
             self.settings = ('tts', self.model, hashlib.sha1(self.ref.read_bytes()).hexdigest()[:16],
                              ref_txt.read_text(encoding='utf-8').strip() if ref_txt.exists() else '', self.seed)
+            sys.path.insert(0, str(self.script.parent))
+            import say as tts_say
+            # a checked model (vibevoice): say.py cleans and checks every take, and speaks a short line together with
+            # the sentence before it (or after it, for the first) and cuts it out; that neighbour is part of the key
+            base = tts_say.MODELS.get(self.model, (None, None, self.model))[2]
+            self.checked = base in tts_say.CHECKED
+            self.short_words = tts_say.SHORT_WORDS
+            if self.checked:
+                self.settings += ('checked', tts_say.CHECK_VERSION)
         else:
             die(f'--voice must be say, say:<voice name> or tts:<model>, not {args.voice}')
 
-    def key(self, text):
-        return h(text, *self.settings)
+    def around(self, sents, k):
+        """-> (before, after): the neighbour a short sentence is spoken with (one of the two), or ('', '')."""
+        if self.kind != 'tts' or not self.checked or len(sents[k]['text'].split()) >= self.short_words:
+            return '', ''
+        if k:
+            return sents[k - 1]['text'], ''
+        return '', sents[k + 1]['text'] if k + 1 < len(sents) else ''
+
+    def key(self, text, around=('', '')):
+        return h(text, *self.settings) if not any(around) else h(text, 'with', *around, *self.settings)
 
     def make_all(self, items):
-        """items: [(text, out_wav)] -> each out_wav a 48 kHz mono 16-bit wav."""
+        """items: [(text, out_wav[, (before, after)])] -> each out_wav a 48 kHz mono 16-bit wav."""
         with tempfile.TemporaryDirectory() as td:
             raws = [Path(td) / f'{i:04d}.{"aiff" if self.kind == "say" else "wav"}' for i in range(len(items))]
             if self.kind == 'say':
@@ -182,12 +199,13 @@ class Voice:
                     list(ex.map(one, range(len(items))))
             else:
                 batch = Path(td) / 'lines.tsv'
-                batch.write_text(''.join(f'{raws[i]}\t{t}\n' for i, (t, _) in enumerate(items)), encoding='utf-8')
+                batch.write_text(''.join(f'{raws[i]}\t{it[0]}' + (f'\t{it[2][0]}\t{it[2][1]}' if len(it) > 2 and any(it[2]) else '')
+                                         + '\n' for i, it in enumerate(items)), encoding='utf-8')
                 r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
                                     '--seed', str(self.seed), '--batch', str(batch)])
                 if r.returncode:
                     die(f'tts/say.py failed (exit {r.returncode})')
-            for raw, (text, out_wav) in zip(raws, items):
+            for raw, (text, out_wav, *_) in zip(raws, items):
                 if not raw.exists():
                     die(f'the voice made no audio for "{text[:60]}"')
                 tmp = Path(str(out_wav) + '.part.wav')
@@ -475,8 +493,9 @@ def main():
     lines = sentences  # the spoken lines of the scenes file; they say where pictures change
     sents = join_sentences(lines)
     voice = Voice(args)
-    for s in sents:
-        s['key'] = voice.key(s['text'])
+    for k, s in enumerate(sents):
+        s['around'] = voice.around(sents, k)
+        s['key'] = voice.key(s['text'], s['around'])
         s['raw'] = adir / f'{s["key"]}.wav'
         s['wav'] = adir / f'{s["key"]}-{fps}p.wav'
     todo, seen = [], set()
@@ -485,7 +504,7 @@ def main():
             todo.append(s); seen.add(s['key'])
     if todo:
         print(f'making {len(todo)} audio clip(s) with {voice.spec} ...', flush=True)
-        voice.make_all([(s['text'], s['raw']) for s in todo])
+        voice.make_all([(s['text'], s['raw'], s['around']) for s in todo])
     made_keys = {s['key'] for s in todo}
 
     meta_path = adir / 'durations.json'

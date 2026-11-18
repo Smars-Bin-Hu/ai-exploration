@@ -2,9 +2,85 @@
 
 Each spoken sentence of a video becomes one audio file, in the presenter's own voice, made on an Apple Silicon Mac with no paid API. This folder holds a small wrapper, `say.py`, that calls one of several open models, each installed in its own environment outside git.
 
-Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 2 comes first.
+Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. The newest round comes first.
 
 Tested November 2026 on an M1 Pro with 32 GB, macOS, Python 3.12.
+
+## Round 3: VibeVoice without music, and reliable on short lines
+
+VibeVoice was trained on podcasts and sometimes plays music of its own under or around the voice; on very short lines it also says something else or runs on ("Two: it forgets." gave 15 s, 1 s and 2.4 s in round 2). Now `say.py` cleans and checks every `vibevoice` take, retakes the bad ones, and speaks a short line together with the sentence before it. Same six sentences, same reference `ref-13s.wav`.
+
+### Finding music by number
+
+Demucs (`htdemucs`, MIT, 4.1.0, on the Apple GPU through MPS) splits a clip into a vocals stem and the rest (drums, bass, other). How loud the rest is, against the voice where it speaks, says whether there is music: on clips with no music only bleed is left there. The measure used is the loudest half second of the rest (`music_peak_db`).
+
+| Clips | Loudest 0.5 s of non-voice, against the voice |
+| --- | --- |
+| Round-2 clips of `qwen3`, `voxcpm2`, `kokoro` (18) and the two reference clips | -25 to -39 dB |
+| Round-2 `vibevoice` 1, 4, 5, 6 | -29 to -38 dB: no music |
+| Round-2 `vibevoice` 3 | **-1 dB**: a half-second burst of music before the first word (the "0.7 s of silence at the start" was this) |
+| Round-2 `vibevoice` 2 ("Thank you.") | **+13 dB**: music louder than the voice, at the start and in the last second |
+
+The limit is set at -25 dB: everything without music lies below it. The reference clips are free of music (-36 dB), so the music does not come from them.
+
+### Preventing it
+
+Each setting was tried with three to nine seeds on the six sentences and measured with Demucs, Whisper and WavLM (likeness, as in round 2). "Music" counts long sentences over -25 dB; short line 2 is counted apart below.
+
+| Setting | Music in the long sentences | Takes with more than 2 word errors | Likeness | Speed |
+| --- | --- | --- | --- | --- |
+| `cfg_scale` 1.3, 10 steps (round 2) | 3 of 39 (-13, -20, -25 dB) | 4 of 39 | 0.961 | 1.0 |
+| **`cfg_scale` 1.8**, 10 steps | **0 of 39** | 2 of 39 | 0.962 to 0.964 | 1.0 |
+| `cfg_scale` 1.3, 20 diffusion steps | 1 of 15, at -1 dB | 1 of 15 | 0.955 | 2.0 |
+| `cfg_scale` 1.3, 9 s reference (`ref-9s.wav`) | 1 of 15 | 0 of 15 | **0.935** | 1.0 |
+
+Kept: `cfg_scale` 1.8 is the new default (stronger guidance by the text: no music seen, fewer slips, likeness the same). More diffusion steps bring no gain at twice the time; the shorter reference loses likeness. Also kept:
+
+- **A length limit.** VibeVoice stops on its own only after about twice its prompt, some 30 s; one take of line 2 ran to 34.5 s. The clip may now run at most 1.5 s plus 0.8 s per word.
+- **A seed per clip.** The seed is set before each sentence, so a clip depends on its text and seed only, not on the other lines in the batch; this keeps build.py's cache honest and makes retakes reproducible.
+
+Not changed: the text format. mlx-audio turns `Speaker 1: text` and plain text into the same prompt, and our lines have none of the openings ("Welcome to", "Hello") that Microsoft names as music triggers.
+
+### Removing it, and retaking
+
+Every take goes through Demucs and only the vocals stem is kept. On clean clips this changes nothing that can be measured: loudness by at most 0.02 dB, every octave band from 50 Hz to 12 kHz by at most 0.3 dB, the removed part is 27 to 38 dB below the clip (8 clips of four models), and likeness moves by -0.008 to +0.004 (30 clips, no change on average). So it is applied to every take, not only flagged ones. On music it works where the music is not too loud: round-2 clip 3 went from -1 to -34 dB, a 1.3 take of sentence 6 from -13 to -35 dB; round-2 clip 2 (+13 dB) still had -16 dB left.
+
+Then each take is checked and retaken with another seed (seed + 101, + 202, ...; `--retakes`, default 3) when any of these holds:
+
+- music still in the cleaned take: Demucs is run on the vocals stem once more and finds more than -25 dB of non-voice;
+- the speed does not fit the words: under 5 or over 22 letters per second of voice (clean takes measured 6.7 to 13.7);
+- Whisper (large-v3-turbo, no prompt, so it does not just repeat our text) hears other words: more than 10 % word edits (at least 1), none at all in a line under 5 words. "2" for "Two" counts as right.
+
+If all takes are flagged, the one with the fewest wrong words is kept and say.py names it on stderr. Without the merge below, line 2 alone shows why the merge is needed: four takes in a row were flagged (music +10 dB with words from nowhere, "Parma... It forgets.", "Good. Let her clip.", "Thank you.").
+
+### Short lines
+
+A line under 5 words is spoken together with the sentence before it (the one after it, for the first line) in one call, and cut out again: Whisper gives the word times of the joined take, and the cut goes at the quietest 20 ms between the last word of the first sentence and the first word of the second. The short line ends the joined take, so it keeps its own falling end, and the cut lands in the natural pause between the sentences.
+
+| Line 2, "Two: it forgets." | Right words | Notes |
+| --- | --- | --- |
+| On its own (12 takes: 4 settings x 3 seeds) | 0 | "It forgets.", "Bye.", "Baby blues", "Moi internet", a 34.5 s runaway |
+| With the sentence before (4 seeds) | 2 | the other two flagged and retaken: "Two" left out once, music once |
+| With the sentence after (4 seeds) | 3, but | no pause to cut at: one cut took "and" from the next sentence, two came out too slow |
+
+`build.py` passes each sentence's neighbours to `say.py` (batch columns `before`, `after`), and a short sentence's cache key includes the neighbour it is spoken with; nothing changes for the other models.
+
+### The result
+
+`.claude/loops/voice/test3/` (personal data, out of git): `vibevoice-clean.mp3` is the six sentences, cleaned and checked, 0.6 s between them; `vibevoice-raw.mp3` beside it is the same takes before Demucs (line 2 already cut out of its joined take); `vibevoice-clean/0N.wav` the single clips, `vibevoice-takes/` every take raw and clean (and line 2's joined take), `vibevoice-report.json` every measure. With seed 1 all six passed at the first take:
+
+| Line | Heard | Music before / after cleaning | Letters per second | Likeness |
+| --- | --- | --- | --- | --- |
+| 1 | "... like Cloud Code, Codex, or GitHub Copilot." | -28 / -35 dB | 10.3 | 0.964 |
+| 2 | "Two, it forgets." (1.55 s, cut at 9.35 s of the joined take) | -35 / -35 dB | 7.7 | 0.892 |
+| 3 | right | -34 / -33 dB | 13.7 | 0.951 |
+| 4 | right | -37 / -36 dB | 12.1 | 0.943 |
+| 5 | right | -36 / -37 dB | 10.3 | 0.965 |
+| 6 | right | -35 / -36 dB | 10.5 | 0.975 |
+
+Likeness 0.948 on average (round 2: 0.924, 0.79 to 0.98); the short clip scores lowest because 1.5 s is little to judge a voice by. "Claude" still comes out as "Cloud", as in round 2, and is not counted as an error by the check (1 edit in 20 words is allowed). Compute: VibeVoice took 1.3 s per second of audio in this run; the check adds about 0.7 s more (Whisper and two Demucs passes over five long clips, 38 s of audio, took 27 s with loading), and each retake round adds its own. `test3/cfg13/` holds the same run at `cfg_scale` 1.3 (also all passed at the first take), `test3/retake-demo/` the run without the merge whose line 2 is quoted above.
+
+Measured with the scripts in `source/video/tts/` (`demucs_clean.py`, `check.py`) and the round-2 WavLM code in `.claude/loops/voice/measure2.py`.
 
 ## Round 2: natural English first
 
@@ -120,6 +196,12 @@ uv pip install -p $T/f5/.venv/bin/python f5-tts
 
 # VoxCPM2 and VibeVoice: nothing to install, mlx-audio 0.6.6 in the mlx env has both.
 
+# Demucs, which say.py runs on every vibevoice take (round 3); weights (htdemucs, 80 MB) download on first use
+mkdir -p $T/demucs && uv venv --python $PY $T/demucs/.venv
+uv pip install -p $T/demucs/.venv/bin/python demucs soundfile "torch<2.9" "torchaudio<2.9"
+# vibevoice's check also needs the whisper env that source/video/build.py uses:
+# python3 -m venv $T/whisper/venv && $T/whisper/venv/bin/pip install mlx-whisper
+
 # Kokoro with voice conversion (OpenVoice v2, Chatterbox VC)
 mkdir -p $T/kvc && uv venv --python $PY $T/kvc/.venv
 uv pip install -p $T/kvc/.venv/bin/python chatterbox-tts "setuptools<81" kokoro "misaki[en]" \
@@ -158,6 +240,8 @@ Many sentences with the model loaded once; the batch file has one `output<TAB>se
 ```bash
 python3 source/video/tts/say.py --model qwen3 --ref ref.wav --batch lines.tsv
 ```
+
+A batch line may also name the sentences around it, `output<TAB>sentence<TAB>before<TAB>after` (either may be empty); `vibevoice` speaks a line under 5 words together with one of them and cuts it out (round 3). `vibevoice` takes are always cleaned with Demucs, checked and retaken when flagged; `--retakes N` (default 3), `--keep-takes DIR` (every take, raw and cleaned), `--report FILE` (every measure, JSON), `--no-merge` and `--no-check` change that.
 
 Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 22 kHz for `kokoro-openvoice`, 24 kHz for the rest).
 
