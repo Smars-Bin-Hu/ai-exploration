@@ -11,6 +11,8 @@ Flags, one line each (file:line · kind · text):
                   it will sound clipped; join it to the sentence before or after.
   no-paragraphs   a scene with many spoken lines and no blank line: there is nowhere to pause.
   paragraphs      a scene whose paragraph count is far from the Chinese script's (when zh.md is given).
+  bare-referent   a sentence or clause ending in this / these / that / those / them / it with no noun after it:
+                  a listener may not know what it points to; name the thing.
   question        a line that reads as a question (starts with who/what/why/how/do/does/is/are/can...) but
                   does not end with "?", or ends with "?" but reads as a statement.
 Exit status 1 when anything is flagged, so a build script can stop on it.
@@ -89,6 +91,8 @@ def lint(scene_file, zh_file=None):
                     flags.append((no, 'split-thought', s[:80]))
                 if 0 < i < len(sents) - 1 and len(s.split()) < 5 and not s.endswith('?'):
                     flags.append((no, 'short-alone', s))
+                if re.search(r'\b(this|these|that|those|them)[.!?:;,]?$', s, re.I) or re.search(r'\b(these|those)\s*[,:;.!?]', s, re.I):
+                    flags.append((no, 'bare-referent', s[:80]))
                 body = re.sub(r'^[^:]{1,12}:\s*', '', s)  # "Three: ..." lead-ins
                 asks = (re.match(QWORDS, body, re.I) or re.search(r',\s*' + QWORDS, body, re.I)) and not re.match(r'(which|what|how|when|where|who)\b[^?]*\b(is|are)\b[^?]*\.$', body, re.I)
                 if s.endswith('?') and not asks and ' or ' not in s:
