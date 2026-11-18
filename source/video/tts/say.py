@@ -8,11 +8,13 @@ Many sentences, model loaded once (one "out<TAB>text" per line):
     python source/video/tts/say.py --model qwen3 --ref ref.wav --batch lines.tsv
 
 A batch line may name the sentences around it: "out<TAB>text<TAB>before<TAB>after" (either may be empty). For a
-checked model (vibevoice) a line under 5 words is then spoken together with its neighbour and cut out again.
+checked model (vibevoice) a line under 7 words is then spoken between its two neighbours (or with the one there is)
+and cut out again.
 
 Checked models (vibevoice): every take goes through Demucs (vocals kept: removes the background music VibeVoice
-sometimes adds) and Whisper; a take with music left in it, too fast or slow for its words, or whose words do not
-match the text is retaken with another seed, up to --retakes times. See README.md, round 3.
+sometimes adds), Whisper and the voice gate (likeness.py: WavLM likeness to the reference and median pitch); a take
+with music left in it, too fast or slow for its words, whose words do not match the text, or in another voice (a
+woman's, another man's, or all creak) is retaken with another seed, up to --retakes times. See README.md, rounds 3-4.
 
 The reference transcript is read from --ref-text, or else from the file next to
 the reference with the same name and a .txt extension.
@@ -26,6 +28,7 @@ any other extension (.mp3, .m4a) is converted with ffmpeg.
 
 import argparse
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -59,13 +62,23 @@ MODELS = {
 
 # Models whose takes are cleaned and checked, and the limits a take must meet (README.md, round 3).
 CHECKED = {"vibevoice"}
-CHECK_VERSION = "c2"      # bump when cleaning, checks or merging change: build.py then remakes those clips
-SHORT_WORDS = 5           # a line with fewer words is spoken together with a neighbour, when the batch names one
+CHECK_VERSION = "c4"      # bump when cleaning, checks or merging change: build.py then remakes those clips
+OLD_VERSIONS = ("c3", "c2")  # clips made by these versions stay in use when they pass the voice gate (build.py checks)
+SHORT_WORDS = 7           # a line with fewer words is spoken together with its neighbours, when the batch names them
 MUSIC_LEFT_DB = -25.0     # loudest 0.5 s of music still in the cleaned take, against the voice
 CPS = (5.0, 22.0)         # letters per second of voice; clean takes measured 6.7 to 12.7
 MAX_EDITS = 0.1           # word edits allowed, as a share of the words (at least 1; none in a short line)
+# The voice gate (README.md, round 4): WavLM likeness to the reference, which falls with the clip's length even for the
+# presenter's own speech (5th percentile 0.68 at 1 s, 0.81 at 1.5 s, 0.87 at 2 s, 0.92 at 3 s), so the limit rises
+# with the seconds of voice; and the median pitch, which catches the woman's voice VibeVoice sometimes switches to,
+# and a line spoken all in creak (pitch at the floor of the tracker), as the end of a joined take often was.
+LIKE_LIMIT = (0.50, 0.16, 0.66, 0.88)  # limit = a + b * seconds of voice, kept between the last two
+PITCH_UP_ST = 6.0         # median pitch more than this many semitones over the reference's (117 Hz -> 165 Hz)
+PITCH_DOWN_ST = 8.0       # or more than this many under it (117 Hz -> 74 Hz): creak all through
 DEMUCS_PY = TTS_HOME / "demucs" / ".venv" / "bin" / "python"
+LIKENESS_PY = Path(os.environ.get("LIKENESS_PY", TTS_HOME / "chatterbox" / ".venv" / "bin" / "python"))
 WHISPER_PY = TTS_HOME / "whisper" / "venv" / "bin" / "python"
+HEARD = {"sql": "sequel", "claude": "clawed"}  # how Whisper writes words that pronounce.tsv respells for the model
 NUM = dict(zip("0 1 2 3 4 5 6 7 8 9 10".split(), "zero one two three four five six seven eight nine ten".split()))
 
 
@@ -80,7 +93,7 @@ def _value(v):
 
 def _norm(w):
     w = re.sub(r"[^a-z0-9]", "", w.lower())
-    return NUM.get(w, w)
+    return HEARD.get(w, NUM.get(w, w))
 
 
 def _tokens(text):
@@ -119,6 +132,32 @@ def _boundary(synth, first_n, words):
     return round(max(t0 - 0.03, 0), 3), round(t1 + 0.03, 3)
 
 
+def like_limit(voice_s):
+    a, b, lo, hi = LIKE_LIMIT
+    return round(min(hi, max(lo, a + b * voice_s)), 3)
+
+
+def voice_flags(m):
+    """A likeness.py result -> what is wrong with the voice ([] if it is the presenter's)."""
+    flags = []
+    if m["sim"] < like_limit(m["voice_s"]):
+        flags.append(f'likeness {m["sim"]:.2f} under {like_limit(m["voice_s"]):.2f} for {m["voice_s"]:.1f} s')
+    if m["f0"] and m["ref_f0"] and 12 * math.log2(m["f0"] / m["ref_f0"]) > PITCH_UP_ST:
+        flags.append(f'pitch {m["f0"]:.0f} Hz, {12 * math.log2(m["f0"] / m["ref_f0"]):+.0f} semitones')
+    if m["f0"] and m["ref_f0"] and 12 * math.log2(m["f0"] / m["ref_f0"]) < -PITCH_DOWN_ST:
+        flags.append(f'creak: pitch {m["f0"]:.0f} Hz, {12 * math.log2(m["f0"] / m["ref_f0"]):+.0f} semitones')
+    return flags
+
+
+def likeness(wavs, ref):
+    """-> {wav: likeness.py result}: WavLM likeness to ref, seconds of voice, median pitch (and the reference's)."""
+    if not LIKENESS_PY.exists():
+        sys.exit(f"the voice gate needs {LIKENESS_PY} (torch, transformers, librosa; see README.md); "
+                 "or set LIKENESS_PY to a Python that has them")
+    return {x["wav"]: x for x in _jobs(LIKENESS_PY, HERE / "likeness.py",
+                                       {"ref": str(ref), "items": [{"wav": str(w)} for w in wavs]})}
+
+
 def _jobs(python, script, job):
     """Run a helper script in its own env with a JSON job on stdin -> its JSON result lines."""
     r = subprocess.run([str(python), str(script)], input=json.dumps(job), text=True, capture_output=True)
@@ -133,20 +172,30 @@ def checked(a, items, job, python, backend, env_vars, tmp):
     for need in (DEMUCS_PY, WHISPER_PY):
         if not need.exists():
             sys.exit(f"{a.model} is checked, which needs {need.parent.parent} (see README.md); or give --no-check")
-    plan = []
-    for it in items:
+    def plan_for(it, k):
+        """How take k of a line is spoken. A short line with two neighbours is spoken between them; its retakes go
+        round the ways to say it (between, after the one before, between, before the one after), since a line that
+        keeps coming out in creak or another voice one way often comes out right another way (README.md, round 4)."""
         text, n = it["text"], len(it["text"].split())
         p = dict(it, synth=text, keep=None, first_n=0)
-        if n < SHORT_WORDS and not a.no_merge and (it.get("before") or it.get("after")):
-            if it.get("before"):  # the short line ends the joined clip, so it keeps its own falling end
-                p.update(synth=f'{it["before"]} {text}', keep="after", first_n=len(_tokens(it["before"])))
+        b, f = it.get("before") or "", it.get("after") or ""
+        if n < a.short_words and not a.no_merge and (b or f):
+            if b and f:
+                b, f = [(b, f), (b, ""), (b, f), ("", f)][k % 4]
+            if b and f:  # in the middle of three sentences: the voice, level and pitch of a line inside a paragraph
+                p.update(synth=f"{b} {text} {f}", keep="middle", first_n=len(_tokens(b)),
+                         second_n=len(_tokens(b)) + len(_tokens(text)))
+            elif b:  # the short line ends the joined clip, so it keeps its own falling end
+                p.update(synth=f"{b} {text}", keep="after", first_n=len(_tokens(b)))
             else:
-                p.update(synth=f'{text} {it["after"]}', keep="before", first_n=len(_tokens(text)))
-        plan.append(p)
+                p.update(synth=f"{text} {f}", keep="before", first_n=len(_tokens(text)))
+        return p
+
     takes = [[] for _ in items]
     pending = list(range(len(items)))
     for k in range(a.retakes + 1):
         seed = a.seed + 101 * k
+        plan = {i: plan_for(items[i], k) for i in pending}
         raws = {i: str(tmp / f"{i:04d}-t{k}-raw.wav") for i in pending}
         cleans = {i: str(tmp / f"{i:04d}-t{k}-clean.wav") for i in pending}
         sub = dict(job, items=[{"out": raws[i], "text": plan[i]["synth"], "seed": seed} for i in pending])
@@ -162,17 +211,25 @@ def checked(a, items, job, python, backend, env_vars, tmp):
                 d["raw_out"] = raws[i][:-8] + "-part.wav"
             if plan[i]["keep"]:
                 win = _boundary(plan[i]["synth"], plan[i]["first_n"], heard[raws[i]]["words"])
-                if win:
+                if plan[i]["keep"] == "middle":
+                    win2 = _boundary(plan[i]["synth"], plan[i]["second_n"], heard[raws[i]]["words"])
+                    if win and win2 and win2[0] > win[1]:
+                        d["cut"] = [win[0], win[1], "middle", win2[0], win2[1]]
+                elif win:
                     d["cut"] = [win[0], win[1], plan[i]["keep"]]
             dj.append(d)
         sep = {x["wav"]: x for x in _jobs(DEMUCS_PY, HERE / "demucs_clean.py", {"items": dj})}
+        like = likeness([cleans[i] for i in pending], a.ref)
         still = []
         for i, d in zip(pending, dj):
             m, h = sep[raws[i]], heard[raws[i]]
             words = h["words"]
             if plan[i]["keep"] and "cut_at" in m:
                 c = m["cut_at"]
-                words = [w for w in words if ((w[1] + w[2]) / 2 < c) == (plan[i]["keep"] == "before")]
+                if plan[i]["keep"] == "middle":
+                    words = [w for w in words if c[0] < (w[1] + w[2]) / 2 < c[1]]
+                else:
+                    words = [w for w in words if ((w[1] + w[2]) / 2 < c) == (plan[i]["keep"] == "before")]
             ref = _tokens(plan[i]["text"])
             ed = _edits(ref, [t for t in (_norm(w[0]) for w in words) if t])
             letters = len(re.sub(r"[^A-Za-z0-9]", "", plan[i]["text"]))
@@ -186,34 +243,41 @@ def checked(a, items, job, python, backend, env_vars, tmp):
                 flags.append(f"{ed} word edits")
             if plan[i]["keep"] and "cut" not in d:
                 flags.append("no boundary found")
+            lk = like[cleans[i]]
+            vflags = voice_flags(lk)
+            flags += vflags
             heard_text = " ".join(w[0] for w in words)
             takes[i].append(dict(take=k, seed=seed, flags=flags, heard=heard_text, edits=ed, cps=round(cps, 1),
                                  voice_s=m["voice_s"], music_db=m["music_db"], music_peak_db=m["music_peak_db"],
                                  left_music_peak_db=m["left_music_peak_db"], cut_at=m.get("cut_at"),
-                                 full=raws[i], raw=d.get("raw_out"), clean=cleans[i]))
+                                 sim=lk["sim"], f0=lk["f0"], ref_f0=lk["ref_f0"], voice_flags=vflags,
+                                 full=raws[i], raw=d.get("raw_out"), clean=cleans[i], keep=plan[i]["keep"],
+                                 spoken=plan[i]["synth"]))
             if flags:
                 still.append(i)
         pending = still
         if not pending:
             break
     report = []
-    for it, p, tk in zip(items, plan, takes):
+    for it, tk in zip(items, takes):
         ok = [t for t in tk if not t["flags"]]
-        best = ok[0] if ok else min(tk, key=lambda t: (t["edits"], len(t["flags"]), t["left_music_peak_db"]))
+        # none passed: rather a word wrong than another voice; then the fewest wrong words, then the most alike
+        best = ok[0] if ok else min(tk, key=lambda t: (len(t["voice_flags"]), t["edits"], len(t["flags"]), -t["sim"]))
+        p = dict(keep=best["keep"], synth=best["spoken"])
         shutil.copyfile(best["clean"], it["out"])
         if a.keep_takes:
             kd = Path(a.keep_takes)
             kd.mkdir(parents=True, exist_ok=True)
             stem = Path(it["out"]).stem
             for t in tk:  # raw: as the model made it (cut out of the joined clip for a short line); clean: as kept
-                for kind in ("raw", "clean") + (("full",) if p["keep"] else ()):
+                for kind in ("raw", "clean") + (("full",) if t["keep"] else ()):
                     dst = kd / f'{stem}-take{t["take"]}-seed{t["seed"]}-{kind}.wav'
                     shutil.copyfile(t[kind], dst)
                     t[kind] = str(dst)
         line = f'[check] {Path(it["out"]).name}: take {best["take"]} of {len(tk)}'
         line += " ok" if not best["flags"] else f' still flagged: {", ".join(best["flags"])}'
         if p["keep"]:
-            line += f' (spoken with the {"sentence before" if p["keep"] == "after" else "sentence after"})'
+            line += f' (spoken with the {dict(after="sentence before", before="sentence after", middle="sentences around it")[p["keep"]]})'
         for t in tk:
             if t["flags"]:
                 line += f'\n[check]     take {t["take"]} seed {t["seed"]}: {", ".join(t["flags"])}; heard "{t["heard"][:80]}"'
@@ -236,6 +300,8 @@ def main():
                    help="model option, e.g. --set cfg_weight=0.3 (see the backend's docstring)")
     p.add_argument("--no-check", action="store_true", help="checked models: no Demucs, no Whisper, no retakes")
     p.add_argument("--no-merge", action="store_true", help="checked models: speak short lines on their own")
+    p.add_argument("--short-words", type=int, default=SHORT_WORDS,
+                   help=f"checked models: a line under this many words is spoken with its neighbours (default {SHORT_WORDS})")
     p.add_argument("--retakes", type=int, default=3, help="checked models: retakes of a flagged clip (default 3)")
     p.add_argument("--keep-takes", metavar="DIR", help="checked models: keep every raw and cleaned take here")
     p.add_argument("--report", metavar="FILE", help="checked models: write every take's measures here (JSON)")

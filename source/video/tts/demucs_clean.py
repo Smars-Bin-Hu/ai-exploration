@@ -7,6 +7,8 @@ Run with the demucs env's Python; the job is JSON on stdin, one result line of J
 "out" is optional: without it the clip is only measured. Further keys of an item, all optional:
 - "cut": [t0, t1, "before" | "after"]: first cut the clip at its quietest 20 ms between t0 and t1 (seconds) and keep
   the part before or after; for a short line spoken together with its neighbour. The result's "cut_at" says where.
+  [t0, t1, "middle", t2, t3]: cut twice and keep the part between (a short line spoken between both neighbours);
+  "cut_at" is then [first, second].
 - "trim": seconds of margin: write the vocals stem cut to where its voice is (loudness), with this much around it;
   the result's "voice_s" is the length of the voice, margins not counted.
 - "raw_out": also write the clip itself, uncleaned, cut and trimmed the same way (to compare by ear).
@@ -124,10 +126,15 @@ def main():
         a, sr = read_wav(it["wav"])
         res = dict(wav=it["wav"])
         if it.get("cut"):
-            t0, t1, keep = it["cut"]
+            t0, t1, keep = it["cut"][:3]
             c = quietest(a, sr, t0, t1)
-            a = a[:c] if keep == "before" else a[c:]
-            res["cut_at"] = round(c / sr, 3)
+            if keep == "middle":  # [t0, t1, "middle", t2, t3]: keep what lies between the two cuts
+                c2 = quietest(a, sr, *it["cut"][3:5])
+                a = a[c:c2]
+                res["cut_at"] = [round(c / sr, 3), round(c2 / sr, 3)]
+            else:
+                a = a[:c] if keep == "before" else a[c:]
+                res["cut_at"] = round(c / sr, 3)
         voc, nov = separate(a, sr)
         res.update(measures(voc, nov, sr))
         v0, v1 = voice_span(voc, sr)

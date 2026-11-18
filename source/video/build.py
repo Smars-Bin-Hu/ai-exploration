@@ -23,6 +23,8 @@ DEFAULT_SAY_VOICE = 'Samantha'
 WHISPER_PY = ROOT / '.claude/loops/tts/whisper/venv/bin/python'
 TRIM_VERSION = 't1'   # bump when trim_and_pad changes, so every clip is cut again
 SEG_VERSION = 's1'    # bump when the rough mp4's segments change
+LOUDNESS, PEAK = -18.0, -1.5   # every sentence clip is set to this integrated loudness (LUFS), true peak at most PEAK dBTP
+LOUD_VERSION = 'n1'   # bump when normalise changes, so every clip is normalised again (no voice made again)
 
 
 def die(msg):
@@ -167,8 +169,10 @@ class Voice:
             base = tts_say.MODELS.get(self.model, (None, None, self.model))[2]
             self.checked = base in tts_say.CHECKED
             self.short_words = tts_say.SHORT_WORDS
+            self.say = tts_say
             if self.checked:
                 self.settings += ('checked', tts_say.CHECK_VERSION)
+                self.version_at = len(self.settings) - 1
             # pronunciation fixes: only the text the model hears changes, the script and subtitles keep the original
             self.pron = []
             pf = self.script.parent / 'pronounce.tsv'
@@ -182,21 +186,62 @@ class Voice:
         else:
             die(f'--voice must be say, say:<voice name> or tts:<model>, not {args.voice}')
 
-    def around(self, sents, k):
-        """-> (before, after): the neighbour a short sentence is spoken with (one of the two), or ('', '')."""
-        if self.kind != 'tts' or not self.checked or len(sents[k]['text'].split()) >= self.short_words:
+    def around(self, sents, k, version=None):
+        """-> (before, after): the neighbours a short sentence is spoken with, or ('', ''). Since check version c3 both
+        (the short line in the middle); before it, the one before (the one after, for the first sentence)."""
+        short = 5 if version == 'c2' else self.short_words
+        if self.kind != 'tts' or not self.checked or len(sents[k]['text'].split()) >= short:
             return '', ''
-        if k:
-            return sents[k - 1]['text'], ''
-        return '', sents[k + 1]['text'] if k + 1 < len(sents) else ''
+        before = sents[k - 1]['text'] if k else ''
+        after = sents[k + 1]['text'] if k + 1 < len(sents) else ''
+        if version == 'c2':
+            return (before, '') if k else ('', after)
+        return before, after
 
     def spoken(self, text):
         for rx, rep in getattr(self, 'pron', []):
             text = rx.sub(rep, text)
         return text
 
-    def key(self, text, around=('', '')):
-        return h(text, *self.settings) if not any(around) else h(text, 'with', *around, *self.settings)
+    def key(self, text, around=('', ''), version=None):
+        st = self.settings
+        if version:  # the key the clip had under an older check version
+            st = st[:self.version_at] + (version,) + st[self.version_at + 1:]
+        return h(text, *st) if not any(around) else h(text, 'with', *around, *st)
+
+    def reuse_old(self, sents, adir):
+        """Clips made by an older check version (say.py OLD_VERSIONS) stay in use when they pass the voice gate, so a new
+        check remakes only the clips it fails. The gate's measures are cached in audio/voice-gate.json.
+        -> (kept, failed): sentences now using an old clip; (sentence, flags) of old clips that failed."""
+        if self.kind != 'tts' or not self.checked:
+            return [], []
+        cand = {}
+        for k, s in enumerate(sents):
+            if s['raw'].exists():
+                continue
+            for v in self.say.OLD_VERSIONS:
+                ok = self.key(s['text'], self.around(sents, k, v), v)
+                if (adir / f'{ok}.wav').exists():
+                    cand[k] = ok
+                    break
+        gate_path = adir / 'voice-gate.json'
+        gate = json.loads(gate_path.read_text()) if gate_path.exists() else {}
+        need = sorted({ok for ok in cand.values() if ok not in gate})
+        if need:
+            print(f'voice gate: measuring {len(need)} clip(s) made before it ...', flush=True)
+            res = self.say.likeness([adir / f'{ok}.wav' for ok in need], self.ref)
+            for ok in need:
+                gate[ok] = res[str(adir / f'{ok}.wav')]
+            gate_path.write_text(json.dumps(gate, indent=0, sort_keys=True))
+        kept, failed = [], []
+        for k, ok in cand.items():
+            flags = self.say.voice_flags(gate[ok])
+            if flags:
+                failed.append((sents[k], flags))
+            else:
+                sents[k].update(key=ok, raw=adir / f'{ok}.wav', wav=adir / f'{ok}-{self.fps}p.wav', around=('', ''))
+                kept.append(sents[k])
+        return kept, failed
 
     def make_all(self, items):
         """items: [(text, out_wav[, (before, after)])] -> each out_wav a 48 kHz mono 16-bit wav."""
@@ -216,8 +261,10 @@ class Voice:
                 batch = Path(td) / 'lines.tsv'
                 batch.write_text(''.join(f'{raws[i]}\t{self.spoken(it[0])}' + (f'\t{self.spoken(it[2][0])}\t{self.spoken(it[2][1])}' if len(it) > 2 and any(it[2]) else '')
                                          + '\n' for i, it in enumerate(items)), encoding='utf-8')
+                report = ([] if not self.checked else
+                          ['--report', str(Path(items[0][1]).parent / f'say-report-{time.strftime("%Y%m%d-%H%M%S")}.json')])
                 r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
-                                    '--seed', str(self.seed), '--batch', str(batch)])
+                                    '--seed', str(self.seed), '--batch', str(batch)] + report)
                 if r.returncode:
                     die(f'tts/say.py failed (exit {r.returncode})')
             for raw, (text, out_wav, *_) in zip(raws, items):
@@ -263,6 +310,44 @@ def trim_and_pad(src, dst, fps, head=0.06, tail=0.15):
     with wave.open(str(dst), 'wb') as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(data)
     return frames, round((v0 - a) / RATE, 4), round((v1 - a) / RATE, 4)
+
+
+def ebur128(path):
+    """-> (integrated loudness in LUFS, true peak in dBTP) of an audio file, by ffmpeg's EBU R128 meter."""
+    r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', str(path), '-filter_complex',
+                        'ebur128=peak=true:framelog=quiet', '-f', 'null', '-'], capture_output=True, text=True)
+    summ = r.stderr[r.stderr.rfind('Summary:'):]
+    i = re.search(r'I:\s+(-?[\d.]+|-inf) LUFS', summ)
+    p = re.search(r'True peak:\s+Peak:\s+(-?[\d.]+|-inf) dBFS', summ)
+    if not i or not p:
+        die(f'ffmpeg could not measure the loudness of {path}: {r.stderr.strip()[-300:]}')
+    return float(i.group(1)), float(p.group(1))
+
+
+def normalise(src, dst):
+    """Copy a clip at LOUDNESS LUFS integrated, its true peak at most PEAK dBTP: one gain, and a lookahead limiter on
+    the few peaks a gain would push past PEAK (delay compensated, so the clip keeps its length and timing).
+    -> dict(lufs, peak, gain, limited, lufs_out, peak_out)."""
+    lufs, peak = ebur128(src)
+    gain, out = LOUDNESS - lufs, None
+    if lufs < -60:  # no voice to measure: leave it as it is
+        gain = 0.0
+    for _ in range(3):  # the limiter takes a little loudness off; measure again and make it up
+        limited = peak + gain > PEAK
+        af = f'volume={gain:.2f}dB:precision=double'
+        if limited:  # a sample-peak limiter, set 0.5 dB under the true-peak limit
+            af += f',alimiter=limit={10 ** ((PEAK - 0.5) / 20):.4f}:attack=5:release=50:level=false:latency=true'
+        tmp = Path(str(dst) + '.part.wav')
+        r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(src), '-af', af, '-ar', str(RATE), '-ac', '1',
+                            '-c:a', 'pcm_s16le', str(tmp)], capture_output=True, text=True)
+        if r.returncode:
+            die(f'ffmpeg could not normalise {src}: {r.stderr.strip()[-300:]}')
+        out = ebur128(tmp)
+        tmp.replace(dst)
+        if gain == 0.0 or abs(out[0] - LOUDNESS) <= 0.2:
+            break
+        gain += LOUDNESS - out[0]
+    return dict(lufs=lufs, peak=peak, gain=round(gain, 2), limited=limited, lufs_out=out[0], peak_out=out[1])
 
 
 def join_sentences(lines):
@@ -513,6 +598,8 @@ def main():
         s['key'] = voice.key(s['text'], s['around'])
         s['raw'] = adir / f'{s["key"]}.wav'
         s['wav'] = adir / f'{s["key"]}-{fps}p.wav'
+    voice.fps = fps
+    kept_old, failed_old = voice.reuse_old(sents, adir)
     todo, seen = [], set()
     for s in sents:
         if not s['raw'].exists() and s['key'] not in seen:
@@ -530,6 +617,23 @@ def main():
             meta[k] = trim_and_pad(s['raw'], s['wav'], fps)
         s['frames'], s['vs'], s['ve'] = meta[k]
     meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
+
+    # every clip at one loudness (LOUDNESS, PEAK): the timeline, the mix and the avatar's glow use these copies
+    loud_path = adir / 'loudness.json'
+    loud = json.loads(loud_path.read_text()) if loud_path.exists() else {}
+    todo_n = {}
+    for s in sents:
+        s['lk'] = f'{s["key"]}-{fps}-{TRIM_VERSION}-{LOUD_VERSION}-{LOUDNESS}-{PEAK}'
+        s['norm'] = adir / f'{s["key"]}-{fps}p-{h(s["lk"])[:6]}.wav'
+        if s['key'] in made_keys or s['lk'] not in loud or not s['norm'].exists():
+            todo_n[s['lk']] = s
+    if todo_n:
+        with ThreadPoolExecutor(8) as ex:
+            for lk, r in zip(todo_n, ex.map(lambda s: normalise(s['wav'], s['norm']), todo_n.values())):
+                loud[lk] = r
+        loud_path.write_text(json.dumps(loud, indent=0, sort_keys=True))
+    for s in sents:
+        s['loud'] = loud[s['lk']]
 
     # word times: where each line of a sentence starts in its clip
     n_aligned = align_all(sents, adir, args)
@@ -566,7 +670,7 @@ def main():
         p['xfade'] = trans[j][0] if j else 0
 
     # 4. outputs, only when the timeline changed
-    clips = [dict(path=s['wav'], name=f'{i + 1:03d} {s["text"][:50]}', start=s['start'], dur=s['frames'])
+    clips = [dict(path=s['norm'], name=f'{i + 1:03d} {s["text"][:50]}', start=s['start'], dur=s['frames'])
              for i, s in enumerate(sents)]
     frames = [dict(path=p['frame'], name=p['name'], start=p['start'], dur=p['dur'], xfade=p['xfade']) for p in shown]
     # subtitles: one cue per spoken line, from the word its line starts with to the next line's (the last one of a
@@ -647,10 +751,18 @@ def main():
     print(f'{"total":<40} {len(lines):>5} {len(sents):>9} {"":>7} {sec(total):>8.1f}')
     n_audio = len({s['key'] for s in sents})
     print(f'\naudio:  {len(made_keys)} sentence clip(s) made, {n_audio - len(made_keys)} reused')
+    if kept_old or failed_old:
+        print(f'voice gate: {len(kept_old)} clip(s) of an older check kept, {len(failed_old)} failed it and were made again')
+        for s, flags in failed_old:
+            print(f'  failed line {s["line"]}: {"; ".join(flags)}: {s["text"][:60]}')
     for s in todo[:10]:
         print(f'  made  line {s["line"]}: {s["text"][:70]}')
     if len(todo) > 10:
         print(f'  ... and {len(todo) - 10} more')
+    li = [s['loud']['lufs'] for s in sents]; lo = [s['loud']['lufs_out'] for s in sents]
+    print(f'loudness: clips {min(li):.1f} to {max(li):.1f} LUFS as made, {min(lo):.1f} to {max(lo):.1f} after setting them to '
+          f'{LOUDNESS} (peaks at most {max(s["loud"]["peak_out"] for s in sents):.1f} dBTP; '
+          f'{sum(1 for s in sents if s["loud"]["limited"])} limited); {len(todo_n)} normalised now')
     multi = sum(1 for s in sents if len(s['lines']) > 1)
     print(f'words:  {n_aligned} clip(s) aligned now; {multi} sentences have a picture or cue change inside: '
           f'{inner["word"]} line starts on a matched word, {inner["interpolated"]} in sentences with some interpolated '
@@ -676,7 +788,7 @@ def main():
     if args.timing_json:
         Path(args.timing_json).write_text(json.dumps(dict(
             fps=fps, total=total,
-            sentences=[dict(line=s['line'], text=s['text'], start=s['start'], frames=s['frames'], vs=s['vs'], ve=s['ve'],
+            sentences=[dict(line=s['line'], text=s['text'], wav=str(s['norm']), made=str(s['raw']), loudness=s['loud'], start=s['start'], frames=s['frames'], vs=s['vs'], ve=s['ve'],
                             starts=s['starts'], how=s['how'], lines=[lines[g]['line'] for g in s['lines']]) for s in sents],
             pictures=[dict(line=p['spec']['line'], raw=p['spec']['raw'], fade_in=lay['F'][j], start=p['start'], dur=p['dur'],
                            hold=lay['hold'][j], xfade=p['xfade'], busy=p['busy']) for j, p in enumerate(shown)],
