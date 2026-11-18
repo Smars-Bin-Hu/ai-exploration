@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 800">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:22px;font-weight:bold}
+.n{font-size:18px}
+.k{font-size:17px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.f{font-family:Menlo,Consolas,monospace;font-size:16px;fill:#141414}
+.h{font-size:17px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.person{fill:#ffffff;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.dat{stroke:#141414;stroke-width:1.8;fill:none}
+.ctl{stroke:#141414;stroke-width:1.8;fill:none;stroke-dasharray:8 6}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<text x="20" y="30" class="h">PERSON</text>
+<text x="420" y="30" class="h">LAYER 1 · THE TASK'S OWN CHAT CALLS THE WORKER, STEP BY STEP</text>
+<text x="420" y="420" class="h">LAYER 2 · HOOKS (CODE)</text>
+<text x="1130" y="420" class="h">LAYER 3 · BOARD RELAY (SERVED BOARD ONLY)</text>
+
+<!-- person -->
+<rect x="20" y="50" width="340" height="250" rx="6" class="person"/>
+<text x="38" y="82" class="t">Person: starts it</text>
+<text x="38" y="112" class="n">Start form on the task page,</text>
+<text x="38" y="136" class="n">or <tspan class="f">harness task autorun on</tspan></text>
+<text x="38" y="168" class="n">scheduler and worker model,</text>
+<text x="38" y="192" class="n">compact percent, minutes,</text>
+<text x="38" y="216" class="n">spend limit; types the code</text>
+<text x="38" y="252" class="k">Start sets Allow all, compacts,</text>
+<text x="38" y="276" class="k">sends /harness-autorun</text>
+
+<rect x="20" y="520" width="340" height="200" rx="6" class="person"/>
+<text x="38" y="552" class="t">Person: comes back</text>
+<text x="38" y="584" class="n">answers QUESTIONS.md once,</text>
+<text x="38" y="608" class="n">reads one diff,</text>
+<text x="38" y="632" class="n">approves the write-back</text>
+<text x="38" y="664" class="k">the run never writes back</text>
+<text x="38" y="688" class="k">by itself</text>
+
+<!-- scheduler -->
+<rect x="420" y="50" width="620" height="320" rx="6" class="focus"/>
+<text x="440" y="82" class="t">Scheduler: the task's default agent</text>
+<text x="440" y="104" class="c">.github/skills/harness-autorun/SKILL.md</text>
+<text x="440" y="140" class="n">takes the first open step of TODO.md, calls the worker,</text>
+<text x="440" y="164" class="n">ticks the step, writes TASK.md and one LOG.md line</text>
+<text x="440" y="200" class="n">may write only:</text>
+<text x="440" y="226" class="f">TODO.md  TASK.md  LOG.md  QUESTIONS.md</text>
+<text x="440" y="262" class="n">no open step left: asks all questions once,</text>
+<text x="440" y="286" class="n">then the independent check,</text>
+<text x="440" y="310" class="n">then <tspan class="f">task promote --dry-run</tspan>, and stops</text>
+<text x="440" y="346" class="k">a Claude model (the board refuses any other)</text>
+
+<!-- worker -->
+<rect x="1130" y="50" width="650" height="320" rx="6" class="box"/>
+<text x="1150" y="82" class="t">Worker subagent: one step, fresh context</text>
+<text x="1150" y="104" class="c">.github/agents/worker.agent.md</text>
+<text x="1150" y="140" class="n">reads TASK.md, its section of PLAN.md, the files named</text>
+<text x="1150" y="164" class="n">writes the rest of the folder (DEV/ as the plan allows),</text>
+<text x="1150" y="188" class="n">never the four files of the scheduler</text>
+<text x="1150" y="224" class="n">hands back one line:</text>
+<text x="1150" y="250" class="f">DONE: ... | files: ... | check: ...</text>
+<text x="1150" y="276" class="f">QUESTION: ... | took: &lt;way or none&gt;</text>
+<text x="1150" y="312" class="n">cannot ask the person; a refused or held call</text>
+<text x="1150" y="336" class="n">goes into QUESTIONS.md as a [held: ...] line</text>
+
+<!-- hooks -->
+<rect x="420" y="440" width="620" height="280" rx="6" class="box"/>
+<text x="440" y="472" class="t">Hooks</text>
+<text x="440" y="494" class="c">modules/task/autorun.py · task/handler.py · gate/handler.py</text>
+<text x="440" y="530" class="n"><tspan font-weight="bold">each worker call:</tspan> stop facts, pit stop, model,</text>
+<text x="440" y="554" class="n">no progress: refuse; else count it, ledger start line</text>
+<text x="440" y="586" class="n"><tspan font-weight="bold">worker ends:</tspan> ledger end line</text>
+<text x="440" y="618" class="n"><tspan font-weight="bold">scheduler stops early:</tspan> Stop hook pushes it on</text>
+<text x="440" y="642" class="n">(after 8 blocks in a row it lets the stop through)</text>
+<text x="440" y="674" class="n"><tspan font-weight="bold">gate:</tspan> the write split; ask_user refused</text>
+<text x="440" y="698" class="n">while a step is open</text>
+
+<!-- relay -->
+<rect x="1130" y="440" width="650" height="280" rx="6" class="box"/>
+<text x="1150" y="472" class="t">Board relay, about once a second</text>
+<text x="1150" y="494" class="c">modules/task/autorun_relay.py</text>
+<text x="1150" y="530" class="n">chat idle 15 s: sends a fixed message, same model</text>
+<text x="1150" y="562" class="n">turn in error: waits 60, 300, 900 s;</text>
+<text x="1150" y="586" class="n">3 errors in a row: stop <tspan class="f">error</tspan></text>
+<text x="1150" y="618" class="n">context at the compact percent: ends the turn,</text>
+<text x="1150" y="642" class="n">sends /compact, then relays (a pit stop)</text>
+<text x="1150" y="674" class="n">last turn cancelled in VS Code: stop <tspan class="f">person</tspan></text>
+<text x="1150" y="706" class="k">no served board: no relay, no pit stop</text>
+
+<!-- arrows -->
+<path d="M360,175 L414,175" class="ctl" marker-end="url(#a)"/>
+<path d="M1040,150 L1124,150" class="ctl" marker-end="url(#a)"/>
+<text x="1050" y="138" class="k">call</text>
+<path d="M1124,260 L1046,260" class="dat" marker-end="url(#a)"/>
+<text x="1046" y="250" class="k">1 line</text>
+<path d="M730,434 L730,376" class="ctl" marker-end="url(#a)"/>
+<text x="740" y="410" class="k">refuse / push on</text>
+<path d="M1130,580 C1080,580 1080,330 1046,330" class="ctl" marker-end="url(#a)"/>
+<text x="1052" y="460" class="k">wake</text>
+<path d="M414,680 L366,680" class="dat" marker-end="url(#a)"/>
+
+<!-- files -->
+<text x="20" y="770" class="h">FILES</text>
+<text x="100" y="770" class="f">TODO.md [ ] [x] [?]   QUESTIONS.md   .task/autorun.json (models, limit)   .task/autorun-run.jsonl (ledger)   .task/task.json → autorun</text>
+<text x="20" y="794" class="k">Dashed: control (who calls or wakes whom). Solid: what comes back.</text>
+</svg>
