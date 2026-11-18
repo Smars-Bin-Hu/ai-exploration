@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Where did the time and money go? Step 1: nothing is recorded. Step 2: the task report fills in
+     time, money and failed calls. Numbers are an illustration, not a real task.
+     @ fig task-report step=1 ... step=2 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .rep { left: 100px; top: 20px; width: 1380px; height: 760px; border-radius: 26px; border: 2px solid var(--edge); background: var(--panel);
+    padding: 30px 40px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr 1.25fr; gap: 26px 30px; }
+  .hd { grid-column: 1 / 3; display: flex; align-items: center; gap: 16px; font-size: 36px; font-weight: 600; }
+  .hd i[data-icon] { color: var(--muted); }
+  .blk { position: relative; border-radius: 18px; border: 2px dashed var(--dim); padding: 22px 28px; }
+  .blk.time { grid-column: 1 / 3; }
+  .blk .t { font-size: 26px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+  .nr { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-30%); text-align: center; font-size: 34px; font-style: italic; color: var(--orange); }
+  .at-2 .nr { display: none; }
+  .at-2 .blk { border: 2px solid rgba(45, 212, 191, 0.55); }
+  .at-2 .blk .t { color: var(--teal); }
+  .fill { display: none; }
+  .at-2 .fill { display: block; }
+  .bar { display: flex; height: 54px; border-radius: 10px; overflow: hidden; margin-top: 20px; }
+  .bar div { display: flex; align-items: center; padding-left: 14px; font-size: 24px; color: var(--bg); font-weight: 600; white-space: nowrap; }
+  .legend { margin-top: 10px; font-size: 26px; color: var(--muted); }
+  .cols { display: flex; align-items: flex-end; gap: 16px; height: 170px; margin-top: 18px; }
+  .cols div { flex: 1; background: var(--teal); border-radius: 6px 6px 0 0; opacity: 0.85; }
+  .fails { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .fails div { font-family: var(--mono); font-size: 24px; color: var(--orange); display: flex; align-items: center; gap: 12px; }
+  .fails i[data-icon] { font-size: 26px; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab rep">
+    <div class="hd"><i data-icon="chart-bar"></i>Task report &middot; show-delivery-date</div>
+    <div class="blk time" data-step="1"><div class="t"><i data-icon="clock"></i>time</div><div class="nr">not recorded</div>
+      <div class="fill"><div class="bar"><div style="width:14%;background:#7d8ba1">plan</div><div style="width:46%;background:#2dd4bf">build</div>
+        <div style="width:26%;background:#5fe0cf">test</div><div style="width:14%;background:#7d8ba1">review</div></div>
+        <div class="legend">where the time went, step by step</div></div></div>
+    <div class="blk" data-step="1"><div class="t"><i data-icon="coins"></i>money</div><div class="nr">not recorded</div>
+      <div class="fill"><div class="cols"><div style="height:40%"></div><div style="height:75%"></div><div style="height:30%"></div><div style="height:95%"></div>
+        <div style="height:55%"></div><div style="height:20%"></div><div style="height:65%"></div></div><div class="legend">credits, prompt by prompt</div></div></div>
+    <div class="blk" data-step="1"><div class="t"><i data-icon="circle-x"></i>failed calls</div><div class="nr">not recorded</div>
+      <div class="fill"><div class="fails"><div><i data-icon="x"></i>git push origin main</div><div><i data-icon="x"></i>pytest tests/ (timeout)</div>
+        <div><i data-icon="x"></i>edit billing/rules.py</div></div></div></div>
+  </div>
+</div></main></body></html>

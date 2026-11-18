@@ -1,263 +1,351 @@
 # Basic 01 · Stop using AI the 2024 way
 
 ## 0 Hook
-@ card "2026 · AI in the team"
-It's 2026, and a lot of teams want AI to really land in how they build software.
-@ card "Claude Code · Codex · GitHub Copilot"
-Plenty of companies have bought their people an AI chat service or a coding agent, like Claude Code, Codex or GitHub Copilot.
-@ basic-01/p09 crop=0.490,0.450,0.450,0.250
-But in practice, we see that many teams still only use AI for a small slice of their daily work.
-@ basic-01/p09 crop=0.490,0.450,0.450,0.250 box=0.505,0.512,0.420,0.100
-And lots of people still use AI the same old way: ask a question, get an answer, chat.
-@ card "A legacy system you know well"
-Here's an example.
+@ card "Stop using AI the 2024 way" kicker="Basic 01"
+It's 2026, and a lot of teams want AI to be a real part of how they build software.
+@ logos "claude|Claude" "codex|ChatGPT" m365-copilot
+Plenty of companies already pay for an AI chat tool or a coding agent,
+@ logos claude-code codex github-copilot
+like Claude Code, Codex or GitHub Copilot.
+@ fig small-slice step=1
+But what we actually see is that many teams still use it for only a small slice of their work.
+@ fig small-slice step=2
+And lots of people still use it the same old way, as a chat.
+@ fig small-slice step=3
+Ask a question, get an answer.
+Here's what I mean.
+@ fig engineer step=1
 Say you're a software engineer, and you've got a huge legacy system on your hands.
+@ fig engineer step=2
 The business side gives you a requirement.
-You've built lots of features like this before, and you know exactly what the best solution is.
-Which code to change, how to test it, what depends on what before and after, what it might affect: you've got the experience for all of it.
-@ basic-01/p03 crop=0.490,0.340,0.450,0.340
-Now someone makes you do it with AI.
+@ fig engineer step=3
+You've built plenty of features like this, and you know the best way to do it.
+@ fig engineer step=4
+Which code to change, how to test it, what depends on what, what it might break.
+You've seen it all.
+@ fig engineer step=5
+Now you're told to do it with AI.
 What do you do?
+@ fig hook-prompt step=1
 Probably something like this.
-@ basic-01/p03 crop=0.490,0.340,0.450,0.340 box=0.515,0.365,0.385,0.125
-First you dig out the code files you think matter, one by one, and hand them to the chat box.
-Then you write a long explanation: what this code does, and how it all connects.
-@ basic-01/p03 crop=0.490,0.340,0.450,0.340 box=0.515,0.491,0.300,0.033
+@ fig hook-prompt step=2
+First, you dig out the files you think matter, one by one, and paste them into the chat.
+@ fig hook-prompt step=3
+Then you write a long explanation of what the code does and how it all fits together.
+@ fig hook-prompt step=4
 Then you paste in the requirement.
-@ basic-01/p03 crop=0.490,0.340,0.450,0.340 box=0.515,0.526,0.250,0.116
-And last, a whole screen of "do this", "add that", "whatever you do, don't touch that".
-@ basic-01/p03 crop=0.490,0.340,0.450,0.340 box=0.505,0.355,0.420,0.315
-The AI hasn't written a single line of code, and you've already been busy for half an hour.
-Then you hit Enter, and hope it gives you the right result.
-@ basic-01/p07 crop=0.505,0.420,0.425,0.200 box=0.525,0.458,0.168,0.125
-But what you usually get is an answer you're maybe 80 to 90 percent happy with.
-@ basic-01/p07 crop=0.505,0.420,0.425,0.200 box=0.737,0.458,0.168,0.125
-You paste the code it wrote back in, run the tests yourself, check the results yourself... and find some parts are still wrong.
-@ basic-01/p06 crop=0.495,0.450,0.445,0.185
-So you spend even more time reviewing the code...
-In the end you feel it's faster to just write it yourself.
-AI can't understand your complex system, and it can't see the traps you know about.
-@ card "What's wrong · Why it's hard · What's missing"
-This video wants to make three things clear: what's wrong with using AI this way, why it's so hard for development teams to make AI really land, and what the missing piece is called.
+@ fig hook-prompt step=5
+And finally, a whole screen of "do this", "add that", "whatever you do, don't touch that".
+@ fig hook-prompt step=6
+The AI hasn't written a single line yet, and you've already spent half an hour.
+@ fig hook-prompt step=7
+Then you hit Enter and hope it gets it right.
+@ fig hook-answer step=1
+What you usually get is an answer you're maybe eighty or ninety percent happy with.
+@ fig hook-answer step=2
+You paste its code back in, run the tests yourself, check the results yourself,
+@ fig hook-answer step=3
+and some of it's still wrong.
+@ fig hook-answer step=4
+So you spend even longer reviewing it.
+@ fig hook-answer step=5
+In the end, it feels faster to just write it yourself.
+@ fig hook-answer step=6
+The AI doesn't get your complex system, and it can't see the traps you know are there.
+@ big "3" "things this video makes clear" icon=list-checks
+In this video I want to make three things clear.
+@ list "This video" "What's wrong with using AI this way|circle-alert" "Why it's so hard for teams to adopt AI|users" "What the missing piece is called|puzzle" lit=1
+What's wrong with using AI this way.
+@ list "This video" "What's wrong with using AI this way|circle-alert" "Why it's so hard for teams to adopt AI|users" "What the missing piece is called|puzzle" lit=2
+Why it's so hard for development teams to really adopt AI.
+@ list "This video" "What's wrong with using AI this way|circle-alert" "Why it's so hard for teams to adopt AI|users" "What the missing piece is called|puzzle" lit=3
+And what the missing piece is called.
 
 ## 1 Your pain points
-@ card "Five pain points"
-If you've used AI like this, you've probably run into every one of these.
-@ basic-01/p04 crop=0.490,0.400,0.360,0.360
+@ list "Your pain points" "It doesn't know your project|folder-search" "It forgets|brain" "It doesn't always follow your rules|list-x" "It's always sure of its own work|badge-check" "You can't see what it did|eye-off"
+If you've used AI like this, you've probably hit every one of these.
+@ fig pain-context step=1
 One: it doesn't know your project.
-@ basic-01/p04 crop=0.490,0.400,0.360,0.360 box=0.505,0.455,0.305,0.265
+@ fig pain-context step=2
 Every single time, you have to find the code, paste the code, explain the code.
-@ basic-01/p04 crop=0.490,0.400,0.360,0.360 box=0.678,0.455,0.132,0.140
-Two: it loses its memory.
+@ fig pain-memory step=1
+Two: it forgets.
+@ fig pain-memory step=2
 Open a new chat, and everything you said before is gone.
-You have to say it all again from the start.
-@ basic-06/p05 crop=0.490,0.340,0.450,0.430
-And you'll notice that the longer one chat goes on, the worse it seems to do.
-@ basic-06/p05 crop=0.490,0.340,0.450,0.430 box=0.510,0.580,0.410,0.155
-Things you agreed on early, it forgets later.
-@ basic-01/p05 crop=0.490,0.400,0.450,0.240
-Three: you tell it lots of things to do and not to do, and it doesn't always do them.
+@ fig pain-memory step=3
+You have to say it all again.
+@ fig pain-memory step=4
+And the longer a chat goes on, the worse it seems to get.
+@ fig pain-memory step=5
+It forgets things you agreed on at the start.
+@ fig pain-rules step=1
+Three: you give it a list of dos and don'ts, and it doesn't always follow them.
+@ fig pain-rules step=2
 Most of the time it listens.
-@ basic-01/p05 crop=0.490,0.400,0.450,0.240 box=0.585,0.475,0.085,0.145
+@ fig pain-rules step=3
 But every so often, it skips exactly the step you cared about most.
-@ basic-06/p05 crop=0.490,0.340,0.450,0.430 box=0.509,0.616,0.025,0.080
-Especially as the chat gets longer and the history piles up, the AI's attention drifts, and it remembers the older stuff less and less.
-@ basic-01/p07 crop=0.505,0.420,0.425,0.200
-Four: it's always confident when it checks itself.
-@ basic-01/p07 crop=0.505,0.420,0.425,0.200 box=0.525,0.458,0.168,0.125
-"It's done, and all the tests pass."
-@ basic-01/p07 crop=0.505,0.420,0.425,0.200 box=0.737,0.458,0.168,0.125
-Then you get it back, take a look, and there's still a pile of mistakes.
-@ basic-01/p08 crop=0.490,0.320,0.450,0.365
+@ fig pain-rules step=4
+And the longer the chat gets, the more its attention drifts, and the less it remembers from earlier.
+@ fig pain-confident step=1
+Four: it's always sure of its own work.
+@ fig pain-confident step=2
+"Done, and all the tests pass."
+@ fig pain-confident step=3
+Then you look for yourself, and there's still a pile of mistakes.
+@ fig pain-blind step=1
 Five: you can't see what it actually did.
-Which files it changed, which commands it ran, why it changed things that way.
-@ basic-01/p08 crop=0.490,0.320,0.450,0.365 box=0.722,0.580,0.135,0.100
-Afterwards, it's hard to say.
+@ fig pain-blind step=2
+Which files did it change?
+@ fig pain-blind step=3
+Which commands did it run?
+@ fig pain-blind step=4
+Why did it do it that way?
+@ fig pain-blind step=5
+After the fact, it's hard to tell.
 
 ## 2 The root cause
-@ basic-01/p10 crop=0.480,0.330,0.460,0.400
+@ fig hook-prompt step=5
 Is this how you use AI right now?
-@ basic-01/p10 crop=0.480,0.330,0.460,0.400 box=0.495,0.360,0.375,0.200
-Actually, this is how people used AI in 2024: as a chatbot.
-@ card "2024 · Prompt engineering"
-In 2024, most people were still working out how to write a good prompt so the AI would do better, and people called it Prompt Engineering.
-@ basic-01/p13 crop=0.490,0.280,0.450,0.450
+@ fig human-carries step=1
+Well, that's how people used AI in 2024.
+As a chatbot.
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=1
+Back then, most people were busy learning to write better prompts to get better answers.
+That was called prompt engineering.
 But here's the problem.
-Even if the AI model is smart enough, you're still treating it as someone who answers questions.
+@ fig human-carries step=2
+Even if the model is smart enough, you're still treating it like someone who just answers questions.
+@ fig human-carries step=3
 You haven't let it get its hands on the work.
-@ basic-01/p10 crop=0.480,0.330,0.460,0.400 box=0.497,0.400,0.125,0.125
-Apart from answering your questions, every other job still lands on you: finding the code, sorting out the requirement, running the tests, remembering the context, watching it follow the process, checking its results.
+@ fig human-carries step=4
+It answers your questions, and everything else is still on you.
+@ fig human-carries step=5
+Finding the code, sorting out the requirement, running the tests,
+@ fig human-carries step=6
+remembering the context, making sure it follows the process, checking its results.
+@ fig human-carries step=7
 You do all of it by hand.
-@ basic-01/p09 crop=0.490,0.450,0.450,0.250 box=0.655,0.640,0.120,0.040
-And in the end, it's easy to hear the same old line: AI isn't reliable, AI makes mistakes, AI can only help with part of my work...
+@ card "The same old lines" icon=messages-square
+And in the end, you hear the same old lines.
+@ list "The same old lines" "AI isn't reliable.|thumbs-down" "AI makes mistakes.|circle-x" "AI can only help with part of my work.|chart-pie" lit=1
+AI isn't reliable.
+@ list "The same old lines" "AI isn't reliable.|thumbs-down" "AI makes mistakes.|circle-x" "AI can only help with part of my work.|chart-pie" lit=2
+AI makes mistakes.
+@ list "The same old lines" "AI isn't reliable.|thumbs-down" "AI makes mistakes.|circle-x" "AI can only help with part of my work.|chart-pie" lit=3
+AI can only help with part of my work.
 
 ## 3 What is an agent
-@ basic-01/p11 crop=0.480,0.400,0.460,0.265
-So here, I have to explain what an AI agent is.
-@ basic-01/p11 crop=0.480,0.400,0.460,0.265 box=0.490,0.440,0.190,0.135
-When you chat with AI day to day, you're really talking straight to the large language model, the LLM.
-It thinks, then writes you a piece of text as an answer.
-@ basic-01/p11 crop=0.480,0.400,0.460,0.265 box=0.599,0.448,0.233,0.122 text="Tool calling"
-An agent is an LLM with tool calling added: the ability to use tools.
+@ card "What is an AI agent?" icon=bot
+So let me explain what an AI agent is.
+@ fig llm-vs-agent step=1
+When you chat with AI, you're talking straight to the large language model, the LLM.
+@ fig llm-vs-agent step=2
+It thinks, then writes you an answer in text.
+@ fig llm-vs-agent step=3
+An agent is an LLM plus tool calling, meaning it can use tools.
+@ fig llm-vs-agent step=4
 Think of tools as its hands.
-@ basic-01/p11 crop=0.480,0.400,0.460,0.265 box=0.727,0.426,0.210,0.160
-Once it's thought things through, it can go and change the code files on your machine by itself, run commands, search the web, open a browser.
+@ fig llm-vs-agent step=5
+Once it's thought things through, it can go and change the code on your machine itself, run commands, search the web, open a browser.
 But hands alone aren't enough.
-@ basic-01/p11 crop=0.480,0.400,0.460,0.265 box=0.565,0.568,0.290,0.095 text="The agent loop"
+@ loop "LLM|bot" "Tool|square-terminal" "Result|file-text" "Next step|arrow-right"
 The key is that it loops.
-@ basic-01/p12 crop=0.490,0.310,0.450,0.300
-It calls a tool, takes a look at the result, then decides what to do next.
-@ basic-01/p12 crop=0.490,0.310,0.450,0.300 box=0.797,0.322,0.135,0.280
-Then it calls again, looks again, and keeps going until the job is done.
-@ card "Agent = LLM + tools + loop"
-With hands, and a loop of its own, an agent is born.
+@ loop "LLM|bot" "Tool|square-terminal" "Result|file-text" "Next step|arrow-right" lit=2
+It calls a tool,
+@ loop "LLM|bot" "Tool|square-terminal" "Result|file-text" "Next step|arrow-right" lit=3
+looks at the result,
+@ loop "LLM|bot" "Tool|square-terminal" "Result|file-text" "Next step|arrow-right" lit=4
+and decides what to do next.
+@ fig llm-vs-agent step=6
+Then it calls again, looks again, and keeps going until the job's done.
+@ formula "Agent" "LLM" "Hands + Loop"
+Give an LLM hands and a loop of its own, and you've got an agent.
+@ fig llm-vs-agent step=7
 It doesn't just answer you anymore.
-It can get a piece of work done by itself.
+@ fig llm-vs-agent step=8
+It can finish a piece of work on its own.
 
 ## 4 What is a harness
-@ card "New problems"
-Once an agent can do work on its own, new problems come with it.
+@ card "New problems" kicker="Once an agent works on its own" icon=triangle-alert
+But once an agent can work on its own, you get a new set of problems.
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work"
 Look back over the last few years.
-@ card "2024 · Prompt engineering"
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=1
 In 2024, people were figuring out how to write good prompts.
-@ card "2025 · Context engineering"
-In 2025, people found you need good context engineering, managing the AI's context, before it performs consistently.
-@ basic-01/p16 crop=0.490,0.315,0.450,0.390 box=0.502,0.556,0.425,0.135
-By 2026, coding agents can really get work done for you, like Claude Code, Codex and GitHub Copilot.
-And being able to do work also brings new problems.
-@ basic-01/p13 crop=0.490,0.280,0.450,0.450
-Companies found that to make agents really land, they have to solve these problems.
-@ basic-01/p13 crop=0.490,0.280,0.450,0.450 box=0.505,0.320,0.112,0.058
-One: it doesn't know your systems and projects, so a person still has to introduce them every time.
-@ basic-01/p13 crop=0.490,0.280,0.450,0.450 box=0.650,0.675,0.130,0.058
-Two: how do you keep memory across sessions?
-If one session dies, how does another session pick up the task?
-@ basic-01/p10 crop=0.480,0.330,0.460,0.400 box=0.497,0.400,0.125,0.125
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=2
+In 2025, people found that to get steady results, you have to manage the AI's context well.
+That's context engineering.
+@ logos claude-code codex github-copilot
+And by 2026, coding agents like Claude Code, Codex and GitHub Copilot can really get work done for you.
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=3
+And that's where the new problems start.
+@ fig nine-gaps step=1
+Companies found that to really adopt agents, they have to solve these.
+@ fig nine-gaps step=2
+One: it doesn't know your systems or your projects, so someone still has to explain them every time.
+@ fig nine-gaps step=3
+Two: how do you keep its memory from one session to the next?
+If a session dies, how does a new one pick up the task?
+@ fig nine-gaps step=4
 Three: people only use the agent to change code.
-Running the tests, the CI/CD pipeline, updating the tickets: people still do all of that.
-@ basic-01/p05 crop=0.490,0.400,0.450,0.240 box=0.585,0.475,0.085,0.145
-Four: rules you agreed on, it doesn't always follow.
-@ basic-06/p04 crop=0.500,0.310,0.440,0.450 box=0.520,0.345,0.390,0.380
-Five: you don't dare open up your servers to it, because it might do something dangerous, like dropping a table.
-@ basic-01/p13 crop=0.490,0.280,0.450,0.450 box=0.505,0.652,0.112,0.058
-Six: when it finishes a task, it tends to confidently believe its result is right.
-@ basic-01/p13 crop=0.490,0.280,0.450,0.450 box=0.795,0.485,0.125,0.225
-Seven: where did the money and the time go, and how do you cut them down?
-The plan, the logs, the trail of the task: none of it is recorded.
-@ board/tour-lobby crop=0.000,0.000,1.000,0.455 box=0.035,0.165,0.930,0.290
-Eight: a person can keep an eye on five sessions at most, so human attention becomes the bottleneck for the agent's work.
-@ board/state-stuck-page crop=0.000,0.000,0.650,1.000 box=0.025,0.885,0.350,0.080
-Nine: on a long or complex task, the agent always ends up stopping partway.
-@ card "2026 · Harness engineering"
-There are just so many problems.
-Getting an agent to work steadily and well is a craft of its own, and it's called harness engineering.
-@ basic-01/p15 crop=0.495,0.350,0.440,0.235
-There's a formula: Agent equals model plus harness.
-@ basic-01/p15 crop=0.495,0.350,0.440,0.235 box=0.617,0.355,0.184,0.228
+Running tests, the CI-CD pipeline, updating tickets, people still do all of that.
+@ fig nine-gaps step=5
+Four: it doesn't always follow the rules you agreed on.
+@ fig nine-gaps step=6
+Five: you don't dare give it access to your servers, in case it does something dangerous, like dropping a table.
+@ fig nine-gaps step=7
+Six: when it finishes a task, it's usually sure it got it right.
+@ fig nine-gaps step=8
+Seven: where did the time and money go, and how do you spend less?
+The plan, the logs, the steps it took.
+None of it gets recorded.
+@ big "5" "sessions at most, before human attention is the bottleneck" icon=messages-square
+Eight: one person can keep an eye on five sessions at most, so human attention becomes the bottleneck.
+@ fig nine-gaps step=10
+Nine: on a long or complex task, the agent always stops partway through.
+@ fig nine-gaps step=11
+That's a lot of problems.
+Getting an agent to work well, and keep working well, is a craft of its own.
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Harness engineering" now=3
+It's called harness engineering.
+@ formula "Agent" "Model" "Harness"
+There's a simple formula: agent equals model plus harness.
+@ fig harness-around step=1
 Everything outside the model is the harness.
-@ basic-01/p03 crop=0.490,0.340,0.450,0.340 box=0.515,0.526,0.250,0.116
+@ fig program-vs-agent step=1
 All of this used to be you, reminding it in the prompt.
-@ basic-01/p10 crop=0.480,0.330,0.460,0.400 box=0.495,0.565,0.430,0.140
+@ fig program-vs-agent step=2
 Now a program does it.
-@ basic-01/p15 crop=0.495,0.350,0.440,0.235 box=0.617,0.355,0.184,0.228
-Because a program is deterministic: it doesn't spend tokens, and it doesn't rely on the model behaving itself.
-@ basic-01/p15 crop=0.495,0.350,0.440,0.235 box=0.500,0.380,0.096,0.180
-We hand the deterministic jobs to programs, and the things that need judgment and thinking to the agent.
+@ fig program-vs-agent step=3
+A program is deterministic.
+@ fig program-vs-agent step=4
+It doesn't spend tokens, and it doesn't depend on the model behaving itself.
+@ fig program-vs-agent step=5
+So jobs with a fixed answer go to programs,
+@ fig program-vs-agent step=6
+and anything that needs judgment goes to the agent.
 
 ## 5 My harness
-@ basic-01/p17 crop=0.490,0.285,0.450,0.460 box=0.500,0.293,0.430,0.293
-I've built a harness framework myself, based on GitHub Copilot in VS Code.
-@ card "M365 Copilot · GitHub Copilot"
-If your team is a Microsoft customer, you're most likely using two Copilots at the same time: M365 Copilot and GitHub Copilot.
-@ basic-01/p16 crop=0.490,0.315,0.450,0.390 box=0.502,0.556,0.425,0.135
+@ board/tour-list crop=0,0,1,0.42
+I've built my own harness framework,
+@ logos github-copilot vscode
+on top of GitHub Copilot in VS Code.
+@ logos m365-copilot github-copilot
+If your company uses Microsoft, you're probably using two Copilots at once: M365 Copilot and GitHub Copilot.
+@ logos "m365-copilot|chat, mail, documents" "github-copilot|coding agent"
 GitHub Copilot is what we call a coding agent.
-@ basic-01/p16 crop=0.490,0.315,0.450,0.390 box=0.500,0.328,0.432,0.205
-My harness is there to help you steer GitHub Copilot better.
-@ basic-01/p18 crop=0.480,0.280,0.470,0.530 box=0.725,0.315,0.205,0.420
-Let's go back to those gaps, and see what each one looks like in my harness.
-@ basic-01/p18 crop=0.480,0.280,0.470,0.530 box=0.500,0.350,0.430,0.058
-First: it doesn't know your systems and projects, so a person still has to introduce them every time.
-@ board/kb-overview crop=0.000,0.000,1.000,0.680
+@ fig harness-around step=2
+My harness helps you steer it better.
+@ fig nine-gaps step=12
+Let's go back to those problems and see how my harness handles each one.
+@ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=1
+First: it doesn't know your systems or your projects, so someone has to explain them every time.
+@ fig kb-build step=1
 I built a standard framework that turns a codebase into a knowledge base.
-@ board/kb-lookup crop=0.000,0.180,0.480,0.280 box=0.012,0.275,0.450,0.165
-A set of tools studies your codebase, finds the hidden dependencies between files, and writes them up as cards.
-@ basic-01/p19 crop=0.410,0.130,0.550,0.670
-When the learning is done, it produces a summary file and an index.
-The agent doesn't have to read the code again every time.
-@ basic-01/p19 crop=0.410,0.130,0.550,0.670 box=0.555,0.405,0.090,0.060
-It only loads the summary file and a few cards, and it has a rough idea of your codebase.
-@ board/kb-lookup crop=0.000,0.180,0.480,0.280 box=0.012,0.205,0.460,0.060
-And if it needs to, it can go straight to the right file through the index.
-@ basic-01/p18 crop=0.480,0.280,0.470,0.530 box=0.500,0.543,0.430,0.058
-Second: how do you keep memory across sessions?
-If one session dies, how does another session pick up the task?
-@ tutorials/1_day/lifecycle box=0.015,0.045,0.290,0.115
+@ fig kb-build step=2
+A set of tools studies your codebase,
+@ fig kb-build step=3
+finds the hidden dependencies between files,
+@ fig kb-build step=4
+and writes them up as cards.
+@ fig kb-build step=5
+When it's done, it produces a summary file and an index.
+@ fig kb-build step=6
+So the agent doesn't have to reread the code every time.
+@ fig kb-build step=7
+It just loads the summary and a few cards,
+@ tutorials/6_kb/kb-go-on-docs box=0.025,0.315,0.95,0.4 text="The knowledge base: 5 domains, 74 cards"
+and it gets a rough picture of your codebase.
+@ board/kb-lookup crop=0,0.03,0.7,0.42 box=0.015,0.2,0.45,0.245 text="Look up: who uses it, what it uses, which file"
+And when it needs more, the index takes it straight to the right file.
+@ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=2
+Second: how do you keep its memory from one session to the next?
+@ fig task-folder step=1
+If a session dies, how does a new one pick up the task?
+@ fig task-folder step=2
 Every task is a folder.
-@ board/tour-tab-files crop=0.000,0.290,0.700,0.710 box=0.030,0.475,0.270,0.515
-It holds the files for the task's whole life: the task plan, the history log, the status, the requirement document, the test scripts, the changed code, and anything else the agent produces while it works.
-It's all saved in there.
-@ board/go-on-new-chat box=0.130,0.730,0.155,0.160
-So even if one session dies, another session only has to scan this task folder, and it can carry on right away.
-@ basic-01/p10 crop=0.480,0.330,0.460,0.400 box=0.497,0.400,0.125,0.125
-Third: people only use the agent to change code, and running the tests, the CI/CD pipeline and updating the tickets are still done by people.
-@ basic-06/p04 crop=0.500,0.310,0.440,0.450 box=0.520,0.345,0.390,0.380
-And you don't dare open up your servers to it, because it might do something dangerous, like dropping a table.
-@ board/one-14-todo box=0.045,0.665,0.400,0.290
-Give the agent access to the development and test environments, and it can build things itself, write its own test scripts, run them itself, and fix them itself.
-@ board/outside-tools-packs crop=0.000,0.000,1.000,0.540 box=0.025,0.160,0.950,0.370
-For safety, here's what I do.
-Through a standard tool pack, the agent gets read-only access to the lower environments.
-@ board/outside-held-card box=0.045,0.850,0.725,0.100
-Write and execute access has to be approved by a person.
-@ board/outside-tools-packs crop=0.000,0.000,1.000,0.540 box=0.025,0.410,0.950,0.115
-Take Microsoft's SQL Server: I've run my harness against thousands of cases of dangerous commands being injected.
-@ board/stop-agent-actions box=0.040,0.500,0.920,0.485
-With a blacklist, a whitelist, a person making the call, and the account's own permissions, the agent's access stays safe.
-@ basic-01/p18 crop=0.480,0.280,0.470,0.530 box=0.500,0.479,0.430,0.058
-Fourth: when it finishes a task, it tends to confidently believe its result is right.
-@ board/review crop=0.000,0.000,1.000,0.580 box=0.600,0.045,0.160,0.040
+@ fig task-folder step=3
+It holds everything from the task's whole life.
+@ fig task-folder step=4
+The plan, the history log, the status,
+@ fig task-folder step=5
+the requirement doc, the test scripts, the changed code,
+@ board/tour-tab-files crop=0,0.31,0.75,0.69 box=0.03,0.475,0.27,0.52 text="The Files tab: the whole task folder"
+and anything else the agent produces along the way.
+@ board/go-on-new-chat box=0.13,0.72,0.8,0.2 text="A new chat picks the task up from its files"
+So if a session dies, a new one just scans the folder and carries on right away.
+@ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=3
+Third: people only use the agent to change code, and still handle the tests, the CI-CD pipeline and the tickets themselves.
+@ big "DROP TABLE" "the one command nobody wants an agent to run" icon=database-zap
+And you don't dare give it access to your servers, in case it does something dangerous, like dropping a table.
+@ fig tool-pack step=1
+Give the agent access to your dev and test environments,
+@ fig tool-pack step=2
+and it can build things, write its own test scripts, run them, and fix what fails.
+@ fig tool-pack step=3
+To keep that safe, here's what I do.
+@ fig tool-pack step=4
+With a standard tool pack, the agent gets read-only access to the lower environments.
+@ board/outside-held-card box=0.045,0.845,0.72,0.1 text="A write waits for a person and a typed code"
+Anything that writes or executes needs a person to approve it.
+@ board/outside-tools-packs crop=0,0,1,0.56 box=0.027,0.405,0.946,0.12 text="The sqlserver tool pack ships with the harness"
+Take Microsoft's SQL Server.
+@ fig guard-layers step=1
+I've tested my harness against thousands of injected dangerous commands.
+@ fig guard-layers step=2
+Between a blacklist, a whitelist,
+@ fig guard-layers step=3
+a human making the call, and the account's own permissions,
+@ board/stop-agent-actions box=0.04,0.495,0.92,0.49 text="What the gate stopped, kept on the task's record"
+the agent's access stays safe.
+@ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=4
+Fourth: when it finishes a task, it's usually sure it got it right.
+@ fig reviewer step=1
 I bring in an independent reviewer as a subagent.
-@ board/review crop=0.000,0.315,1.000,0.255 box=0.035,0.343,0.930,0.225
-The subagent reviews everything the agent did on the task, and gives a test verdict.
-@ board/review crop=0.000,0.800,1.000,0.200 box=0.035,0.805,0.930,0.180
-In practice, the reviewer finds lots of cases the main agent never thought of.
-@ basic-01/p18 crop=0.480,0.280,0.470,0.530 box=0.500,0.670,0.430,0.058
-Fifth: where did the money and the time go, and how do you cut them down?
-The plan, the logs, the trail of the task: none of it is recorded.
-@ board/tour-report crop=0.000,0.020,1.000,0.400 box=0.012,0.160,0.975,0.230
-I built a task report panel just for the whole task's numbers: where the time went, where the money went, which tool calls failed.
-@ basic-01/p22 crop=0.420,0.060,0.530,0.600
-Every conclusion, clear at a glance.
-@ card "And a lot more"
-And there's a lot more, but there isn't time to go through it all here.
+@ fig reviewer step=2
+It reviews everything the agent did on the task
+@ board/review crop=0,0.57,1,0.43 box=0.035,0.805,0.93,0.185 text="Each round: a verdict and its reasons"
+and gives a test verdict.
+@ board/checks-used-review crop=0,0.46,1,0.54 box=0.04,0.79,0.92,0.2 text="Caught: capital letters and digits were never checked"
+In practice, the reviewer catches lots of cases the main agent never thought of.
+@ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=5
+Fifth: where did the time and money go, and how do you spend less?
+@ fig task-report step=1
+The plan, the logs, the steps it took.
+None of it gets recorded.
+@ board/tour-report crop=0,0.03,1,0.37 box=0.012,0.17,0.975,0.2 text="Task analysis: the whole task in numbers"
+I built a report panel that shows the numbers for the whole task.
+@ board/tour-report crop=0,0.78,1,0.2 box=0.035,0.805,0.93,0.15 text="Where the time went"
+Where the time went,
+@ board/tour-performance crop=0,0.37,1,0.32 box=0.01,0.39,0.98,0.28 text="Credits, prompt by prompt"
+where the money went,
+@ board/stop-agent-actions crop=0,0.36,1,0.64 box=0.655,0.385,0.305,0.09 text="Blocked and failed calls, counted"
+which tool calls failed.
+@ fig task-report step=2
+It's all there at a glance.
+@ board/tour-lobby crop=0,0,1,0.62
+There's a lot more, but no time to cover it all here.
 
 ## 6 Summary
-@ basic-01/p23 crop=0.490,0.350,0.420,0.300
+@ card "AI hasn't gotten dumber" icon=brain
 So, AI hasn't gotten dumber.
-@ basic-01/p23 crop=0.490,0.350,0.420,0.300 box=0.612,0.360,0.090,0.285
-It's that the way we use it is still stuck in 2024: treating it as a chatbot, with people doing the copying and pasting, watching the process, and doing the checks.
-@ basic-01/p23 crop=0.490,0.350,0.420,0.300 box=0.703,0.360,0.090,0.285
-Agents hand the copying and pasting to a program.
-@ basic-01/p23 crop=0.490,0.350,0.420,0.300 box=0.793,0.360,0.090,0.285
-A harness hands the process, the checks and the boundaries to a program too.
-People can finally step back, and just make the calls and sign off.
-@ card "Which stronger model?"
-If you're pushing AI on your team, don't rush to ask "which stronger model should we switch to?"
-@ card "What's missing around our AI?"
-First, ask one question: "What's missing around our AI?"
-@ board/one-01-new-task
-If you want to try it yourself, in the next video I'll help you install this harness and start your first task.
-
-// notes
-// - Timeline 2024 prompts, 2025 context engineering, 2026 harness engineering: none in the catalog; three cards.
-// - Claude Code, Codex and GitHub Copilot in the hook: a card (basic-01/p16 shows them later, in scene 4).
-// - "A legacy system you know well", "80 to 90 percent right": no picture of the engineer's own situation; a card, then the basic-01/p07 mock-up.
-// - "This video makes three things clear": basic-01/p02 lists five questions, not these three; card.
-// - M365 Copilot beside GitHub Copilot: none; card.
-// - Agent = LLM + tools + loop as one summary picture: none; card.
-// - A long chat getting worse: none for chat; basic-06/p05 (rules buried in a long task) is the closest.
-// - Five sessions at most: board/tour-lobby (13 agents waiting for you) stands in; no picture of the five-session limit itself.
-// - Long task stops partway: board/state-stuck-page shows the harness's stuck warning, the closest.
-// - Thousands of SQL Server injection tests, blacklist and whitelist: no picture of the tests or the lists; the sqlserver tool pack and the blocked-calls tab stand in.
-// - Summary file and index of the knowledge base: no picture of the files; basic-01/p19 (knowledge base with 305 cards) stands in.
-// - "And a lot more": card.
+@ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Harness engineering" now=1
+The way we use it is just stuck in 2024.
+@ fig who-does-what step=1
+We treat it as a chatbot, and people still do the copying and pasting, watch the process, and do the checks.
+@ fig who-does-what step=2
+With an agent, a program does the copying and pasting.
+@ fig who-does-what step=3
+With a harness, a program also handles the process, the checks and the boundaries.
+@ fig who-does-what step=4
+And people can finally step back,
+@ board/accept box=0.045,0.85,0.135,0.11 text="You make the call: Accept and close"
+make the calls, and sign off.
+@ quote "Which stronger model should we switch to?" by="Don't ask this first"
+If you're rolling out AI on your team, don't rush to ask, "Which stronger model should we switch to?"
+@ fig harness-around step=3
+Ask this first: "What's missing around our AI?"
+@ board/one-01-new-task box=0.02,0.54,0.47,0.165 text="Your first task starts here"
+If you want to try it yourself,
+@ card "Install the harness, start your first task" kicker="Next video" icon=play
+in the next video I'll walk you through installing this harness and starting your first task.

@@ -1,0 +1,70 @@
+<!doctype html>
+<!-- Thousands of injected dangerous commands against SQL Server; four walls stop them:
+     a blacklist, a whitelist, a human making the call, and the account's own permissions.
+     @ fig guard-layers step=1 ... step=3 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .cmds { left: 0; top: 70px; width: 420px; display: flex; flex-direction: column; gap: 22px; }
+  .cmd { font-family: var(--mono); font-size: 26px; color: var(--orange); padding: 14px 20px; border-radius: 12px;
+    border: 2px solid rgba(232, 89, 12, 0.6); background: rgba(232, 89, 12, 0.08); white-space: nowrap; }
+  .count { left: 0; top: 640px; width: 420px; text-align: center; }
+  .count b { display: block; font-size: 60px; color: var(--orange); font-weight: 600; }
+  .count span { font-size: 28px; color: var(--muted); }
+  .wall { position: absolute; top: 40px; width: 30px; height: 600px; border-radius: 8px; border: 3px dashed var(--dim); }
+  .wall.lit, .wall.done { border: 3px solid var(--teal); background: rgba(45, 212, 191, 0.25); box-shadow: 0 0 24px rgba(45, 212, 191, 0.3); }
+  .wall.done { border-color: var(--muted); background: rgba(125, 139, 161, 0.3); box-shadow: none; }
+  .wlab { position: absolute; top: 660px; width: 170px; transform: translateX(-50%); text-align: center; font-size: 28px; line-height: 1.15; color: var(--muted); }
+  .wlab.lit { color: var(--teal); }
+  .wlab.done { color: var(--fg); }
+  .db { left: 1300px; top: 220px; width: 270px; display: flex; flex-direction: column; align-items: center; gap: 18px; font-size: 34px; }
+  .db .tile { width: 230px; height: 230px; border-radius: 30px; background: var(--panel); border: 3px solid var(--muted); display: flex; align-items: center; justify-content: center; position: relative; }
+  .db .tile img { width: 150px; }
+  .db .tile .mk { position: absolute; right: -16px; top: -16px; width: 64px; height: 64px; font-size: 38px; display: none; }
+  .at-3 .db .tile { border-color: var(--teal); box-shadow: 0 0 30px rgba(45, 212, 191, 0.3); }
+  .at-3 .db .tile .mk { display: inline-flex; }
+  .at-3 .db { color: var(--teal); }
+  .stop { position: absolute; width: 40px; height: 40px; font-size: 24px; }
+  .s1, .s2 { display: none; }
+  .at-2 .full { display: none; }
+  .at-2 .s1 { display: inline; }
+  .at-3 .s1 { display: none; }
+  .at-3 .s2 { display: inline; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab cmds" data-step="1">
+    <div class="cmd">DROP TABLE orders;</div>
+    <div class="cmd">TRUNCATE TABLE users;</div>
+    <div class="cmd">DELETE FROM invoices;</div>
+    <div class="cmd">EXEC xp_cmdshell 'del';</div>
+    <div class="cmd">ALTER LOGIN sa &hellip;</div>
+    <div class="cmd">GRANT CONTROL &hellip;</div>
+  </div>
+  <div class="ab count" data-step="1"><b>thousands</b><span>injected, one by one</span></div>
+
+  <svg class="wires">
+    <g class="full"><path class="orange dash" d="M 430 102 L 1290 300"/><path class="orange dash" d="M 430 178 L 1290 320"/>
+      <path class="orange dash" d="M 430 254 L 1290 335"/><path class="orange dash" d="M 430 330 L 1290 350"/>
+      <path class="orange dash" d="M 430 406 L 1290 365"/><path class="orange dash" d="M 430 482 L 1290 380"/></g>
+    <g class="s1"><path class="orange" d="M 430 102 L 560 102"/><path class="orange" d="M 430 178 L 560 178"/>
+      <path class="orange" d="M 430 254 L 560 254"/><path class="orange" d="M 430 330 L 760 330"/>
+      <path class="orange" d="M 430 406 L 560 406"/><path class="orange dash" d="M 430 482 L 1290 380"/></g>
+    <g class="s2"><path class="orange" d="M 430 102 L 560 102"/><path class="orange" d="M 430 178 L 560 178"/>
+      <path class="orange" d="M 430 254 L 560 254"/><path class="orange" d="M 430 330 L 760 330"/>
+      <path class="orange" d="M 430 406 L 560 406"/><path class="orange" d="M 430 482 L 960 482"/></g>
+  </svg>
+  <div class="s1"><span class="ab mk no stop" style="left:550px;top:82px"><i data-icon="x"></i></span><span class="ab mk no stop" style="left:550px;top:158px"><i data-icon="x"></i></span>
+    <span class="ab mk no stop" style="left:550px;top:234px"><i data-icon="x"></i></span><span class="ab mk no stop" style="left:750px;top:310px"><i data-icon="x"></i></span>
+    <span class="ab mk no stop" style="left:550px;top:386px"><i data-icon="x"></i></span></div>
+  <div class="s2"><span class="ab mk no stop" style="left:550px;top:82px"><i data-icon="x"></i></span><span class="ab mk no stop" style="left:550px;top:158px"><i data-icon="x"></i></span>
+    <span class="ab mk no stop" style="left:550px;top:234px"><i data-icon="x"></i></span><span class="ab mk no stop" style="left:750px;top:310px"><i data-icon="x"></i></span>
+    <span class="ab mk no stop" style="left:550px;top:386px"><i data-icon="x"></i></span><span class="ab mk no stop" style="left:950px;top:462px"><i data-icon="x"></i></span></div>
+
+  <div class="wall" style="left:580px"></div><div class="wall" style="left:780px"></div><div class="wall" style="left:980px"></div><div class="wall" style="left:1180px"></div>
+  <div class="wall" style="left:580px" data-step="2"></div><div class="wlab" style="left:595px" data-step="2">blacklist</div>
+  <div class="wall" style="left:780px" data-step="2"></div><div class="wlab" style="left:795px" data-step="2">whitelist</div>
+  <div class="wall" style="left:980px" data-step="3"></div><div class="wlab" style="left:995px" data-step="3">a human decides</div>
+  <div class="wall" style="left:1180px" data-step="3"></div><div class="wlab" style="left:1195px" data-step="3">account permissions</div>
+
+  <div class="ab db"><div class="tile"><img data-logo="sql-server"><span class="mk ok"><i data-icon="check"></i></span></div>SQL Server</div>
+</div></main></body></html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- Pain 5: the agent works in a closed box; you can't see which files, which commands, or why; afterwards nobody can tell.
+     @ fig pain-blind step=1 ... step=5 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .prog { left: 0; top: 0; display: flex; align-items: center; gap: 26px; }
+  .you { left: 60px; top: 270px; width: 220px; }
+  .box { left: 420px; top: 140px; width: 520px; height: 460px; border-radius: 28px; background: #070808;
+    border: 3px solid #2c3036; box-shadow: inset 0 0 60px rgba(0,0,0,.9), 0 30px 80px rgba(0,0,0,.6);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .box .face { opacity: 0.35; }
+  .box .lab { opacity: 0.6; }
+  .qs { left: 1060px; top: 120px; width: 500px; display: flex; flex-direction: column; gap: 40px; }
+  .q { display: flex; align-items: center; gap: 22px; font-size: 40px; }
+  .q .ic { width: 96px; height: 96px; border-radius: 22px; border: 2px dashed var(--muted); display: flex; align-items: center;
+    justify-content: center; font-size: 50px; color: var(--muted); flex: none; }
+  .q.lit { color: var(--teal); }
+  .q.lit .ic { border-color: var(--teal); color: var(--teal); }
+  .at-5 .q { opacity: 0.35; }
+  .when { left: 330px; top: 640px; width: 700px; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 16px;
+    font-size: 40px; color: var(--orange); font-weight: 600; }
+  .when i[data-icon] { font-size: 56px; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab prog"><div class="dots"><b></b><b></b><b></b><b></b><b class="on"></b></div><span class="tag orange">Pain 5 &middot; you can't see what it did</span></div>
+  <div class="ab actor you" data-step="1"><div class="face"><i data-icon="user"></i></div>you, outside</div>
+  <div class="ab box" data-step="1"><div class="actor agent"><div class="face"><i data-icon="bot"></i></div></div><div class="lab">the agent, inside</div></div>
+  <div class="ab qs">
+    <div class="q" data-step="2"><span class="ic"><i data-icon="file-text"></i></span>which files?</div>
+    <div class="q" data-step="3"><span class="ic"><i data-icon="square-terminal"></i></span>which commands?</div>
+    <div class="q" data-step="4"><span class="ic"><i data-icon="circle-help"></i></span>why?</div>
+  </div>
+  <div class="ab when" data-step="5"><i data-icon="clock"></i>after the fact: hard to tell</div>
+</div></main></body></html>

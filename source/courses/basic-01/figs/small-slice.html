@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- A team's whole job as one long bar; AI only lights a sliver of "code", and it is used as a chat.
+     @ fig small-slice step=1 ... step=3 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .work { left: 40px; top: 70px; width: 1500px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; }
+  .seg { height: 90px; border-radius: 12px; background: var(--panel); border: 2px solid var(--edge); position: relative; }
+  .seg-name { margin-top: 18px; text-align: center; font-size: 30px; color: var(--muted); }
+  .slice { position: absolute; left: 66px; top: -2px; width: 52px; height: 90px; border-radius: 6px; background: var(--teal);
+    box-shadow: 0 0 30px var(--teal-glow); }
+  .slice.done { opacity: 0.75; box-shadow: none; }
+  .ai-tag { position: absolute; left: 52px; top: -62px; width: 80px; text-align: center; font-size: 30px; font-weight: 600; color: var(--teal); }
+  .head { left: 40px; top: 0; }
+  .chat { left: 400px; top: 330px; width: 780px; height: 430px; }
+  .chat .win-body { justify-content: center; gap: 28px; padding: 30px 40px; }
+  .chat .bub { font-size: 34px; display: flex; align-items: center; gap: 16px; }
+  .chat .bub i[data-icon] { font-size: 34px; color: var(--muted); }
+  .chat .bub.lit i[data-icon] { color: var(--teal); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab head kicker">A team's work</div>
+  <div class="ab work">
+    <div><div class="seg"></div><div class="seg-name">requirement</div></div>
+    <div><div class="seg"></div><div class="seg-name">design</div></div>
+    <div><div class="seg"><div class="slice" data-step="1"></div><div class="ai-tag" data-step="1">AI</div></div><div class="seg-name">code</div></div>
+    <div><div class="seg"></div><div class="seg-name">test</div></div>
+    <div><div class="seg"></div><div class="seg-name">CI/CD</div></div>
+    <div><div class="seg"></div><div class="seg-name">tickets</div></div>
+    <div><div class="seg"></div><div class="seg-name">review</div></div>
+    <div><div class="seg"></div><div class="seg-name">release</div></div>
+  </div>
+  <svg class="wires"><path class="dash dim" d="M 507 200 C 507 260, 640 270, 700 326" data-step="2"/></svg>
+  <div class="ab win chat" data-step="2">
+    <div class="win-bar"><i data-icon="message-square"></i> chat</div>
+    <div class="win-body">
+      <div class="bub me" data-step="3"><i data-icon="user"></i> How do I add a delivery date?</div>
+      <div class="bub ai" data-step="3"><i data-icon="message-square"></i> Here's one way to do it&hellip;</div>
+    </div>
+  </div>
+</div></main></body></html>

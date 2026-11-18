@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- Open the dev and test environments to the agent (prod stays locked), so it can build, test and fix by itself;
+     a tool pack keeps it safe: reads pass, writes and runs wait at a gate for a person.
+     @ fig tool-pack step=1 ... step=4 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .agent { left: 0; top: 270px; width: 220px; }
+  .agent .face { width: 160px; height: 160px; font-size: 90px; }
+  .env { position: absolute; left: 1040px; width: 250px; height: 140px; border-radius: 20px; background: var(--panel); border: 3px solid var(--muted);
+    display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 44px; font-weight: 600; letter-spacing: 0.04em; }
+  .env.lit { border-color: var(--teal); color: var(--teal); box-shadow: 0 0 30px rgba(45, 212, 191, 0.25); }
+  .env.prod { top: 600px; border: 3px dashed var(--dim); color: var(--dim); background: transparent; }
+  .shield { left: 0; top: 0; }
+  .shield path.sh { fill: rgba(45, 212, 191, 0.07); stroke: var(--teal); stroke-width: 4; }
+  .shield.done path.sh { stroke: var(--muted); fill: rgba(255, 255, 255, 0.03); }
+  .pack { left: 520px; top: 20px; width: 400px; text-align: center; display: none; font-size: 30px; }
+  .at-4 .pack { display: block; }
+  .at-4 .trunk { display: none; }
+  .lanes { display: none; }
+  .at-4 .lanes { display: inline; }
+  .lane-lab { position: absolute; font-size: 32px; font-weight: 600; white-space: nowrap; }
+  .gate { left: 640px; top: 432px; width: 26px; height: 100px; border-radius: 8px; background: var(--orange); box-shadow: 0 0 20px rgba(232, 89, 12, 0.5); }
+  .you { left: 590px; top: 548px; flex-direction: row; gap: 14px; }
+  .loop { left: 1300px; top: 10px; width: 270px; height: 360px; }
+  .loop .chip { position: absolute; font-size: 28px; padding: 10px 16px; }
+  .loop svg { position: absolute; inset: 0; overflow: visible; }
+  .loop svg path { fill: none; stroke: var(--teal); stroke-width: 3; }
+  .loop.done svg path { stroke: var(--muted); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <svg class="wires shield" data-step="3"><path class="sh" d="M 470 130 L 720 70 L 970 130 L 970 400 Q 970 600 720 700 Q 470 600 470 400 Z"/></svg>
+  <div class="ab tag teal pack">tool pack</div>
+  <div class="ab actor agent" data-step="1"><div class="face"><i data-icon="bot"></i></div>the agent</div>
+
+  <svg class="wires">
+    <g class="trunk" data-step="1"><path class="teal" d="M 230 350 L 900 350"/>
+      <path class="teal" d="M 900 350 C 960 350, 960 230, 1030 230"/><polyline class="teal" points="1014,218 1032,230 1014,242"/>
+      <path class="teal" d="M 900 350 C 960 350, 960 450, 1030 450"/><polyline class="teal" points="1014,438 1032,450 1014,462"/></g>
+    <g class="lanes">
+      <path class="teal" d="M 230 300 L 920 300"/>
+      <path class="orange" d="M 230 480 L 920 480"/>
+      <path class="teal" d="M 920 300 C 980 300, 970 230, 1030 230"/><polyline class="teal" points="1014,218 1032,230 1014,242"/>
+      <path class="teal" d="M 920 300 C 980 300, 970 450, 1030 450"/>
+      <path class="orange" d="M 920 480 C 980 480, 970 460, 1030 460"/><polyline class="orange" points="1014,448 1032,460 1014,472"/>
+    </g>
+  </svg>
+  <div class="lanes">
+    <div class="lane-lab teal" style="left:240px;top:248px">read &middot; passes</div>
+    <div class="lane-lab orange" style="left:240px;top:428px">write / execute</div>
+    <div class="ab gate"></div>
+    <div class="ab actor warn sm you"><div class="face"><i data-icon="user"></i></div>a person</div>
+  </div>
+
+  <div class="env" style="top:160px" data-step="1">DEV</div>
+  <div class="env" style="top:380px" data-step="1">TEST</div>
+  <div class="env prod"><i data-icon="lock"></i>PROD</div>
+
+  <div class="ab loop" data-step="2">
+    <svg><path d="M 135 70 C 250 80, 260 260, 160 300 M 110 300 C 10 280, 10 90, 110 70"/></svg>
+    <div class="chip" style="left:70px;top:30px">build</div>
+    <div class="chip" style="left:120px;top:150px">write tests</div>
+    <div class="chip" style="left:90px;top:280px">run</div>
+    <div class="chip" style="left:0;top:150px">fix</div>
+  </div>
+</div></main></body></html>

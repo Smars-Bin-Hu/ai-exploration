@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- Who does the work. In 2024 (chatbot) you do it all; with an agent a program copies and pastes; with a harness
+     a program also runs the process, the checks and the boundaries, and you make the calls.
+     @ fig who-does-what step=1 ... step=4 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .tbl { left: 40px; top: 0; width: 1500px; display: grid; grid-template-columns: 380px repeat(3, 1fr); grid-auto-rows: 118px; }
+  .tbl > div { display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--edge); }
+  .rh { justify-content: flex-start !important; font-size: 38px; padding-left: 10px; }
+  .ch { flex-direction: column; font-size: 38px; font-weight: 600; line-height: 1.1; }
+  .ch small { font-size: 24px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .ch.lit { color: var(--teal); }
+  .c .ic { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 46px; border: 3px solid; }
+  .c .you { color: var(--orange); border-color: var(--orange); }
+  .c .gear { color: var(--teal); border-color: var(--teal); border-radius: 20px; }
+  .c.done .gear { color: var(--fg); border-color: var(--muted); }
+  .c.lit .gear { box-shadow: 0 0 24px var(--teal-glow); }
+  .judge { left: 40px; top: 640px; width: 1500px; display: grid; grid-template-columns: 380px repeat(3, 1fr); align-items: center; }
+  .judge .lab2 { font-size: 38px; padding-left: 10px; color: var(--teal); }
+  .judge .who { grid-column: 4; display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 30px; color: var(--teal); }
+  .judge .who .ic { width: 96px; height: 96px; border-radius: 50%; border: 3px solid var(--teal); display: flex; align-items: center; justify-content: center;
+    font-size: 54px; box-shadow: 0 0 0 8px rgba(45, 212, 191, 0.12), 0 0 30px var(--teal-glow); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab tbl">
+    <div></div>
+    <div class="ch" data-step="1"><small>2024</small>chatbot</div>
+    <div class="ch" data-step="2"><small>with an</small>agent</div>
+    <div class="ch" data-step="3"><small>with a</small>harness</div>
+
+    <div class="rh">copy &amp; paste</div>
+    <div class="c" data-step="1"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="2"><span class="ic gear"><i data-icon="cog"></i></span></div>
+    <div class="c" data-step="3"><span class="ic gear"><i data-icon="cog"></i></span></div>
+
+    <div class="rh">the process</div>
+    <div class="c" data-step="1"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="2"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="3"><span class="ic gear"><i data-icon="cog"></i></span></div>
+
+    <div class="rh">the checks</div>
+    <div class="c" data-step="1"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="2"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="3"><span class="ic gear"><i data-icon="cog"></i></span></div>
+
+    <div class="rh">the boundaries</div>
+    <div class="c" data-step="1"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="2"><span class="ic you"><i data-icon="user"></i></span></div>
+    <div class="c" data-step="3"><span class="ic gear"><i data-icon="cog"></i></span></div>
+  </div>
+  <div class="ab judge" data-step="4"><div class="lab2">you</div><div></div><div></div>
+    <div class="who"><span class="ic"><i data-icon="user"></i></span>make the calls &middot; sign off</div></div>
+</div></main></body></html>

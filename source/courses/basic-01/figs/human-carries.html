@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- The root cause: in 2024 the AI is a chatbot that only answers; it has no hands on the work, so you carry
+     everything else by hand. @ fig human-carries step=1 ... step=7 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .bot { left: 240px; top: 220px; width: 280px; }
+  .bot .face { width: 200px; height: 200px; font-size: 110px; }
+  .year { left: 240px; top: 120px; width: 280px; text-align: center; font-size: 48px; font-weight: 600; color: var(--muted); font-variant-numeric: lining-nums; }
+  .year.lit { color: var(--teal); }
+  .at-7 .bot, .at-7 .year, .at-7 .qa, .at-7 .nohand { opacity: 0.35; }
+  .idle { left: 300px; top: 30px; display: none; }
+  .at-7 .idle { display: block; }
+  .qa .lab { position: absolute; font-size: 32px; }
+  .qa.lit .lab { color: var(--teal); }
+  .nohand { left: 260px; top: 560px; width: 240px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .nohand .ring { position: relative; width: 120px; height: 120px; border-radius: 50%; border: 3px dashed var(--muted);
+    display: flex; align-items: center; justify-content: center; font-size: 64px; color: var(--muted); }
+  .nohand .ring .mk { position: absolute; right: -10px; top: -10px; width: 48px; height: 48px; font-size: 28px; }
+  .nohand .lab { white-space: nowrap; }
+  .nohand.lit .lab { color: var(--orange); }
+  .you { left: 1010px; top: 300px; width: 240px; }
+  .task { position: absolute; transform: translate(-50%, -50%); }
+  .t1 { left: 1130px; top: 110px; } .t2 { left: 1380px; top: 240px; } .t3 { left: 1380px; top: 560px; }
+  .t4 { left: 1130px; top: 690px; } .t5 { left: 870px; top: 560px; } .t6 { left: 870px; top: 240px; }
+  .at-7 .you { top: 600px; }
+  .at-7 .task { left: 1130px; transform: translate(-50%, 0); width: 420px; justify-content: center; border-color: var(--orange); }
+  .at-7 .t1 { top: 0; } .at-7 .t2 { top: 80px; } .at-7 .t3 { top: 160px; } .at-7 .t4 { top: 240px; } .at-7 .t5 { top: 320px; } .at-7 .t6 { top: 400px; }
+  .byhand { left: 1290px; top: 640px; font-size: 44px; font-weight: 600; color: var(--orange); white-space: nowrap; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab year" data-step="1">2024</div>
+  <div class="ab actor bot" data-step="1"><div class="face"><i data-icon="message-square"></i></div>chatbot</div>
+  <div class="ab tag muted idle">idle</div>
+
+  <div class="qa" data-step="2">
+    <svg class="wires">
+      <path class="teal" d="M 20 290 L 268 290"/><polyline class="teal" points="252,278 270,290 252,302"/>
+      <path class="teal" d="M 268 380 L 20 380"/><polyline class="teal" points="36,368 18,380 36,392"/>
+    </svg>
+    <div class="lab" style="left:30px;top:236px">question</div>
+    <div class="lab" style="left:30px;top:394px">answer</div>
+  </div>
+
+  <div class="ab nohand" data-step="3"><div class="ring"><i data-icon="hand"></i><span class="mk no"><i data-icon="x"></i></span></div>
+    <div class="lab">no hands on the work</div></div>
+
+  <div class="ab actor warn you" data-step="4"><div class="face"><i data-icon="user"></i></div>you</div>
+
+  <div class="chip task t1" data-step="5"><i data-icon="search"></i>find the code</div>
+  <div class="chip task t2" data-step="5"><i data-icon="ticket"></i>sort the requirement</div>
+  <div class="chip task t3" data-step="5"><i data-icon="flask-conical"></i>run the tests</div>
+  <div class="chip task t4" data-step="6"><i data-icon="brain"></i>remember context</div>
+  <div class="chip task t5" data-step="6"><i data-icon="list-checks"></i>follow the process</div>
+  <div class="chip task t6" data-step="6"><i data-icon="badge-check"></i>check results</div>
+  <div class="ab byhand" data-step="7">by hand</div>
+</div></main></body></html>
