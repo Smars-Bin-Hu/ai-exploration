@@ -1,9 +1,14 @@
 # Writes a Final Cut Pro XML (1.10 by default: FCP 10.6 and later import it; 1.11 needs FCP 10.6.6 or later).
 # One event, one project: the frames as stills on the primary storyline, each sentence's audio connected below it (lane -1).
+# Between two stills, a Cross Dissolve transition on the primary storyline, centred on the edit point: the stills keep
+# their places (a still has endless handles), the transition overlaps both by half its length.
 # Every time is a whole number of frames, written as a rational number of seconds.
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import quote
+
+VERSION = 'x2'  # bump when the output changes, so build.py writes it again
+CROSS_DISSOLVE = 'FxPlug:4731E73A-8DAC-4113-9A30-AE85B1761265'  # FCP's built-in Cross Dissolve (PAECrossDissolve)
 
 
 def _url(path):
@@ -11,7 +16,8 @@ def _url(path):
 
 
 def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10', captions=(), overlay=None):
-    """pictures: [dict(path, name, start, dur)] in frames, contiguous from 0 to total.
+    """pictures: [dict(path, name, start, dur, xfade)] in frames, contiguous from 0 to total; xfade: frames of the
+    cross-dissolve into this picture (even, 0 = a cut), centred on its start.
     clips: [dict(path, name, start, dur)] in frames, absolute; each must fall inside one picture.
     captions: [(lang, [(start, dur, rows)])]: SRT captions (role SRT?captionFormat=SRT.<lang>), one caption lane per language.
     overlay: dict(path, size, centre): a square video with alpha (the speaking avatar), the whole length, on the lane above the
@@ -48,6 +54,8 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
 
     for p in pictures:
         asset(p['path'], p['name'])
+    if any(p.get('xfade') for p in pictures):
+        ET.SubElement(res, 'effect', id='rfx', name='Cross Dissolve', uid=CROSS_DISSOLVE)
     if overlay:
         sz = str(overlay['size'])
         ET.SubElement(res, 'format', id='rov', frameDuration=t(1), width=sz, height=sz,
@@ -64,14 +72,23 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
     seq = ET.SubElement(proj, 'sequence', format='r1', duration=t(total), tcStart='0s', tcFormat='NDF',
                         audioLayout='stereo', audioRate='48k')
     spine = ET.SubElement(seq, 'spine')
+    # each still is used from an hour into its (endless) media, so a transition has frames on both sides of every cut;
+    # a connected clip's offset is on the parent's own timeline, which starts at the parent's start
+    base = 3600 * fps
     ci, ts = 0, 0
     caps = [(lane, lang, c) for lane, (lang, cl) in enumerate(captions, 1) for c in cl]
     for p in pictures:
+        d = p.get('xfade') or 0
+        if d and p['start']:
+            assert d % 2 == 0 and d // 2 <= p['dur'], 'a transition must be an even number of frames, inside its clips'
+            tr = ET.SubElement(spine, 'transition', name='Cross Dissolve', offset=t(p['start'] - d // 2), duration=t(d))
+            ET.SubElement(tr, 'filter-video', ref='rfx', name='Cross Dissolve')
         v = ET.SubElement(spine, 'video', ref=ids[str(p['path'])], offset=t(p['start']), name=p['name'],
-                          start='0s', duration=t(p['dur']))
+                          start=t(base), duration=t(p['dur']))
         end = p['start'] + p['dur']
+        rel = lambda x: t(base + x - p['start'])
         if overlay and p['start'] == 0:  # connected to the first still, running past it to the end
-            oc = ET.SubElement(v, 'asset-clip', ref='raov', lane=str(len(captions) + 1), offset='0s', name='speaking avatar', start='0s',
+            oc = ET.SubElement(v, 'asset-clip', ref='raov', lane=str(len(captions) + 1), offset=t(base), name='speaking avatar', start='0s',
                                duration=t(total))
             px = lambda d: f'{d / height * 100:.4f}'.rstrip('0').rstrip('.')
             ET.SubElement(oc, 'adjust-conform', type='none')
@@ -79,14 +96,13 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
         while ci < len(clips) and clips[ci]['start'] < end:
             c = clips[ci]
             assert c['start'] >= p['start'], 'an audio clip starts before its picture'
-            # a connected clip's offset is on the parent's own timeline, which starts at the parent's start (0s)
-            ET.SubElement(v, 'asset-clip', ref=ids[str(c['path'])], lane='-1', offset=t(c['start'] - p['start']),
+            ET.SubElement(v, 'asset-clip', ref=ids[str(c['path'])], lane='-1', offset=rel(c['start']),
                           name=c['name'], start='0s', duration=t(c['dur']), audioRole='dialogue')
             ci += 1
         for lane, lang, (cs, cd, rows) in caps:
             if p['start'] <= cs < end:
                 ts += 1
-                cap = ET.SubElement(v, 'caption', lane=str(lane), offset=t(cs - p['start']), name=' '.join(rows)[:60],
+                cap = ET.SubElement(v, 'caption', lane=str(lane), offset=rel(cs), name=' '.join(rows)[:60],
                                     start='0s', duration=t(cd), role=f'SRT?captionFormat=SRT.{lang}')
                 ET.SubElement(ET.SubElement(cap, 'text'), 'text-style', ref=f'ts{ts}').text = '\n'.join(rows)
                 ET.SubElement(ET.SubElement(cap, 'text-style-def', id=f'ts{ts}'), 'text-style', font='.AppleSystemUIFont',

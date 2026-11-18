@@ -27,8 +27,8 @@ First you hunt down the code files you think matter, and paste them in.
 ```
 
 - `# ...` is the video title. `## ...` starts a scene; the title is not spoken.
-- **Every other non-empty line is one spoken sentence = one audio clip.** Keep it to one or two short sentences, the length a person says in one breath.
-- **A line starting with `@` is a picture.** It appears when the next sentence starts and stays until the next `@`. This is the beat (the `[>]` of the script).
+- **Every other non-empty line is spoken.** A line may be a whole sentence or a piece of one (cut at a comma so a new picture can come in on that word). Lines are joined into sentences until a line ends with `.`, `?` or `!` (or the scene ends): **one sentence = one audio clip**, said in one go, with no pause inside. Where a picture changes mid-sentence, it lands on the word its line starts with (word times from mlx-whisper, see below).
+- **A line starting with `@` is a picture.** It fades in just before the next line's first word and stays until the next `@`. This is the beat (the `[>]` of the script).
   One `@` line is one picture, written on one line. Words with spaces go in double quotes; options are `name=value`.
 
   **An image** (a screenshot or a page), shown as a white card with rounded corners on the dark background:
@@ -66,8 +66,15 @@ First you hunt down the code files you think matter, and paste them in.
 
 - Each sentence's audio is cached under its text's hash. Change one sentence → only that clip is made again; the timeline after it shifts by itself.
 - Each picture is cached under its `@` line, the image's date, `figs.css`, the figure's HTML, the avatar and the theme. Change one `@` line or one figure → only those pictures are made again; change `figs.css` → all of them (about 0.1 s each, in one browser).
-- Nobody edits times by hand: a picture lasts from the start of its first sentence to the start of the next `@`'s sentence, plus a short pause between sentences.
+- Each sentence clip's word times are cached under the clip's own hash: change one sentence → one clip and one alignment are made again.
+- Nobody edits times by hand. The timing rules (`source/video/timing.py`, each a flag of `build.py`):
+  - no pause inside a sentence; `--gap` 0.3 s between sentences on the same picture;
+  - when the picture changes between sentences, the outgoing picture stays `--dwell` 0.8 s after the words end (`--busy` +0.4 s for a screenshot, a list of 4+ items, a quote or a figure with 30+ words), then the next one fades in; `--scene-gap` 1.4 s of silence between scenes (at least dwell + lead);
+  - a new picture starts fading in `--lead` 0.3 s before its first word;
+  - a picture holds at least `--min-hold` 2.2 s; a shorter beat is merged (a later step of the same figure or list shows from the short one's start; otherwise the short picture is skipped and the one before stays). The build lists every merge. Words are never moved or cut;
+  - cross-dissolves: `--xfade` 0.5 s between different pictures, `--step-xfade` 0.35 s between steps of one `@ fig` or one `@ list` (so the newly lit parts fade in). In the FCPXML they are real Cross Dissolve transitions on the primary storyline; in the rough mp4, ffmpeg `xfade`.
+- Word times: `mlx-whisper` (MIT) in its own venv, `.claude/loops/tts/whisper/venv` (`python3 -m venv .claude/loops/tts/whisper/venv && .claude/loops/tts/whisper/venv/bin/pip install mlx-whisper`), model `mlx-community/whisper-large-v3-turbo`. The known script words are matched to what it heard; a word it missed is placed by character count between its neighbours, and a sentence with under half its words matched (or no venv) is timed by character count. The build says how often.
 
 ## Outputs (not in git)
 
-`.claude/loops/video-out/<video>/` (in this repository): `audio/` (one file per sentence), `frames/` (one PNG per `@`), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).
+`.claude/loops/video-out/<video>/` (in this repository; `--out` for another root): `audio/` (one file per sentence, `align/` its word times), `frames/` (one PNG per `@`), `segments/` (the rough mp4's pieces: a still held, or a dissolve), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).

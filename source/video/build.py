@@ -6,7 +6,8 @@
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
 Writes .claude/loops/video-out/<video>/: audio/ (one wav per sentence), frames/ (one png per @ line), avatar-<hash>.mov
-(the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio and frames are cached by what made them, so a rerun makes only what changed.
+(the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio (one clip per sentence), its word
+times, frames and the mp4's pieces are cached by what made them, so a rerun makes only what changed. Timing rules: timing.py.
 """
 import argparse, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
 from concurrent.futures import ThreadPoolExecutor
@@ -15,10 +16,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(HERE))
-import render, fcpxml, subs, avatar as speaker  # noqa: E402
+import render, fcpxml, subs, align, timing, avatar as speaker  # noqa: E402
 
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
+WHISPER_PY = ROOT / '.claude/loops/tts/whisper/venv/bin/python'
+TRIM_VERSION = 't1'   # bump when trim_and_pad changes, so every clip is cut again
+SEG_VERSION = 's1'    # bump when the rough mp4's segments change
 
 
 def die(msg):
@@ -200,16 +204,132 @@ def probe_seconds(path):
     return float(r.stdout.strip())
 
 
-def pad_to_frames(src, dst, fps):
-    """Copy a 48 kHz mono wav, padded with silence to a whole number of frames, so every time in the timeline is exact."""
+def trim_and_pad(src, dst, fps, head=0.06, tail=0.15):
+    """Copy a 48 kHz mono wav cut to its voice (by loudness, keeping `head` and `tail` seconds of what is around it, so no
+    word is cut), padded with silence to a whole number of frames, so every time in the timeline is exact.
+    -> (frames, vs, ve): the clip's length, and where the voice starts and ends in it (seconds)."""
+    import audioop, warnings
     with wave.open(str(src)) as w:
         data, n = w.readframes(w.getnframes()), w.getnframes()
+    hop = RATE // 100  # 10 ms
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', DeprecationWarning)
+        db = [20 * math.log10(max(audioop.rms(data[i:i + 2 * hop], 2), 1) / 32768) for i in range(0, len(data), 2 * hop)]
+    thr = max(max(db, default=-90) - 40, -55)
+    loud = [i for i, d in enumerate(db) if d > thr]
+    if loud:
+        v0, v1 = loud[0] * hop, min(n, (loud[-1] + 1) * hop)
+    else:
+        v0, v1 = 0, n
+    a, b = max(0, v0 - round(head * RATE)), min(n, v1 + round(tail * RATE))
+    data = data[2 * a:2 * b]
+    m = b - a
     spf = RATE // fps
-    frames = max(1, math.ceil(n / spf))
-    data += b'\0\0' * (frames * spf - n)
+    frames = max(1, math.ceil(m / spf))
+    data += b'\0\0' * (frames * spf - m)
     with wave.open(str(dst), 'wb') as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(data)
-    return frames
+    return frames, round((v0 - a) / RATE, 4), round((v1 - a) / RATE, 4)
+
+
+def join_sentences(lines):
+    """Spoken lines -> sentences: consecutive lines of one scene, joined until a line ends with . ? or ! (or the scene ends).
+    Each sentence is one audio clip; its lines still say where the pictures change."""
+    out = []
+    for g, ln in enumerate(lines):
+        if not out or out[-1]['closed'] or out[-1]['scene'] != ln['scene']:
+            out.append(dict(scene=ln['scene'], lines=[], closed=False))
+        out[-1]['lines'].append(g)
+        out[-1]['closed'] = bool(re.search(r'[.?!]["\'”’)\]]*$', ln['text']))
+    for s in out:
+        s['text'] = ' '.join(lines[g]['text'] for g in s['lines'])
+        s['line'] = lines[s['lines'][0]]['line']
+    return out
+
+
+def busy(spec):
+    """A picture that takes longer to look at: a screenshot or page, a list showing 4+ items, a quote, or a figure that
+    shows 30 or more words at its step."""
+    k = spec.get('kind')
+    if k == 'image':
+        return True
+    if k == 'quote':
+        return True
+    if k == 'list':
+        lit = spec['opts'].get('lit')
+        return (int(lit) if lit and lit.isdigit() else len(spec['args']) - 1) >= 4
+    if k == 'fig' and spec.get('src') and Path(spec['src']).exists():
+        return fig_words(Path(spec['src']).read_text(encoding='utf-8'), spec['opts'].get('step')) >= 30
+    return False
+
+
+def fig_words(page, step):
+    """Words a figure page shows at a step: text outside <style>/<script> and outside elements with data-step > step."""
+    from html.parser import HTMLParser
+    n = int(step) if step and str(step).isdigit() else None
+    void = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr',
+            'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'use', 'stop'}
+
+    class P(HTMLParser):
+        def __init__(self):
+            super().__init__(); self.stack, self.words = [], 0
+
+        def handle_starttag(self, tag, attrs):
+            if tag in void:
+                return
+            a = dict(attrs)
+            hide = tag in ('style', 'script', 'head') or (n is not None and (a.get('data-step') or '').isdigit()
+                                                         and int(a['data-step']) > n)
+            self.stack.append((tag, hide))
+
+        def handle_startendtag(self, tag, attrs):
+            pass
+
+        def handle_endtag(self, tag):
+            if tag in void:
+                return
+            for i in range(len(self.stack) - 1, -1, -1):
+                if self.stack[i][0] == tag:
+                    del self.stack[i:]; break
+
+        def handle_data(self, d):
+            if not any(h for _, h in self.stack):
+                self.words += len(re.findall(r'[A-Za-z0-9]+', d))
+    p = P(); p.feed(page)
+    return p.words
+
+
+def group_of(spec):
+    """Pictures in one group are steps of one build: the same figure at another step=, or the same list, loop, timeline
+    or formula with another lit= / now=."""
+    k = spec.get('kind')
+    if k == 'fig':
+        return ('fig', spec['args'][0])
+    if k in ('list', 'loop', 'timeline', 'formula'):
+        return (k,) + tuple(spec['args'])
+    return None
+
+
+def align_all(sents, adir, args):
+    """Word times for each sentence clip, cached under the clip's own hash (and the model). -> how many were made."""
+    tag = h(args.whisper_model)[:6]
+    for s in sents:
+        s['align'] = adir / 'align' / f'{hashlib.sha1(s["wav"].read_bytes()).hexdigest()[:16]}-{tag}.json'
+    todo = {str(s['align']): s for s in sents if not s['align'].exists()}
+    if todo and not Path(args.whisper_python).exists():
+        print(f'  note: no {args.whisper_python}; pictures inside a sentence are placed by character count '
+              f'(install: python3 -m venv .claude/loops/tts/whisper/venv && .claude/loops/tts/whisper/venv/bin/pip install mlx-whisper)')
+        return 0
+    if todo:
+        (adir / 'align').mkdir(exist_ok=True)
+        print(f'aligning {len(todo)} clip(s) with {args.whisper_model} ...', flush=True)
+        with tempfile.TemporaryDirectory() as td:
+            jobs = Path(td) / 'jobs.json'
+            jobs.write_text(json.dumps([dict(wav=str(s['wav']), text=s['text'], out=o) for o, s in todo.items()]), encoding='utf-8')
+            r = subprocess.run([args.whisper_python, str(HERE / 'align.py'), '--model', args.whisper_model, '--batch', str(jobs)])
+            if r.returncode:
+                print(f'  note: align.py failed (exit {r.returncode}); the clips it did not do are placed by character count')
+    return len(todo)
 
 
 # ---------- build ----------
@@ -225,10 +345,22 @@ def main():
     ap.add_argument('--seed', type=int, default=1, help='tts only: seed passed to tts/say.py')
     ap.add_argument('--tts-python', help='tts only: python that runs tts/say.py (default: this one)')
     ap.add_argument('--jobs', type=int, help='say only: clips made at once (default 4)')
-    ap.add_argument('--gap', type=float, default=0.35, help='seconds between sentences')
-    ap.add_argument('--pic-gap', type=float, default=0.9, help='seconds of silence when the picture changes (the new picture shows during it)')
-    ap.add_argument('--scene-gap', type=float, default=1.6, help='seconds of silence between scenes (the new picture shows during it)')
-    ap.add_argument('--tail', type=float, default=1.0, help='seconds the last picture stays after the last sentence')
+    R = timing.Rules()
+    ap.add_argument('--gap', type=float, default=R.gap, help='seconds of silence between sentences on the same picture')
+    ap.add_argument('--dwell', type=float, default=R.dwell, help='when the picture changes between sentences: seconds the '
+                    'outgoing picture stays after the words end, before the next one fades in')
+    ap.add_argument('--busy', type=float, default=R.busy, help='seconds added to --dwell when the outgoing picture is busy '
+                    '(a screenshot, a list of 4+ items, a figure with many words)')
+    ap.add_argument('--scene-gap', type=float, default=R.scene_gap, help='seconds of silence between scenes (at least dwell + lead)')
+    ap.add_argument('--lead', type=float, default=R.lead, help='a new picture starts fading in this many seconds before its first word')
+    ap.add_argument('--min-hold', type=float, default=R.min_hold, help='a picture stays at least this many seconds; shorter beats are merged')
+    ap.add_argument('--xfade', type=float, default=R.xfade, help='cross-dissolve seconds between different pictures (0: cut)')
+    ap.add_argument('--step-xfade', type=float, default=R.step_xfade, help='cross-dissolve seconds between steps of one figure or list')
+    ap.add_argument('--head', type=float, default=R.head, help='seconds before the first word')
+    ap.add_argument('--tail', type=float, default=R.tail, help='seconds the last picture stays after the last word')
+    ap.add_argument('--whisper-python', default=str(WHISPER_PY), help='python of the venv with mlx-whisper (word times); '
+                    'if it is missing, pictures inside a sentence are placed by character count')
+    ap.add_argument('--whisper-model', default=align.DEFAULT_MODEL, help='mlx-whisper model (Hugging Face id or folder)')
     ap.add_argument('--fps', type=int, default=25, choices=[25, 30, 50, 60])
     ap.add_argument('--fcpxml-version', default='1.10', choices=['1.10', '1.11'])
     ap.add_argument('--no-mp4', action='store_true', help='skip the rough mp4')
@@ -243,6 +375,7 @@ def main():
                     'else the smarshu.com portrait); none: no avatar. It is a speaking overlay video over the stills '
                     '(glow follows the voice), except with --avatar-static or --frames-only, where it is drawn into each still')
     ap.add_argument('--avatar-static', action='store_true', help='draw the avatar into each still, no speaking overlay')
+    ap.add_argument('--timing-json', help='also write the timeline (sentences, pictures, merges) to this file, to check it')
     ap.add_argument('--out', default=str(ROOT / '.claude/loops/video-out'), help='output root')
     args = ap.parse_args()
     t0 = time.time()
@@ -338,14 +471,16 @@ def main():
         print(f'frames: {len(made_f)} made, {len(reused_f)} reused; {len(pics)} pictures in {out}')
         return
 
-    # 2. audio: one clip per sentence, cached by (text, voice settings)
+    # 2. audio: one clip per sentence (spoken lines joined until . ? !), cached by (sentence text, voice settings)
+    lines = sentences  # the spoken lines of the scenes file; they say where pictures change
+    sents = join_sentences(lines)
     voice = Voice(args)
-    for s in sentences:
+    for s in sents:
         s['key'] = voice.key(s['text'])
         s['raw'] = adir / f'{s["key"]}.wav'
         s['wav'] = adir / f'{s["key"]}-{fps}p.wav'
     todo, seen = [], set()
-    for s in sentences:
+    for s in sents:
         if not s['raw'].exists() and s['key'] not in seen:
             todo.append(s); seen.add(s['key'])
     if todo:
@@ -355,53 +490,73 @@ def main():
 
     meta_path = adir / 'durations.json'
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-    for s in sentences:
-        k = f'{s["key"]}-{fps}'
+    for s in sents:
+        k = f'{s["key"]}-{fps}-{TRIM_VERSION}'
         if s['key'] in made_keys or k not in meta or not s['wav'].exists():
-            meta[s['key']] = round(probe_seconds(s['raw']), 4)  # ffprobe: the clip's spoken length
-            meta[k] = pad_to_frames(s['raw'], s['wav'], fps)
-        s['seconds'], s['frames'] = meta[s['key']], meta[k]
+            meta[k] = trim_and_pad(s['raw'], s['wav'], fps)
+        s['frames'], s['vs'], s['ve'] = meta[k]
     meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
 
-    # 3. timeline, in frames
-    gap, pic_gap, scene_gap, tail = (round(x * fps) for x in (args.gap, args.pic_gap, args.scene_gap, args.tail))
-    new_pic = {p['at'] for j, p in enumerate(shown) if j}  # sentences that open with a new picture
-    t = 0
-    for i, s in enumerate(sentences):
-        s['pause'] = t  # where the silence before this sentence begins
-        if i:
-            if s['scene'] != sentences[i - 1]['scene']:
-                t += scene_gap
-            elif i in new_pic:
-                t += pic_gap
-            else:
-                t += gap
-        s['start'] = t
-        t += s['frames']
-    total = t + tail
+    # word times: where each line of a sentence starts in its clip
+    n_aligned = align_all(sents, adir, args)
+    hows = {'aligned': 0, 'interpolated': 0, 'proportional': 0}
+    inner = dict(word=0, interpolated=0, proportional=0)  # line starts inside sentences
+    for s in sents:
+        words = None
+        if s['align'].exists():
+            words = json.loads(s['align'].read_text(encoding='utf-8')).get('words')
+        texts = [lines[g]['text'] for g in s['lines']]
+        s['starts'], s['how'], s['matched'] = align.line_times(texts, words, s['vs'], s['ve'])
+        hows[s['how']] += 1
+        if len(texts) > 1:
+            key = 'proportional' if s['how'] == 'proportional' else None
+            for j in range(1, len(texts)):
+                inner[key or ('word' if s['how'] == 'aligned' else 'interpolated')] += 1
+    # (interpolated counts every inner line of a sentence with at least one interpolated start; good enough to report)
+
+    # 3. timeline, in frames: the timing rules are in timing.py
+    rules = timing.Rules(fps=fps, gap=args.gap, dwell=args.dwell, busy=args.busy, scene_gap=args.scene_gap, lead=args.lead,
+                         min_hold=args.min_hold, head=args.head, tail=args.tail, xfade=args.xfade, step_xfade=args.step_xfade)
+    for p in shown:
+        p['busy'] = busy(p['spec'])
+        p['group'] = group_of(p['spec'])
+        p['scene'] = lines[p['at']]['scene']
+    shown, lay, merges, still_short = timing.merge(sents, shown, rules)
+    trans, E = timing.transitions(shown, lay, rules)
+    total = lay['total']
+    for k, s in enumerate(sents):
+        s['start'] = lay['T'][k]
     for j, p in enumerate(shown):
-        # a new picture appears when the silence before its sentence begins, so the eye has a moment
-        p['start'] = sentences[p['at']]['pause'] if j else 0
-    for j, p in enumerate(shown):
-        p['dur'] = (shown[j + 1]['start'] if j + 1 < len(shown) else total) - p['start']
+        p['start'] = E[j]
+        p['dur'] = (E[j + 1] if j + 1 < len(shown) else total) - E[j]
+        p['xfade'] = trans[j][0] if j else 0
 
     # 4. outputs, only when the timeline changed
     clips = [dict(path=s['wav'], name=f'{i + 1:03d} {s["text"][:50]}', start=s['start'], dur=s['frames'])
-             for i, s in enumerate(sentences)]
-    frames = [dict(path=p['frame'], name=p['name'], start=p['start'], dur=p['dur']) for p in shown]
-    # subtitles: one cue per spoken line, timed as its clip (long lines split into cues in a row)
+             for i, s in enumerate(sents)]
+    frames = [dict(path=p['frame'], name=p['name'], start=p['start'], dur=p['dur'], xfade=p['xfade']) for p in shown]
+    # subtitles: one cue per spoken line, from the word its line starts with to the next line's (the last one of a
+    # sentence: to a moment after the words end); long lines split into cues in a row
+    l_start, l_dur = [0] * len(lines), [0] * len(lines)
+    for k, s in enumerate(sents):
+        nxt = sents[k + 1]['start'] + round(sents[k + 1]['vs'] * fps) if k + 1 < len(sents) else total
+        st = [s['start'] + round(x * fps) for x in s['starts']]
+        end_last = min(s['start'] + round((s['ve'] + 0.4) * fps), nxt)
+        for j, g in enumerate(s['lines']):
+            l_start[g] = st[j]
+            l_dur[g] = max(1, (st[j + 1] if j + 1 < len(st) else end_last) - st[j])
     captions = []
     for lang in [x.strip() for x in args.subs.split(',') if x.strip()]:
         if lang == 'en':
-            texts = [s['text'] for s in sentences]
+            texts = [s['text'] for s in lines]
         else:
             src = (scenes_path.parent if args.scenes else ROOT / 'source/courses' / args.video) / f'subs.{lang}.txt'
             if not src.exists():
-                die(f'--subs {lang} needs {src} (one line per spoken line, {len(sentences)} lines)')
+                die(f'--subs {lang} needs {src} (one line per spoken line, {len(lines)} lines)')
             texts = [x.strip() for x in src.read_text(encoding='utf-8').splitlines() if x.strip()]
-            if len(texts) != len(sentences):
-                die(f'{src.name} has {len(texts)} lines, but the scenes file has {len(sentences)} spoken lines')
-        captions.append((lang, subs.cues(texts, [s['start'] for s in sentences], [s['frames'] for s in sentences])))
+            if len(texts) != len(lines):
+                die(f'{src.name} has {len(texts)} lines, but the scenes file has {len(lines)} spoken lines')
+        captions.append((lang, subs.cues(texts, l_start, l_dur)))
     made_subs = []
     for lang, cl in captions:
         f = out / f'{args.video}.{lang}.srt'
@@ -411,7 +566,7 @@ def main():
     burn = captions[0][1] if captions and not args.no_burn else None
 
     tl = json.dumps([[(str(c['path']), c['start'], c['dur']) for c in clips],
-                     [(str(f['path']), f['start'], f['dur']) for f in frames], title, fps, total])
+                     [(str(f['path']), f['start'], f['dur'], f['xfade']) for f in frames], title, fps, total])
     # the speaking avatar: one overlay video for the whole timeline, made again only when the audio, its times or the avatar change
     overlay, made_ov = None, []
     if avatar and not still_avatar:
@@ -421,13 +576,14 @@ def main():
             t1 = time.time()
             try:
                 info = speaker.make(ov, track=mix(clips, total, fps), rate=RATE, fps=fps, total=total,
-                                    sentence_starts=[c['start'] for c in clips], avatar_path=avatar)
+                                    sentence_starts=[c['start'] + round(s['vs'] * fps) for c, s in zip(clips, sents)],
+                                    avatar_path=avatar)
             except RuntimeError as e:
                 die(str(e))
             made_ov.append(f'{ov.name} ({info["onsets"]} ripples, {ov.stat().st_size / 1e6:.1f} MB, {time.time() - t1:.1f} s)')
         overlay = dict(path=ov, size=speaker.SIZE, centre=speaker.CENTRE)
-    sig = h(tl, args.fcpxml_version, json.dumps(captions), overlay and str(overlay['path']))
-    sig_mp4 = h(tl, json.dumps(burn), subs.ass([], fps, render.W, render.H), overlay and str(overlay['path']))
+    sig = h(tl, args.fcpxml_version, json.dumps(captions), overlay and str(overlay['path']), fcpxml.VERSION)
+    sig_mp4 = h(tl, json.dumps(burn), subs.ass([], fps, render.W, render.H), overlay and str(overlay['path']), SEG_VERSION)
     fx, mp4 = out / f'{args.video}.fcpxml', out / f'{args.video}-rough.mp4'
     state_path = out / 'build-state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
@@ -437,28 +593,44 @@ def main():
                      pictures=frames, clips=clips, total=total, version=args.fcpxml_version, captions=captions,
                      overlay=overlay)
         state['fcpxml'] = sig; made_out.append(fx.name)
+    made_segs = 0
     if not args.no_mp4 and (state.get('mp4') != sig_mp4 or not mp4.exists()):
-        rough(mp4, frames, clips, total, fps, out, burn, overlay)
-        state['mp4'] = sig_mp4; made_out.append(mp4.name)
+        made_segs = rough(mp4, frames, clips, total, fps, out, burn, overlay)
+        state['mp4'] = sig_mp4; made_out.append(f'{mp4.name} ({made_segs} segments made)')
     state_path.write_text(json.dumps(state, indent=1))
 
     # 5. report
     sec = lambda f: f / fps
     print(f'\n{title}  ({scenes_path.relative_to(ROOT) if scenes_path.is_relative_to(ROOT) else scenes_path})')
-    print(f'{"scene":<40} {"sentences":>9} {"start":>7} {"seconds":>8}')
+    print(f'{"scene":<40} {"lines":>5} {"sentences":>9} {"start":>7} {"seconds":>8}')
     for si, sc in enumerate(scenes):
-        ss = [s for s in sentences if s['scene'] == si]
+        ss = [s for s in sents if s['scene'] == si]
         if not ss:
             continue
-        nxt = next((s['start'] for s in sentences if s['scene'] > si), total)
-        print(f'{sc["title"][:40]:<40} {len(ss):>9} {sec(ss[0]["start"]):>7.1f} {sec(nxt - ss[0]["start"]):>8.1f}')
-    print(f'{"total":<40} {len(sentences):>9} {"":>7} {sec(total):>8.1f}')
-    n_audio = len({s['key'] for s in sentences})
-    print(f'\naudio:  {len(made_keys)} made, {n_audio - len(made_keys)} reused')
+        nxt = next((s['start'] for s in sents if s['scene'] > si), total)
+        print(f'{sc["title"][:40]:<40} {sum(len(s["lines"]) for s in ss):>5} {len(ss):>9} {sec(ss[0]["start"]):>7.1f} '
+              f'{sec(nxt - ss[0]["start"]):>8.1f}')
+    print(f'{"total":<40} {len(lines):>5} {len(sents):>9} {"":>7} {sec(total):>8.1f}')
+    n_audio = len({s['key'] for s in sents})
+    print(f'\naudio:  {len(made_keys)} sentence clip(s) made, {n_audio - len(made_keys)} reused')
     for s in todo[:10]:
         print(f'  made  line {s["line"]}: {s["text"][:70]}')
     if len(todo) > 10:
         print(f'  ... and {len(todo) - 10} more')
+    multi = sum(1 for s in sents if len(s['lines']) > 1)
+    print(f'words:  {n_aligned} clip(s) aligned now; {multi} sentences have a picture or cue change inside: '
+          f'{inner["word"]} line starts on a matched word, {inner["interpolated"]} in sentences with some interpolated '
+          f'starts, {inner["proportional"]} by character count ({hows["proportional"]} sentence(s) fell back)')
+    for s in sents:
+        if s['how'] != 'aligned' and len(s['lines']) > 1:
+            print(f'  {s["how"]:<12} line {s["line"]} ({s["matched"]:.0%} of words matched): {s["text"][:70]}')
+    holds = lay['hold']
+    print(f'pictures: {len(shown)} shown, shortest hold {sec(min(holds)):.2f} s (min {args.min_hold} s), '
+          f'{sum(1 for t in trans[1:] if t[1] == "dissolve")} dissolves, {sum(1 for t in trans[1:] if t[1] == "step")} step dissolves')
+    for p, kept, secs, how in merges:
+        print(f'  merged line {p["spec"]["line"]} ({p["spec"]["raw"][2:50]}, {secs:.2f} s): {how} (line {kept["spec"]["line"]})')
+    for p, secs in still_short:
+        print(f'  short  line {p["spec"]["line"]} ({p["spec"]["raw"][2:50]}): {secs:.2f} s, nothing in its scene to merge with')
     print(f'frames: {len(made_f)} made, {len(reused_f)} reused')
     for p in made_f[:10]:
         print(f'  made  line {p["spec"]["line"]}: {p["spec"]["raw"][:70]}')
@@ -467,6 +639,15 @@ def main():
     print(f'timeline: {"rebuilt " + ", ".join(made_out) if made_out else "unchanged, srt, fcpxml and mp4 reused"}')
     print(f'out: {out}')
     print(f'done in {time.time() - t0:.1f} s')
+    if args.timing_json:
+        Path(args.timing_json).write_text(json.dumps(dict(
+            fps=fps, total=total,
+            sentences=[dict(line=s['line'], text=s['text'], start=s['start'], frames=s['frames'], vs=s['vs'], ve=s['ve'],
+                            starts=s['starts'], how=s['how'], lines=[lines[g]['line'] for g in s['lines']]) for s in sents],
+            pictures=[dict(line=p['spec']['line'], raw=p['spec']['raw'], fade_in=lay['F'][j], start=p['start'], dur=p['dur'],
+                           hold=lay['hold'][j], xfade=p['xfade'], busy=p['busy']) for j, p in enumerate(shown)],
+            merges=[dict(line=p['spec']['line'], into=kept['spec']['line'], seconds=secs, how=how) for p, kept, secs, how in merges],
+        ), indent=1), encoding='utf-8')
 
 
 def mix(clips, total, fps):
@@ -481,20 +662,69 @@ def mix(clips, total, fps):
     return bytes(track)
 
 
+def segments(frames, total):
+    """The picture track as pieces: [('hold', png, n) | ('fade', png_from, png_to, n)], n frames each, in order.
+    A dissolve of d frames is centred on its edit point."""
+    out, t = [], 0
+    for j, f in enumerate(frames):
+        d_in = f['xfade'] if j else 0
+        nxt = frames[j + 1] if j + 1 < len(frames) else None
+        d_out = nxt['xfade'] if nxt else 0
+        if d_in:
+            out.append(('fade', str(frames[j - 1]['path']), str(f['path']), d_in)); t += d_in
+        end = (nxt['start'] - d_out // 2) if nxt else total
+        if end > t:
+            out.append(('hold', str(f['path']), end - t)); t = end
+    assert t == total, (t, total)
+    return out
+
+
+def segment(seg, dst, fps):
+    """One piece of the picture track as a small H.264 file (no B-frames, so the pieces join exactly)."""
+    enc = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '16', '-tune', 'stillimage', '-bf', '0', '-pix_fmt', 'yuv420p',
+           '-r', str(fps), '-video_track_timescale', str(fps * 1000)]
+    if seg[0] == 'hold':
+        _, a, n = seg
+        cmd = ['-loop', '1', '-framerate', str(fps), '-i', a, '-vf', 'format=yuv420p', '-frames:v', str(n)]
+    else:
+        _, a, b, n = seg
+        d = n / fps
+        cmd = ['-loop', '1', '-framerate', str(fps), '-t', f'{d + 1:.3f}', '-i', a,
+               '-loop', '1', '-framerate', str(fps), '-t', f'{d + 1:.3f}', '-i', b,
+               '-filter_complex', f'[0:v]format=yuv444p,settb=1/{fps}[a];[1:v]format=yuv444p,settb=1/{fps}[b];'
+                                  f'[a][b]xfade=transition=fade:duration={d:.4f}:offset=0,format=yuv420p[v]',
+               '-map', '[v]', '-frames:v', str(n)]
+    tmp = dst.with_suffix('.part.mp4')
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *cmd, *enc, str(tmp)], capture_output=True, text=True)
+    if r.returncode:
+        raise RuntimeError(f'ffmpeg could not make a segment of the rough mp4: {r.stderr.strip()[-600:]}')
+    tmp.replace(dst)
+
+
 def rough(mp4, frames, clips, total, fps, out, burn=None, overlay=None):
-    """Stills plus one audio track, no transitions: a quick check that words and pictures line up."""
+    """Stills with cross-dissolves plus one audio track: a quick check that words and pictures line up.
+    The picture track is made of small pieces (a still held, or a dissolve between two), each cached by what it shows
+    and how long, then joined and laid under the avatar and the subtitles in one pass. -> pieces made."""
     track = mix(clips, total, fps)
+    sdir = out / 'segments'
+    sdir.mkdir(exist_ok=True)
+    segs = segments(frames, total)
+    files = [sdir / f'{h(SEG_VERSION, fps, *s)}.mp4' for s in segs]
+    todo = {str(f): s for f, s in zip(files, segs) if not f.exists()}
+    if todo:
+        try:
+            with ThreadPoolExecutor(6) as ex:
+                list(ex.map(lambda kv: segment(kv[1], Path(kv[0]), fps), todo.items()))
+        except RuntimeError as e:
+            die(str(e))
     with tempfile.TemporaryDirectory() as td:
         wav = Path(td) / 'track.wav'
         with wave.open(str(wav), 'wb') as w:
             w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(bytes(track))
-        # each still is a looped input cut to its exact number of frames, then all are joined (frame-exact, unlike the concat demuxer)
-        ins, graph = [], []
-        for i, f in enumerate(frames):
-            ins += ['-loop', '1', '-framerate', str(fps), '-i', str(f['path'])]
-            graph.append(f'[{i}:v]trim=end_frame={f["dur"]},setpts=PTS-STARTPTS,format=yuv420p[v{i}]')
-        n = len(frames)
-        graph.append(''.join(f'[v{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=0' + ('[s]' if overlay else '[c]' if burn else '[v]'))
+        lst = Path(td) / 'pieces.txt'
+        lst.write_text(''.join(f"file '{f}'\n" for f in files), encoding='utf-8')
+        ins = ['-f', 'concat', '-safe', '0', '-i', str(lst)]
+        graph, n = [f'[0:v]setpts=N/({fps}*TB),format=yuv420p' + ('[s]' if overlay else '[c]' if burn else '[v]')], 1
         if overlay:  # the speaking avatar over the stills, its centre where the static one was (from its colour|alpha preview)
             ins += ['-i', str(speaker.preview_path(overlay['path']))]
             z = overlay['size']
@@ -508,12 +738,14 @@ def rough(mp4, frames, clips, total, fps, out, burn=None, overlay=None):
             graph.append(f"[c]ass='{ass}':fontsdir='{render.FONTS}'[v]")
         tmp = mp4.with_suffix('.part.mp4')
         r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-i', str(wav), '-filter_complex', ';'.join(graph),
-                            '-map', '[v]', '-map', f'{n}:a', '-r', str(fps), '-c:v', 'libx264', '-preset', 'veryfast',
+                            '-map', '[v]', '-map', f'{n}:a', '-r', str(fps), '-frames:v', str(total),
+                            '-c:v', 'libx264', '-preset', 'veryfast',
                             '-tune', 'stillimage', '-crf', '26', '-c:a', 'aac', '-b:a', '128k',
                             '-movflags', '+faststart', str(tmp)], capture_output=True, text=True)
         if r.returncode:
             die(f'ffmpeg could not make the rough mp4: {r.stderr.strip()[-600:]}')
         tmp.replace(mp4)
+    return len(todo)
 
 
 if __name__ == '__main__':
