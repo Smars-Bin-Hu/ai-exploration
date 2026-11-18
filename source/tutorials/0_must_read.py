@@ -5,7 +5,7 @@
 COVER = None
 PAGES = []
 
-CLOSING = dict(kicker='Harness tutorials · Read this first', title='Six picture manuals: when to open each',
+CLOSING = dict(kicker='Harness tutorials · Read this first · Interim: videos will replace them', title='Six picture manuals: when to open each',
   text=[
    'Not installed yet? First **AI Exploration/4 Install the harness/**.',
    ('steps', [
