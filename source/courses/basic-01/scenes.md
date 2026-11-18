@@ -8,9 +8,9 @@ Plenty of companies already pay for an AI chat tool or a coding agent,
 @ logos claude-code codex github-copilot
 like Claude Code, Codex or GitHub Copilot.
 @ fig small-slice step=1
-But what we actually see is that many teams still use it for only a small slice of their work.
+But what we actually see is that many teams still use AI for only a small slice of their work.
 @ fig small-slice step=2
-And lots of people still use it the same old way, as a chat:
+And lots of people even still use it the same old way, as a chat:
 @ fig small-slice step=3
 ask a question, get an answer.
 
@@ -45,7 +45,7 @@ The AI hasn't written a single line yet, and you've already spent half an hour.
 Then you hit Enter and hope it gets it right.
 
 @ fig hook-answer step=1
-What you usually get is an answer you're maybe eighty or ninety percent happy with.
+But what you usually get is an answer you're maybe eighty or ninety percent happy with.
 @ fig hook-answer step=2
 You paste its code back in, run the tests yourself, check the results yourself,
 @ fig hook-answer step=3
@@ -53,9 +53,9 @@ and some of it's still wrong,
 @ fig hook-answer step=4
 so you spend even longer reviewing it.
 @ fig hook-answer step=5
-In the end, it feels faster to just write it yourself.
+In the end, it feels faster to just write it yourself,
 @ fig hook-answer step=6
-The AI doesn't get your complex system, and it can't see the traps you know are there.
+because the AI doesn't get your complex system, and it can't see the traps you know are there.
 
 @ big "3" "things this video makes clear" icon=list-checks
 In this video I want to make three things clear:
@@ -68,7 +68,7 @@ and what the missing piece is called.
 
 ## 1 Your pain points
 @ list "Your pain points" "It doesn't know your project|folder-search" "It forgets|brain" "It doesn't always follow your rules|list-x" "It's always sure of its own work|badge-check" "You can't see what it did|eye-off"
-If you've used AI like this, you've probably hit every one of these.
+If you've used AI like this, you've probably run into every one of the following problems.
 
 @ fig pain-context step=1
 One: it doesn't know your project.
@@ -82,7 +82,7 @@ Open a new chat, and everything you said before is gone,
 @ fig pain-memory step=3
 so you have to say it all again.
 @ fig pain-memory step=4
-And the longer a chat goes on, the worse it seems to get:
+And the longer you stay in the same chat, the worse the AI seems to do:
 @ fig pain-memory step=5
 it forgets things you agreed on at the start.
 
@@ -93,7 +93,7 @@ Most of the time it listens,
 @ fig pain-rules step=3
 but every so often it skips exactly the step you care about most.
 @ fig pain-rules step=4
-And the longer the chat gets, the more its attention drifts, and the less it remembers from earlier.
+That's especially true in long chats: the more history piles up, the more its attention drifts, and the less it remembers from earlier.
 
 @ fig pain-confident step=1
 Four: it's always sure of its own work.
@@ -160,7 +160,7 @@ An agent is an LLM plus tool calling, meaning it can use tools.
 Think of tools as its hands:
 @ fig llm-vs-agent step=5
 once it's thought things through, it can go and change the code on your machine itself, run commands, search the web, open a browser.
-But hands alone aren't enough;
+But hands alone aren't enough,
 @ loop "LLM|bot" "Tool|square-terminal" "Result|file-text" "Next step|arrow-right"
 the key is that it loops.
 @ loop "LLM|bot" "Tool|square-terminal" "Result|file-text" "Next step|arrow-right" lit=2
@@ -175,7 +175,7 @@ Then it calls again, looks again, and keeps going until the job's done.
 @ formula "Agent" "LLM" "Hands + Loop"
 Give an LLM hands and a loop of its own, and you've got an agent.
 @ fig llm-vs-agent step=7
-It doesn't just answer you anymore;
+It doesn't just answer you anymore,
 @ fig llm-vs-agent step=8
 it can finish a piece of work on its own.
 
@@ -188,26 +188,24 @@ Look back over the last few years:
 @ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=1
 in 2024, people were figuring out how to write good prompts.
 @ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=2
-In 2025, people found that to get steady results, you have to manage the AI's context well.
-That's context engineering.
+In 2025, people found that to get steady results, you have to manage the AI's context well, and that's context engineering.
 @ logos claude-code codex github-copilot
 And by 2026, coding agents like Claude Code, Codex and GitHub Copilot can really get work done for you.
 @ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Coding agents at work" now=3
 And that's where the new problems start.
 
 @ fig nine-gaps step=1
-Companies found that to really adopt agents, they have to solve these.
+Companies found that to really adopt agents, they have to solve these problems.
 
 @ fig nine-gaps step=2
-One: it doesn't know your systems or your projects, so someone still has to explain them every time.
+One: the agent doesn't know your systems or your projects, so someone still has to explain them every time.
 
 @ fig nine-gaps step=3
 Two: how do you keep its memory from one session to the next?
 If a session dies, how does a new one pick up the task?
 
 @ fig nine-gaps step=4
-Three: people only use the agent to change code.
-Running tests, the CI-CD pipeline, updating tickets, people still do all of that.
+Three: people only use the agent to change code, and still handle the tests, the CI-CD pipeline and the tickets themselves.
 
 @ fig nine-gaps step=5
 Four: it doesn't always follow the rules you agreed on.
@@ -246,9 +244,9 @@ but now a program does it.
 @ fig program-vs-agent step=3
 A program is deterministic,
 @ fig program-vs-agent step=4
-it doesn't spend tokens, and it doesn't depend on the model behaving itself.
+it doesn't spend tokens, and it doesn't depend on the model behaving itself,
 @ fig program-vs-agent step=5
-So jobs with a fixed answer go to programs,
+so jobs with a fixed answer go to programs,
 @ fig program-vs-agent step=6
 and anything that needs judgment goes to the agent.
 
@@ -269,7 +267,7 @@ and my harness helps you steer it better.
 Let's go back to those problems and see how my harness handles each one.
 
 @ list "How my harness handles them" "It doesn't know your systems|folder-search" "Memory across sessions|history" "Tests, pipelines, tickets · server access|server" "Sure it got it right|badge-check" "Time and money, not recorded|receipt" lit=1
-First: it doesn't know your systems or your projects, so someone has to explain them every time.
+First: the agent doesn't know your systems or your projects, so someone has to explain them every time.
 
 @ fig kb-build step=1
 I built a standard framework that turns a codebase into a knowledge base.
@@ -363,13 +361,13 @@ which tool calls failed.
 It's all there at a glance.
 
 @ board/tour-lobby crop=0,0,1,0.62
-There's a lot more, but no time to cover it all here.
+There are plenty of other problems too, but there's no time to go through them all here.
 
 ## 6 Summary
 @ card "AI hasn't gotten dumber" icon=brain
-So, AI hasn't gotten dumber;
+So, AI hasn't gotten dumber,
 @ timeline "2024|Prompt engineering" "2025|Context engineering" "2026|Harness engineering" now=1
-the way we use it is just stuck in 2024.
+it's the way we use it that's still stuck in 2024.
 @ fig who-does-what step=1
 We treat it as a chatbot, and people still do the copying and pasting, watch the process, and do the checks.
 
@@ -380,7 +378,7 @@ With a harness, a program also handles the process, the checks and the boundarie
 @ fig who-does-what step=4
 And people can finally step back,
 @ board/accept box=0.045,0.85,0.135,0.11 text="You make the call: Accept and close"
-make the calls, and sign off.
+and just make the calls and sign off.
 
 @ quote "Which stronger model should we switch to?" by="Don't ask this first"
 If you're rolling out AI on your team, don't rush to ask, "Which stronger model should we switch to?"
