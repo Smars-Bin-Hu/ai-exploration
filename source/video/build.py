@@ -5,9 +5,10 @@
     .venv/bin/python source/video/build.py basic-01 --voice tts:qwen3 --ref .claude/loops/voice/ref/ref-13s.wav
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
-Writes .claude/loops/video-out/<video>/: audio/ (one wav per sentence), frames/ (one png per @ line), avatar-<hash>.mov
-(the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio (one clip per sentence), its word
-times, frames and the mp4's pieces are cached by what made them, so a rerun makes only what changed. Timing rules: timing.py.
+Writes .claude/loops/video-out/<video>/: audio/ (one wav per paragraph, and its sentences cut out of it), frames/ (one png
+per @ line), avatar-<hash>.mov (the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio
+(one clip per paragraph), its word times, frames and the mp4's pieces are cached by what made them, so a rerun makes only
+what changed. Timing rules: timing.py.
 """
 import argparse, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
 from concurrent.futures import ThreadPoolExecutor
@@ -23,8 +24,9 @@ DEFAULT_SAY_VOICE = 'Samantha'
 WHISPER_PY = ROOT / '.claude/loops/tts/whisper/venv/bin/python'
 TRIM_VERSION = 't1'   # bump when trim_and_pad changes, so every clip is cut again
 SEG_VERSION = 's1'    # bump when the rough mp4's segments change
-LOUDNESS, PEAK = -18.0, -1.5   # every sentence clip is set to this integrated loudness (LUFS), true peak at most PEAK dBTP
+LOUDNESS, PEAK = -18.0, -1.5   # every paragraph clip is set to this integrated loudness (LUFS), true peak at most PEAK dBTP
 LOUD_VERSION = 'n1'   # bump when normalise changes, so every clip is normalised again (no voice made again)
+CPS = 16.0            # letters per second the voice speaks (Kokoro am_fenrir: 16 to 17), to keep a clip under --para-max
 
 
 def die(msg):
@@ -38,14 +40,18 @@ def h(*parts):
 # ---------- scenes file ----------
 
 def parse(path):
-    """-> title, scenes: [dict(title, items: [('pic', spec) | ('say', text)])]"""
+    """-> title, scenes: [dict(title, items: [('pic', spec) | ('say', dict(text, line, brk))])]; brk: a blank line comes
+    between this spoken line and the one before it (a paragraph break; @ lines do not break, a scene heading does)."""
     title, scenes = None, []
+    blank = False  # a blank line since the last spoken line: the next spoken line starts a paragraph
     for no, raw in enumerate(Path(path).read_text(encoding='utf-8').splitlines(), 1):
         line = raw.strip()
-        if not line or line.startswith('//'):
+        if not line:
+            blank = True; continue
+        if line.startswith('//'):
             continue
         if line.startswith('## '):
-            scenes.append(dict(title=line[3:].strip(), items=[])); continue
+            scenes.append(dict(title=line[3:].strip(), items=[])); blank = False; continue
         if line.startswith('# '):
             title = line[2:].strip(); continue
         if not scenes:
@@ -55,7 +61,8 @@ def parse(path):
         else:
             text = re.sub(r'\s*\[>\]\s*', ' ', line).strip()
             if text:
-                scenes[-1]['items'].append(('say', dict(text=text, line=no)))
+                scenes[-1]['items'].append(('say', dict(text=text, line=no, brk=blank)))
+                blank = False
     return title or Path(path).parent.name, scenes
 
 
@@ -112,7 +119,7 @@ def pic_spec(line, no, scene_title):
 def figs_dir(scenes_path):
     """Hand-made figures: <scenes file's folder>/<scenes name>-figs/ if it exists (e.g. samples-figs/), else .../figs/."""
     own = scenes_path.parent / f'{scenes_path.stem}-figs'
-    return own if own.is_dir() else scenes_path.parent / 'figs'
+    return own.resolve() if own.is_dir() else scenes_path.parent / 'figs'  # resolved: a linked folder keeps its css links
 
 
 def kicker_from(scene_title):
@@ -164,6 +171,9 @@ class Voice:
                              ref_txt.read_text(encoding='utf-8').strip() if ref_txt.exists() else '', self.seed)
             sys.path.insert(0, str(self.script.parent))
             import say as tts_say
+            preset = tts_say.MODELS.get(self.model, (None, None, None, {}))[3]
+            if preset:  # the preset's settings (kokoro-seedvc: voice, f0 model, question rise) are part of the key
+                self.settings += ('preset', json.dumps(preset, sort_keys=True))
             # a checked model (vibevoice): say.py cleans and checks every take, and speaks a short line together with
             # the sentence before it (or after it, for the first) and cuts it out; that neighbour is part of the key
             base = tts_say.MODELS.get(self.model, (None, None, self.model))[2]
@@ -189,8 +199,10 @@ class Voice:
     def around(self, sents, k, version=None):
         """-> (before, after): the neighbours a short sentence is spoken with, or ('', ''). Since check version c3 both
         (the short line in the middle); before it, the one before (the one after, for the first sentence)."""
+        if self.kind != 'tts' or not self.checked:
+            return '', ''
         short = 5 if version == 'c2' else self.short_words
-        if self.kind != 'tts' or not self.checked or len(sents[k]['text'].split()) >= short:
+        if len(sents[k]['text'].split()) >= short:
             return '', ''
         before = sents[k - 1]['text'] if k else ''
         after = sents[k + 1]['text'] if k + 1 < len(sents) else ''
@@ -351,18 +363,171 @@ def normalise(src, dst):
 
 
 def join_sentences(lines):
-    """Spoken lines -> sentences: consecutive lines of one scene, joined until a line ends with . ? or ! (or the scene ends).
-    Each sentence is one audio clip; its lines still say where the pictures change."""
-    out = []
+    """Spoken lines -> sentences: consecutive lines of one scene, joined until a line ends with . ? or ! (or the scene or
+    the paragraph ends). Each sentence knows its paragraph (para): a scene's lines with no blank line between them."""
+    out, para = [], -1
     for g, ln in enumerate(lines):
-        if not out or out[-1]['closed'] or out[-1]['scene'] != ln['scene']:
-            out.append(dict(scene=ln['scene'], lines=[], closed=False))
+        new_para = not out or out[-1]['scene'] != ln['scene'] or ln.get('brk')
+        if new_para:
+            para += 1
+        if new_para or out[-1]['closed']:
+            out.append(dict(scene=ln['scene'], para=para, lines=[], closed=False))
         out[-1]['lines'].append(g)
         out[-1]['closed'] = bool(re.search(r'[.?!]["\'”’)\]]*$', ln['text']))
     for s in out:
         s['text'] = ' '.join(lines[g]['text'] for g in s['lines'])
         s['line'] = lines[s['lines'][0]]['line']
     return out
+
+
+def _split_even(size, n):
+    """Cut a list of sizes into n contiguous runs, the largest run as small as it can be. -> [(start, end)]."""
+    n = min(n, len(size))
+    pre = [0]
+    for x in size:
+        pre.append(pre[-1] + x)
+    best = {}  # (i, m): smallest max for size[i:] in m runs, and where the first run ends
+
+    def go(i, m):
+        if (i, m) in best:
+            return best[i, m]
+        if m == 1:
+            r = (pre[-1] - pre[i], len(size))
+        else:
+            r = min(((max(pre[e] - pre[i], go(e, m - 1)[0]), e) for e in range(i + 1, len(size) - m + 2)))
+        best[i, m] = r
+        return r
+    out, i = [], 0
+    for m in range(n, 0, -1):
+        e = go(i, m)[1]
+        out.append((i, e)); i = e
+    return out
+
+
+def make_chunks(sents, max_s, cps):
+    """Sentences -> the units the voice speaks in one call: a whole paragraph, or, when it would take longer than max_s
+    seconds (cps letters per second), a run of whole sentences of it, the runs about equally long. Sets s['chunk'].
+    -> [dict(text, sents: [sentence indexes], para, scene)]"""
+    out, k = [], 0
+    while k < len(sents):
+        j = k
+        while j < len(sents) and sents[j]['para'] == sents[k]['para']:
+            j += 1
+        para = list(range(k, j))
+        size = [len(sents[i]['text']) + 1 for i in para]
+        limit = max_s * cps
+        n = max(1, math.ceil(sum(size) / limit))
+        while True:  # the fewest runs that fit, split so the longest run is as short as it can be
+            groups = _split_even(size, n)
+            if n >= len(size) or max(sum(size[a:b]) for a, b in groups) <= limit:
+                break
+            n += 1
+        out += [para[a:b] for a, b in groups]
+        k = j
+    chunks = []
+    for ci, idx in enumerate(out):
+        for i in idx:
+            sents[i]['chunk'] = ci
+        chunks.append(dict(text=' '.join(sents[i]['text'] for i in idx), sents=idx, para=sents[idx[0]]['para'],
+                           scene=sents[idx[0]]['scene'], line=sents[idx[0]]['line']))
+    return chunks
+
+
+def _db10(data):
+    """16-bit mono PCM -> loudness in dB of each 10 ms."""
+    import audioop, warnings
+    hop = RATE // 100
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', DeprecationWarning)
+        return [20 * math.log10(max(audioop.rms(data[i:i + 2 * hop], 2), 1) / 32768) for i in range(0, len(data), 2 * hop)]
+
+
+def cut_chunk(c, sents, lines, fps, adir):
+    """One paragraph clip (normalised, whole frames) -> one piece per sentence, cut where the voice is quietest between
+    the last word of one sentence and the first of the next (word times from mlx-whisper; without them, where the
+    letters say, +-0.5 s), on a frame boundary so the pieces put back to back are the clip, sample for sample.
+    Sets on each sentence: norm (its piece), frames, vs, ve (voice start and end in the piece, s), words (its word
+    times, s within the piece), cut (how the cut before it was found)."""
+    idx = c['sents']
+    words = None
+    if c['align'].exists():
+        words = json.loads(c['align'].read_text(encoding='utf-8')).get('words')
+    with wave.open(str(c['norm'])) as w:
+        data = w.readframes(w.getnframes())
+    spf = RATE // fps
+    n_frames = len(data) // 2 // spf
+    db = _db10(data)
+    thr = max(max(db, default=-90) - 40, -55)
+    hyp = [(align.norm(wd), a, b) for wd, a, b in (words or []) if align.norm(wd)]
+    toks = []  # (normalised word, sentence position in chunk, char position in chunk text)
+    pos = 0
+    for j, i in enumerate(idx):
+        for wd in sents[i]['text'].split():
+            if align.norm(wd):
+                toks.append((align.norm(wd), j, pos))
+            pos += len(wd) + 1
+    at = {}
+    if toks and hyp:
+        import difflib
+        sm = difflib.SequenceMatcher(None, [t[0] for t in toks], [x[0] for x in hyp], autojunk=False)
+        for a, b, n in sm.get_matching_blocks():
+            for q in range(n):
+                at[a + q] = hyp[b + q]
+    matched = len(at) / max(len(toks), 1)
+    cuts, hows = [0], []
+    total_chars = max(pos - 1, 1)
+    for j in range(1, len(idx)):
+        before = [at[q][2] for q, t in enumerate(toks) if t[1] == j - 1 and q in at]
+        after = [at[q][1] for q, t in enumerate(toks) if t[1] == j and q in at]
+        if matched >= 0.5 and before and after and after[0] > before[-1] - 0.05:
+            lo, hi, how = before[-1] - 0.04, after[0] + 0.04, 'words'
+        else:  # where the letters say, with room either side
+            first = next(t[2] for t in toks if t[1] == j) if any(t[1] == j for t in toks) else 0
+            mid = c['vs'] + (c['ve'] - c['vs']) * first / total_chars
+            lo, hi, how = mid - 0.5, mid + 0.5, 'letters'
+        lo_f = max(cuts[-1] + 1, math.ceil(lo * fps))
+        hi_f = min(n_frames - 1, math.floor(hi * fps))
+        cand = list(range(lo_f, hi_f + 1)) or [min(max(cuts[-1] + 1, round((lo + hi) / 2 * fps)), n_frames - 1)]
+
+        def quiet(f):  # loudness of the 20 ms around the frame boundary
+            k = f * spf * 100 // RATE
+            return max(db[max(k - 1, 0):k + 1] or [-90])
+        cuts.append(min(cand, key=lambda f: (quiet(f), abs(f - (lo + hi) / 2 * fps))))
+        hows.append(how)
+    cuts.append(n_frames)
+    for j, i in enumerate(idx):
+        s = sents[i]
+        f0, f1 = cuts[j], cuts[j + 1]
+        if len(idx) == 1:
+            s['norm'] = c['norm']
+        else:
+            s['norm'] = adir / f'{c["norm"].stem}-{f0}-{f1}.wav'
+            if not s['norm'].exists():
+                tmp = Path(str(s['norm']) + '.part.wav')
+                with wave.open(str(tmp), 'wb') as w:
+                    w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE)
+                    w.writeframes(data[2 * f0 * spf:2 * f1 * spf])
+                tmp.replace(s['norm'])
+        t0, t1 = f0 / fps, f1 / fps
+        loud = [k for k in range(int(t0 * 100), min(len(db), int(t1 * 100))) if db[k] > thr]
+        s['frames'] = f1 - f0
+        s['vs'] = round(loud[0] / 100 - t0, 4) if loud else 0.0
+        s['ve'] = round(min((loud[-1] + 1) / 100, t1) - t0, 4) if loud else round(t1 - t0, 4)
+        # the voice converter can leave a breath or a low noise in a pause, which loudness counts as voice: where the
+        # sentence's first and last words were heard, they say where the voice starts and ends
+        mine = [q for q, tk in enumerate(toks) if tk[1] == j]
+        if matched >= 0.5 and mine and mine[0] in at and t0 <= at[mine[0]][1] < t1:
+            k = int(max(t0 + s['vs'], at[mine[0]][1] - 0.03) * 100)  # Whisper often starts a word early, in the pause
+            k0 = k
+            while k < min(len(db), int(t1 * 100)) - 1 and k < k0 + 50 and db[k] < max(db, default=-90) - 30:
+                k += 1
+            s['vs'] = round(k / 100 - t0, 4) if k < k0 + 50 else round(k0 / 100 - t0, 4)
+        if matched >= 0.5 and mine and mine[-1] in at and t0 < at[mine[-1]][2] <= t1:
+            s['ve'] = round(max(min(s['ve'], at[mine[-1]][2] - t0 + 0.12), s['vs'] + 0.1), 4)
+        s['words'] = None if words is None else [[wd, round(a - t0, 3), round(b - t0, 3)] for wd, a, b in words
+                                                 if t0 <= (a + b) / 2 < t1]
+        s['cut'] = hows[j - 1] if j else None
+        s['matched_chunk'] = matched
 
 
 def busy(spec):
@@ -429,7 +594,7 @@ def group_of(spec):
 
 
 def align_all(sents, adir, args):
-    """Word times for each sentence clip, cached under the clip's own hash (and the model). -> how many were made."""
+    """Word times for each paragraph clip, cached under the clip's own hash (and the model). -> how many were made."""
     tag = h(args.whisper_model)[:6]
     for s in sents:
         s['align'] = adir / 'align' / f'{hashlib.sha1(s["wav"].read_bytes()).hexdigest()[:16]}-{tag}.json'
@@ -464,8 +629,12 @@ def main():
     ap.add_argument('--tts-python', help='tts only: python that runs tts/say.py (default: this one)')
     ap.add_argument('--jobs', type=int, help='say only: clips made at once (default 4)')
     R = timing.Rules()
-    ap.add_argument('--gap', type=float, default=R.gap, help='seconds of silence between sentences on the same picture')
-    ap.add_argument('--dwell', type=float, default=R.dwell, help='when the picture changes between sentences: seconds the '
+    ap.add_argument('--gap', type=float, default=R.gap, help='seconds of silence between two clips of one long paragraph '
+                    '(inside a clip the voice keeps its own pauses)')
+    ap.add_argument('--para-gap', type=float, default=R.para_gap, help='seconds of silence between paragraphs on the same picture')
+    ap.add_argument('--para-max', type=float, default=20.0, help='a paragraph longer than this many seconds of speech (at '
+                    f'{CPS:.0f} letters a second) is spoken in runs of whole sentences of about equal length')
+    ap.add_argument('--dwell', type=float, default=R.dwell, help='when the picture changes between paragraphs: seconds the '
                     'outgoing picture stays after the words end, before the next one fades in')
     ap.add_argument('--busy', type=float, default=R.busy, help='seconds added to --dwell when the outgoing picture is busy '
                     '(a screenshot, a list of 4+ items, a figure with many words)')
@@ -538,7 +707,7 @@ def main():
                     it['src'] = src
                 pics.append(dict(spec=it, scene=si, at=n_sent))
             else:
-                sentences.append(dict(text=it['text'], line=it['line'], scene=si))
+                sentences.append(dict(text=it['text'], line=it['line'], scene=si, brk=it['brk']))
                 n_sent += 1
     if missing:
         die('pictures not found:\n' + '\n'.join(missing))
@@ -589,62 +758,64 @@ def main():
         print(f'frames: {len(made_f)} made, {len(reused_f)} reused; {len(pics)} pictures in {out}')
         return
 
-    # 2. audio: one clip per sentence (spoken lines joined until . ? !), cached by (sentence text, voice settings)
+    # 2. audio: one clip per paragraph (or per run of its sentences, when long), cached by (its text, voice settings);
+    # then cut back into one piece per sentence at the quiet point between the words
     lines = sentences  # the spoken lines of the scenes file; they say where pictures change
     sents = join_sentences(lines)
+    chunks = make_chunks(sents, args.para_max, CPS)
     voice = Voice(args)
-    for k, s in enumerate(sents):
-        s['around'] = voice.around(sents, k)
-        s['key'] = voice.key(s['text'], s['around'])
-        s['raw'] = adir / f'{s["key"]}.wav'
-        s['wav'] = adir / f'{s["key"]}-{fps}p.wav'
+    for k, c in enumerate(chunks):
+        c['around'] = voice.around(chunks, k)
+        c['key'] = voice.key(c['text'], c['around'])
+        c['raw'] = adir / f'{c["key"]}.wav'
+        c['wav'] = adir / f'{c["key"]}-{fps}p.wav'
     voice.fps = fps
-    kept_old, failed_old = voice.reuse_old(sents, adir)
+    kept_old, failed_old = voice.reuse_old(chunks, adir)
     todo, seen = [], set()
-    for s in sents:
-        if not s['raw'].exists() and s['key'] not in seen:
-            todo.append(s); seen.add(s['key'])
+    for c in chunks:
+        if not c['raw'].exists() and c['key'] not in seen:
+            todo.append(c); seen.add(c['key'])
     if todo:
-        print(f'making {len(todo)} audio clip(s) with {voice.spec} ...', flush=True)
-        voice.make_all([(s['text'], s['raw'], s['around']) for s in todo])
-    made_keys = {s['key'] for s in todo}
+        print(f'making {len(todo)} paragraph clip(s) with {voice.spec} ...', flush=True)
+        voice.make_all([(c['text'], c['raw'], c['around']) for c in todo])
+    made_keys = {c['key'] for c in todo}
 
     meta_path = adir / 'durations.json'
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-    for s in sents:
-        k = f'{s["key"]}-{fps}-{TRIM_VERSION}'
-        if s['key'] in made_keys or k not in meta or not s['wav'].exists():
-            meta[k] = trim_and_pad(s['raw'], s['wav'], fps)
-        s['frames'], s['vs'], s['ve'] = meta[k]
+    for c in chunks:
+        k = f'{c["key"]}-{fps}-{TRIM_VERSION}'
+        if c['key'] in made_keys or k not in meta or not c['wav'].exists():
+            meta[k] = trim_and_pad(c['raw'], c['wav'], fps)
+        c['frames'], c['vs'], c['ve'] = meta[k]
     meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
 
-    # every clip at one loudness (LOUDNESS, PEAK): the timeline, the mix and the avatar's glow use these copies
+    # every clip at one loudness (LOUDNESS, PEAK), one gain for the whole paragraph clip
     loud_path = adir / 'loudness.json'
     loud = json.loads(loud_path.read_text()) if loud_path.exists() else {}
     todo_n = {}
-    for s in sents:
-        s['lk'] = f'{s["key"]}-{fps}-{TRIM_VERSION}-{LOUD_VERSION}-{LOUDNESS}-{PEAK}'
-        s['norm'] = adir / f'{s["key"]}-{fps}p-{h(s["lk"])[:6]}.wav'
-        if s['key'] in made_keys or s['lk'] not in loud or not s['norm'].exists():
-            todo_n[s['lk']] = s
+    for c in chunks:
+        c['lk'] = f'{c["key"]}-{fps}-{TRIM_VERSION}-{LOUD_VERSION}-{LOUDNESS}-{PEAK}'
+        c['norm'] = adir / f'{c["key"]}-{fps}p-{h(c["lk"])[:6]}.wav'
+        if c['key'] in made_keys or c['lk'] not in loud or not c['norm'].exists():
+            todo_n[c['lk']] = c
     if todo_n:
         with ThreadPoolExecutor(8) as ex:
-            for lk, r in zip(todo_n, ex.map(lambda s: normalise(s['wav'], s['norm']), todo_n.values())):
+            for lk, r in zip(todo_n, ex.map(lambda c: normalise(c['wav'], c['norm']), todo_n.values())):
                 loud[lk] = r
         loud_path.write_text(json.dumps(loud, indent=0, sort_keys=True))
-    for s in sents:
-        s['loud'] = loud[s['lk']]
+    for c in chunks:
+        c['loud'] = loud[c['lk']]
 
-    # word times: where each line of a sentence starts in its clip
-    n_aligned = align_all(sents, adir, args)
+    # word times of each paragraph clip; they say where to cut it into sentences, and where each line starts
+    n_aligned = align_all(chunks, adir, args)
+    for c in chunks:
+        cut_chunk(c, sents, lines, fps, adir)
     hows = {'aligned': 0, 'interpolated': 0, 'proportional': 0}
     inner = dict(word=0, interpolated=0, proportional=0)  # line starts inside sentences
     for s in sents:
-        words = None
-        if s['align'].exists():
-            words = json.loads(s['align'].read_text(encoding='utf-8')).get('words')
+        s['loud'] = chunks[s['chunk']]['loud']
         texts = [lines[g]['text'] for g in s['lines']]
-        s['starts'], s['how'], s['matched'] = align.line_times(texts, words, s['vs'], s['ve'])
+        s['starts'], s['how'], s['matched'] = align.line_times(texts, s['words'], s['vs'], s['ve'])
         hows[s['how']] += 1
         if len(texts) > 1:
             key = 'proportional' if s['how'] == 'proportional' else None
@@ -654,7 +825,8 @@ def main():
 
     # 3. timeline, in frames: the timing rules are in timing.py
     rules = timing.Rules(fps=fps, gap=args.gap, dwell=args.dwell, busy=args.busy, scene_gap=args.scene_gap, lead=args.lead,
-                         min_hold=args.min_hold, head=args.head, tail=args.tail, xfade=args.xfade, step_xfade=args.step_xfade)
+                         min_hold=args.min_hold, head=args.head, tail=args.tail, xfade=args.xfade, step_xfade=args.step_xfade,
+                         para_gap=args.para_gap)
     for p in shown:
         p['busy'] = busy(p['spec'])
         p['group'] = group_of(p['spec'])
@@ -740,17 +912,22 @@ def main():
     # 5. report
     sec = lambda f: f / fps
     print(f'\n{title}  ({scenes_path.relative_to(ROOT) if scenes_path.is_relative_to(ROOT) else scenes_path})')
-    print(f'{"scene":<40} {"lines":>5} {"sentences":>9} {"start":>7} {"seconds":>8}')
+    print(f'{"scene":<40} {"lines":>5} {"sentences":>9} {"paragraphs":>10} {"start":>7} {"seconds":>8}')
     for si, sc in enumerate(scenes):
         ss = [s for s in sents if s['scene'] == si]
         if not ss:
             continue
         nxt = next((s['start'] for s in sents if s['scene'] > si), total)
-        print(f'{sc["title"][:40]:<40} {sum(len(s["lines"]) for s in ss):>5} {len(ss):>9} {sec(ss[0]["start"]):>7.1f} '
+        print(f'{sc["title"][:40]:<40} {sum(len(s["lines"]) for s in ss):>5} {len(ss):>9} {len({s["para"] for s in ss}):>10} '
+              f'{sec(ss[0]["start"]):>7.1f} '
               f'{sec(nxt - ss[0]["start"]):>8.1f}')
-    print(f'{"total":<40} {len(lines):>5} {len(sents):>9} {"":>7} {sec(total):>8.1f}')
-    n_audio = len({s['key'] for s in sents})
-    print(f'\naudio:  {len(made_keys)} sentence clip(s) made, {n_audio - len(made_keys)} reused')
+    print(f'{"total":<40} {len(lines):>5} {len(sents):>9} {len({s["para"] for s in sents}):>10} {"":>7} {sec(total):>8.1f}')
+    n_audio = len({c['key'] for c in chunks})
+    n_para = len({s['para'] for s in sents})
+    print(f'\naudio:  {len(chunks)} clip(s) for {n_para} paragraphs ({len(chunks) - n_para} split for length), '
+          f'{len(made_keys)} made, {n_audio - len(made_keys)} reused; cut into {len(sents)} sentence pieces '
+          f'({sum(1 for s in sents if s["cut"] == "words")} cuts between matched words, '
+          f'{sum(1 for s in sents if s["cut"] == "letters")} by letter count)')
     if kept_old or failed_old:
         print(f'voice gate: {len(kept_old)} clip(s) of an older check kept, {len(failed_old)} failed it and were made again')
         for s, flags in failed_old:
@@ -759,10 +936,10 @@ def main():
         print(f'  made  line {s["line"]}: {s["text"][:70]}')
     if len(todo) > 10:
         print(f'  ... and {len(todo) - 10} more')
-    li = [s['loud']['lufs'] for s in sents]; lo = [s['loud']['lufs_out'] for s in sents]
+    li = [c['loud']['lufs'] for c in chunks]; lo = [c['loud']['lufs_out'] for c in chunks]
     print(f'loudness: clips {min(li):.1f} to {max(li):.1f} LUFS as made, {min(lo):.1f} to {max(lo):.1f} after setting them to '
-          f'{LOUDNESS} (peaks at most {max(s["loud"]["peak_out"] for s in sents):.1f} dBTP; '
-          f'{sum(1 for s in sents if s["loud"]["limited"])} limited); {len(todo_n)} normalised now')
+          f'{LOUDNESS} (peaks at most {max(c["loud"]["peak_out"] for c in chunks):.1f} dBTP; '
+          f'{sum(1 for c in chunks if c["loud"]["limited"])} limited); {len(todo_n)} normalised now')
     multi = sum(1 for s in sents if len(s['lines']) > 1)
     print(f'words:  {n_aligned} clip(s) aligned now; {multi} sentences have a picture or cue change inside: '
           f'{inner["word"]} line starts on a matched word, {inner["interpolated"]} in sentences with some interpolated '
@@ -788,8 +965,10 @@ def main():
     if args.timing_json:
         Path(args.timing_json).write_text(json.dumps(dict(
             fps=fps, total=total,
-            sentences=[dict(line=s['line'], text=s['text'], wav=str(s['norm']), made=str(s['raw']), loudness=s['loud'], start=s['start'], frames=s['frames'], vs=s['vs'], ve=s['ve'],
-                            starts=s['starts'], how=s['how'], lines=[lines[g]['line'] for g in s['lines']]) for s in sents],
+            sentences=[dict(line=s['line'], text=s['text'], para=s['para'], chunk=s['chunk'], wav=str(s['norm']),
+                            made=str(chunks[s['chunk']]['raw']), loudness=s['loud'], start=s['start'], frames=s['frames'],
+                            vs=s['vs'], ve=s['ve'], cut=s['cut'], starts=s['starts'], how=s['how'],
+                            lines=[lines[g]['line'] for g in s['lines']]) for s in sents],
             pictures=[dict(line=p['spec']['line'], raw=p['spec']['raw'], fade_in=lay['F'][j], start=p['start'], dur=p['dur'],
                            hold=lay['hold'][j], xfade=p['xfade'], busy=p['busy']) for j, p in enumerate(shown)],
             merges=[dict(line=p['spec']['line'], into=kept['spec']['line'], seconds=secs, how=how) for p, kept, secs, how in merges],

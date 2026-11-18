@@ -1,10 +1,59 @@
 # Voice-cloned narration, locally
 
-Each spoken sentence of a video becomes one audio file, in the presenter's own voice, made on an Apple Silicon Mac with no paid API. This folder holds a small wrapper, `say.py`, that calls one of several open models, each installed in its own environment outside git.
+Each spoken paragraph of a video becomes one audio file (cut into its sentences afterwards, see `../FORMAT.md`), in the presenter's own voice, made on an Apple Silicon Mac with no paid API. This folder holds a small wrapper, `say.py`, that calls one of several open models, each installed in its own environment outside git.
 
-Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. Round 5 keeps Kokoro's native English and swaps OpenVoice for a stronger voice converter, Seed-VC, because `kokoro-openvoice` did not sound like the presenter. The newest round comes first.
+Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. Round 5 keeps Kokoro's native English and swaps OpenVoice for a stronger voice converter, Seed-VC, because `kokoro-openvoice` did not sound like the presenter. Round 6 makes questions sound like questions and lets Kokoro speak a whole paragraph at a time. The newest round comes first.
 
 Tested November 2026 on an M1 Pro with 32 GB, macOS, Python 3.12.
+
+## Round 6: questions that rise, and a paragraph per call
+
+The presenter heard two things in the first full build: questions did not sound like questions, and the narration came out sentence by sentence, each one restarting flat ("Most of the time it listens." [a gap] "But every so often…"). The second is fixed in `build.py` (one call per paragraph, `../FORMAT.md`); the voice side of it is below. The first was measured.
+
+### Where the rise is lost
+
+Pitch by RMVPE (Seed-VC's own tracker), in semitones against the clip's median, over the last 0.25 s of voice; reference `ref-13s.wav`, `am_fenrir`, seed 1. A falling end reads about -6 to -10.
+
+| Sentence | Kokoro alone | after Seed-VC v1 (as built) | after the f0 model, no bend |
+| --- | --- | --- | --- |
+| Is this how you use AI right now? | -6.3 | -5.3 | -10.0 |
+| Do you use AI like this? | -8.3 | -4.5 | -8.1 |
+| What do you do? | -8.5 | -5.3 | -10.6 |
+| Which files did it change? | -8.3 | -6.5 | -7.2 |
+| If a session dies, how does a new one pick up the task? | -7.2 | -6.0 | -6.9 |
+| control: Is this how you use AI right now**.** | -7.2 | -5.3 | -8.5 |
+
+So Kokoro itself says a question exactly like a statement: the yes/no question falls as far as the same words with a full stop. Seed-VC does not flatten a rise; there is none to keep (v1 even narrows the fall a little, as it re-makes the pitch). Kokoro's options do not help either (pYIN, `am_fenrir` unless named): `??` -5.1, `?!` -4.0, `…?` -5.4, a space before `?` -4.1, `, right now?` -4.5, a leading "So," -4.7, speed 0.9 or 1.1 -4.3; other voices `am_michael` -1.1, `am_onyx` -0.9, `af_heart` -1.0, `am_adam` -7.7, `bm_george` -11.0 (less fall, still no rise). Kokoro sees the `?` (its phonemes end in `?`), it just was not trained to rise on it.
+
+### The fix: draw the rise into the pitch curve
+
+Seed-VC has a second model, conditioned on pitch (`DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2`, whisper-small content, 44 kHz BigVGAN, RMVPE for pitch; same GPL-3.0 code; about 1.2 GB more in the HF cache: model 0.4, BigVGAN 44 kHz 0.6, RMVPE 0.2). It follows the pitch curve it is given, moved to the reference's median (Seed-VC's "auto f0 adjust"). The backend (`f0=1`) takes Kokoro's own curve, finds each question from Kokoro's word timestamps, and over the question's last word (at least 0.35 s) bends the curve into a smooth rise up to `qrise` semitones above that question's median for a yes/no question, `whrise` for one with a question word (what, which, how, ...; "If a session dies, how does…?" counts as one, "So, is this…?" as yes/no). Pitch of the last 0.8 s, every 50 ms, after conversion:
+
+```
+Is this how you use AI right now?   no bend  ... -2.3 -4.0 -3.5 -2.6 -4.1 -6.8 -8.2   .  -12.4 -12.5
+                                    6 / 3    ... -2.0 -4.4 -3.2 -4.1 -6.8 -3.9 -2.4 -0.2  +3.3  +5.6
+Do you use AI like this?            no bend  ... -3.5 -4.3 -4.9 -6.2   .    .  -7.7 -9.2 -10.4
+                                    6 / 3    ... -4.5 -5.0 -6.2 -6.7 -6.0 -6.2 -3.2 +1.6  +4.3
+Which files did it change?          no bend  ... -3.7   .    .  -0.0 -3.7 -6.5 -7.3 -9.7  -9.4
+                                    6 / 3    ... -3.8   .  -1.0 -1.1 -0.7 -0.0 +0.7 +1.6  +2.1
+```
+
+| `qrise` / `whrise` | yes/no questions: highest point at the end | question-word questions: end | WavLM likeness of the six question clips |
+| --- | --- | --- | --- |
+| 0 / 0 (no bend) | -2.4, -3.5 | -7.2 to -9.7 | 0.796 |
+| 4 / 2 | +4.0, +1.8 | -0.3 to +0.8 | 0.818 |
+| **6 / 3** (the preset) | **+5.6, +4.3** | **+0.1 to +0.3**, peaks +1.9 to +3.1 | 0.811 |
+| 8 / 4 | +4.3, +5.9 | +0.3 to +0.7 | 0.840 |
+
+The model follows the bend only partly (a rise of 6 semitones asked comes out at 4 to 6), and going past 6 / 3 gains little. Question-word questions now end level or slightly up instead of dropping 8 to 10 semitones into the floor; whether that is the right amount is for the ear (`--set whrise=0` keeps Kokoro's fall, `--set qrise=…` changes the yes/no rise). The bend costs no likeness (0.796 without, 0.81 to 0.84 with, the spread is noise on 1 to 3 s clips).
+
+Likeness of the f0 model against v1, `measure2.py` on round 2's six sentences, each said alone: 0.833 against 0.836 overall; on the four long sentences the same (0.859 against 0.860); on short clips said alone it is weaker: "Two: it forgets." scores the same (0.709 against 0.701) but Whisper heard "Do what forgets.", and the six question clips (1 to 3 s) score 0.786 against 0.822. In a video every clip is now a whole paragraph, so the short-clip weakness hardly applies. Speed: 2.9 s of compute per second of audio over the test build's 11 paragraph clips (2.5 on the long ones, up to 5.8 on a 2 s one), against 2.1 to 2.4 for v1 on single sentences.
+
+### A paragraph per call
+
+`build.py` now sends one paragraph per call. Kokoro speaks it in one go, so each sentence is said knowing the ones around it. Its own pause between sentences is uneven, though: in "Five: you can't see what it actually did. Which files did it change? Which commands did it run? Why did it do it that way? …" the voice is quiet (under -50 dBFS) for 0.17, 0.01, 0.00 and 0.21 s at the four sentence ends, so the questions ran into each other, while "Most of the time it listens. But every so often…" gets 0.35 s. `pause=0.3` (in the preset) tops each sentence end up to 0.3 s of silence, put in at the quietest 10 ms of Kokoro's pause before Seed-VC (faded 10 ms either side, timestamps moved with it); a pause already 0.3 s or longer is left alone, and commas are never touched. `--set pause=0` gives Kokoro's own. Seed-VC's window holds 30 s of reference plus speech, so with the 13 s reference it converts at most about 16.5 s at once; a longer take is converted in pieces cut in the middle of a sentence-end pause (or else a comma pause) that Kokoro's timestamps give, each piece kept exactly as long as its source, and the peak limit applied once to the whole clip. `build.py` keeps a paragraph to about 20 s per call (`--para-max`), so Whisper's 30 s window and Kokoro's 510-phoneme limit are never reached.
+
+`kokoro-seedvc` is now `am_fenrir`, 30 steps, `f0=1`, `qrise=6`, `whrise=3`, `pause=0.3`, at 44 kHz; `kokoro-seedvc-v1` is round 5's setting (v1 model, 22 kHz, no bend). The preset's settings are part of `build.py`'s cache key, so changing them makes the clips again. Measured with the scripts in `.claude/loops/voice/` and `source/video/tts/`; the clips are in the session's scratch folder, not kept.
 
 ## Round 5: Kokoro with a stronger voice converter (Seed-VC)
 
@@ -28,7 +77,7 @@ Speed is the cost: 2.1 to 2.4 s of compute per second of audio at 30 steps (3.5 
 
 To listen to, in `.claude/loops/voice/test5/` (personal data, out of git), six sentences with 0.6 s between: `kokoro-seedvc.mp3` (`am_michael`, the direct counterpart of round 2's `kokoro-openvoice.mp3`), `kokoro-seedvc-am_fenrir.mp3` (the preset), `kokoro-seedvc-am_onyx.mp3` (most alike, one slip); single clips in the folders of the same names, and `kokoro-seedvc-am_eric/`, `-am_adam/`, `-am_fenrir-50/`.
 
-`say.py --model kokoro-seedvc` (and `build.py --voice tts:kokoro-seedvc`) uses `am_fenrir`, 30 steps; `--set voice=am_onyx`, `--set steps=50`, `--set cfg=0.7`, `--set ref_s=25` change that. It is not a checked model: no Demucs, Whisper or retakes, which Kokoro's clean takes did not need in this test.
+`say.py --model kokoro-seedvc` (and `build.py --voice tts:kokoro-seedvc`) used `am_fenrir`, 30 steps in this round; since round 6 that is `kokoro-seedvc-v1`, and `kokoro-seedvc` uses the pitch-conditioned model. `--set voice=am_onyx`, `--set steps=50`, `--set cfg=0.7`, `--set ref_s=25` change that. It is not a checked model: no Demucs, Whisper or retakes, which Kokoro's clean takes did not need in this test.
 
 ## Round 3: VibeVoice without music, and reliable on short lines
 
@@ -277,7 +326,7 @@ python3 source/video/tts/say.py --model qwen3 --ref ref.wav --batch lines.tsv
 
 A batch line may also name the sentences around it, `output<TAB>sentence<TAB>before<TAB>after` (either may be empty); `vibevoice` speaks a line under 5 words together with one of them and cuts it out (round 3). `vibevoice` takes are always cleaned with Demucs, checked and retaken when flagged; `--retakes N` (default 3), `--keep-takes DIR` (every take, raw and cleaned), `--report FILE` (every measure, JSON), `--no-merge` and `--no-check` change that.
 
-Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 22 kHz for `kokoro-openvoice` and `kokoro-seedvc`, 24 kHz for the rest).
+Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 44 kHz for `kokoro-seedvc`, 22 kHz for `kokoro-openvoice` and `kokoro-seedvc-v1`, 24 kHz for the rest).
 
 `--ref-text "..."` overrides `ref.txt`. `--out` ending in `.mp3` or `.m4a` is converted with ffmpeg. `--seed` (default 1) makes a run repeatable; change it to get another take of a sentence. Timings go to stderr.
 

@@ -18,6 +18,7 @@ One video = one folder `source/courses/<video>/`:
 @ basic-01/p03
 Suppose you want to build a feature with AI today.
 What do you do?
+
 @ board/one-05-requirement box=0.08,0.30,0.60,0.25 text="Confirm requirement"
 First you hunt down the code files you think matter, and paste them in.
 
@@ -27,7 +28,8 @@ First you hunt down the code files you think matter, and paste them in.
 ```
 
 - `# ...` is the video title. `## ...` starts a scene; the title is not spoken.
-- **Every other non-empty line is spoken.** A line may be a whole sentence or a piece of one (cut at a comma so a new picture can come in on that word). Lines are joined into sentences until a line ends with `.`, `?` or `!` (or the scene ends): **one sentence = one audio clip**, said in one go, with no pause inside. Where a picture changes mid-sentence, it lands on the word its line starts with (word times from mlx-whisper, see below).
+- **Every other non-empty line is spoken.** A line may be a whole sentence or a piece of one (cut at a comma so a new picture can come in on that word). Lines are joined into sentences until a line ends with `.`, `?` or `!` (or the paragraph or scene ends). Where a picture changes inside a sentence, it lands on the word its line starts with (word times from mlx-whisper, see below).
+- **A blank line between spoken lines is a paragraph break.** Spoken lines with no blank line between them are one paragraph, whatever `@` lines sit between them; a scene heading also ends a paragraph. Mark paragraphs as the text runs (one paragraph of `en.md` = one paragraph here): **one paragraph = one audio clip**, spoken in one go, so each sentence is said knowing the ones around it ("Most of the time it listens. But every so often…" flows on, instead of "But" starting cold), and the voice keeps its own pauses between its sentences (the default voice makes each at least 0.3 s, `tts/README.md` round 6). The blank line may go before or after the `@` line that opens the paragraph. A paragraph that would run over `--para-max` (20 s of speech) is spoken in runs of whole sentences of about equal length. A line on its own as a paragraph is fine (a question set apart, a one-line beat).
 - **A line starting with `@` is a picture.** It fades in just before the next line's first word and stays until the next `@`. This is the beat (the `[>]` of the script).
   One `@` line is one picture, written on one line. Words with spaces go in double quotes; options are `name=value`.
 
@@ -64,12 +66,13 @@ First you hunt down the code files you think matter, and paste them in.
 
 ## How changes stay small
 
-- Each sentence's audio is cached under its text's hash. Change one sentence → only that clip is made again; the timeline after it shifts by itself.
+- Each paragraph's audio is cached under its text's hash (and the voice settings). Change one sentence → only its paragraph is spoken again; the timeline after it shifts by itself. The clip is then cut into one piece per sentence, at the quietest point between the last word of one sentence and the first word of the next (word times from mlx-whisper; on a frame boundary, so the pieces back to back are the clip exactly). Each piece is one clip in the FCPXML.
 - Each picture is cached under its `@` line, the image's date, `figs.css`, the figure's HTML, the avatar and the theme. Change one `@` line or one figure → only those pictures are made again; change `figs.css` → all of them (about 0.1 s each, in one browser).
-- Each sentence clip's word times are cached under the clip's own hash: change one sentence → one clip and one alignment are made again.
+- Each paragraph clip's word times are cached under the clip's own hash: change one sentence → one clip and one alignment are made again.
 - Nobody edits times by hand. The timing rules (`source/video/timing.py`, each a flag of `build.py`):
-  - no pause inside a sentence; `--gap` 0.3 s between sentences on the same picture;
-  - when the picture changes between sentences, the outgoing picture stays `--dwell` 0.8 s after the words end (`--busy` +0.4 s for a screenshot, a list of 4+ items, a quote or a figure with 30+ words), then the next one fades in; `--scene-gap` 1.4 s of silence between scenes (at least dwell + lead);
+  - inside a paragraph the timeline inserts nothing: the sentences keep the voice's own pauses, and a picture that changes there fades in on the word, `--lead` before it, with no dwell; between two runs of one long paragraph `--gap` 0.3 s;
+  - `--para-gap` 0.5 s between paragraphs on the same picture;
+  - when the picture changes at a paragraph break, the outgoing picture stays `--dwell` 0.8 s after the words end (`--busy` +0.4 s for a screenshot, a list of 4+ items, a quote or a figure with 30+ words), then the next one fades in; `--scene-gap` 1.4 s of silence between scenes (at least dwell + lead);
   - a new picture starts fading in `--lead` 0.3 s before its first word;
   - a picture holds at least `--min-hold` 2.2 s; a shorter beat is merged (a later step of the same figure or list shows from the short one's start; otherwise the short picture is skipped and the one before stays). The build lists every merge. Words are never moved or cut;
   - cross-dissolves: `--xfade` 0.5 s between different pictures, `--step-xfade` 0.35 s between steps of one `@ fig` or one `@ list` (so the newly lit parts fade in). In the FCPXML they are real Cross Dissolve transitions on the primary storyline; in the rough mp4, ffmpeg `xfade`.
@@ -77,7 +80,7 @@ First you hunt down the code files you think matter, and paste them in.
 
 ## Outputs (not in git)
 
-`.claude/loops/video-out/<video>/` (in this repository; `--out` for another root): `audio/` (one file per sentence, `align/` its word times), `frames/` (one PNG per `@`), `segments/` (the rough mp4's pieces: a still held, or a dissolve), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).
+`.claude/loops/video-out/<video>/` (in this repository; `--out` for another root): `audio/` (one file per paragraph as made, as normalised and cut into its sentences; `align/` the word times), `frames/` (one PNG per `@`), `segments/` (the rough mp4's pieces: a still held, or a dissolve), `<video>.fcpxml` (opens in Final Cut Pro), `<video>-rough.mp4` (a quick preview).
 
 ## Checks before any voice is made
 

@@ -1,19 +1,22 @@
-# The timeline: where each sentence clip starts and when each picture fades in, in frames.
+# The timeline: where each sentence piece starts and when each picture fades in, in frames.
 #
-# One sentence = one clip. Inside a sentence there is no pause; a picture whose line starts mid-sentence fades in `lead`
-# before the word its line starts with. Between sentences on the same picture: `gap` of silence. When the picture changes
-# at a sentence boundary, the outgoing picture stays `dwell` after the words end (+`busy` for a busy picture), then the
-# new one fades in, `lead` before its first word; between scenes the silence is at least `scene_gap`. A picture holds
-# at least `min_hold` from its fade-in to the next one's; a shorter beat is merged (see merge()). Transitions are
-# centred on the edit point: the fade starts at the fade-in time, so the edit point is `d/2` after it.
+# The voice speaks a paragraph in one go (one clip; a long one in runs of whole sentences), and the clip is cut into one
+# piece per sentence. Inside a clip the pieces are put back to back, so the voice keeps its own pauses and nothing is
+# inserted; a picture that changes there fades in `lead` before the word its line starts with, with no dwell. Between
+# two clips of one paragraph: `gap`. Between paragraphs on the same picture: `para_gap`. When the picture changes at
+# a paragraph break, the outgoing picture stays `dwell` after the words end (+`busy` for a busy picture), then the new
+# one fades in, `lead` before its first word; between scenes the silence is at least `scene_gap`. A picture holds at
+# least `min_hold` from its fade-in to the next one's; a shorter beat is merged (see merge()). Transitions are centred
+# on the edit point: the fade starts at the fade-in time, so the edit point is `d/2` after it.
 from dataclasses import dataclass
 
 
 @dataclass
 class Rules:
     fps: int = 25
-    gap: float = 0.3          # silence between sentences on the same picture
-    dwell: float = 0.8        # the outgoing picture stays this long after the words end, before the next fades in
+    gap: float = 0.3          # silence between two clips of one long paragraph
+    para_gap: float = 0.5     # silence between paragraphs on the same picture
+    dwell: float = 0.8        # at a paragraph break: the outgoing picture stays this long after the words end
     busy: float = 0.4         # added to dwell for a busy picture
     scene_gap: float = 1.4    # silence between scenes (at least dwell + lead)
     lead: float = 0.3         # a new picture starts fading in this long before its first word
@@ -29,9 +32,9 @@ def _even(seconds, fps):
 
 
 def compute(sents, pics, r):
-    """sents: [dict(frames, vs, ve, starts, scene, lines)] (vs, ve, starts in seconds within the clip; lines: the global
-    indexes of the spoken lines it is made of). pics: [dict(at, busy, group, scene)] in order, at = global line index,
-    pics[0].at == 0. -> dict(T: clip starts, F: fade-in starts, hold, total), all in frames."""
+    """sents: [dict(frames, vs, ve, starts, scene, para, chunk, lines)] (vs, ve, starts in seconds within the piece;
+    para: the paragraph, chunk: the clip it was cut from; lines: the global indexes of the spoken lines it is made of).
+    pics: [dict(at, busy, group, scene)] in order, at = global line index, pics[0].at == 0. -> dict(T: clip starts, F: fade-in starts, hold, total), all in frames."""
     fps = r.fps
     where = {}  # global line -> (sentence, line within it)
     for k, s in enumerate(sents):
@@ -48,14 +51,18 @@ def compute(sents, pics, r):
         if not k:
             T.append(max(0, round((r.head - s['vs']) * fps))); continue
         p = sents[k - 1]
+        if s.get('chunk') is not None and s.get('chunk') == p.get('chunk'):  # cut from one clip: back to back
+            T.append(T[-1] + p['frames']); continue
         out = pics[shown_at[p['lines'][-1]]]
         dwell = r.dwell + (r.busy if out['busy'] else 0)
         if s['scene'] != p['scene']:
             g = max(r.scene_gap, dwell + r.lead)
+        elif s.get('para') is not None and s.get('para') == p.get('para'):
+            g = max(r.gap, r.lead) if s['lines'][0] in pic_at else r.gap
         elif s['lines'][0] in pic_at:
             g = dwell + r.lead
         else:
-            g = r.gap
+            g = r.para_gap
         t = round((T[-1] / fps + p['ve'] + g - s['vs']) * fps)
         T.append(max(t, T[-1] + p['frames']))
     F = []

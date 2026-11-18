@@ -22,7 +22,8 @@ the reference with the same name and a .txt extension.
 This script uses only the standard library. It runs the model's own Python
 (an isolated venv under .claude/loops/tts/<env>/, see README.md) on
 backends/<model>_backend.py and passes the job as JSON on stdin. Output is a mono wav
-at the model's own rate (24 kHz; 48 kHz for voxcpm2, 22 kHz for kokoro-openvoice and kokoro-seedvc);
+at the model's own rate (24 kHz; 48 kHz for voxcpm2, 44 kHz for kokoro-seedvc, 22 kHz for kokoro-openvoice and
+kokoro-seedvc-v1);
 any other extension (.mp3, .m4a) is converted with ffmpeg.
 """
 
@@ -54,7 +55,9 @@ MODELS = {
     "kokoro": ("kvc", "kokoro_vc_backend.py", "kokoro", {"voice": "am_michael"}),
     "kokoro-cbvc": ("kvc", "kokoro_vc_backend.py", "kokoro-cbvc", {"voice": "am_michael"}),
     "kokoro-openvoice": ("kvc", "kokoro_vc_backend.py", "kokoro-openvoice", {"voice": "am_michael", "tau": 0.3}),
-    "kokoro-seedvc": ("seedvc", "kokoro_seedvc_backend.py", "kokoro-seedvc", {"voice": "am_fenrir", "steps": 30}),
+    "kokoro-seedvc": ("seedvc", "kokoro_seedvc_backend.py", "kokoro-seedvc",
+                      {"voice": "am_fenrir", "steps": 30, "f0": 1, "qrise": 6, "whrise": 3, "pause": 0.3}),
+    "kokoro-seedvc-v1": ("seedvc", "kokoro_seedvc_backend.py", "kokoro-seedvc", {"voice": "am_fenrir", "steps": 30}),
     "qwen3": ("mlx", "qwen3_backend.py", "qwen3", {}),
     "vibevoice": ("mlx", "vibevoice_backend.py", "vibevoice", {}),
     "voxcpm2": ("mlx", "voxcpm2_backend.py", "voxcpm2", {}),
