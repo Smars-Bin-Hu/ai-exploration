@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 1010">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:21px;font-weight:bold}
+.n{font-size:18px}
+.k{font-size:17px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:16px;fill:#6b6b6b}
+.h{font-size:16px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.dat{stroke:#141414;stroke-width:1.8;fill:none}
+.ctl{stroke:#6b6b6b;stroke-width:1.8;fill:none;stroke-dasharray:7 5}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<!-- 1 fetch -->
+<text x="20" y="62" class="h">AGENT RUNS</text>
+<rect x="200" y="20" width="760" height="100" rx="6" class="box"/>
+<text x="218" y="50" class="t">harness task fetch &lt;repo&gt;/&lt;path&gt;</text>
+<text x="218" y="76" class="n">after the plan is approved; the base branch is first brought up to its remote</text>
+<text x="218" y="102" class="c">copy to DEV/&lt;repo&gt;/&lt;path&gt;; base commit and blob kept in .task/task.json</text>
+<line x1="580" y1="120" x2="580" y2="146" class="dat" marker-end="url(#a)"/>
+
+<!-- 2 edit -->
+<text x="20" y="190" class="h">AGENT EDITS</text>
+<rect x="200" y="148" width="760" height="76" rx="6" class="box"/>
+<text x="218" y="178" class="t">The agent changes the copy in DEV/, never the repository</text>
+<text x="218" y="206" class="k">the gate refuses edits in a target repository's working tree</text>
+<line x1="580" y1="224" x2="580" y2="250" class="dat" marker-end="url(#a)"/>
+
+<!-- 3 dry run -->
+<text x="20" y="296" class="h">AGENT RUNS,</text>
+<text x="20" y="318" class="h">CODE CHECKS</text>
+<rect x="200" y="252" width="760" height="124" rx="6" class="box"/>
+<text x="218" y="282" class="t">harness task promote --dry-run</text>
+<text x="218" y="308" class="n">refused unless: plan approved, enough check passes, clean working tree,</text>
+<text x="218" y="332" class="n">branch name free, every file still as fetched; nothing is written</text>
+<text x="218" y="358" class="c">PROMOTE-PLAN.diff, a snapshot, the plan digest</text>
+<line x1="580" y1="376" x2="580" y2="402" class="dat" marker-end="url(#a)"/>
+
+<!-- 4 approve -->
+<text x="20" y="446" class="h">PERSON</text>
+<rect x="200" y="404" width="760" height="100" rx="6" class="focus"/>
+<text x="218" y="434" class="t">Approve promote (task page) or task approve-promote</text>
+<text x="218" y="460" class="n">reads the diff, types six capitals taken from the plan digest</text>
+<text x="218" y="486" class="k">the gate refuses this command on the agent's command line</text>
+<line x1="580" y1="504" x2="580" y2="530" class="dat" marker-end="url(#a)"/>
+
+<!-- 5 promote -->
+<text x="20" y="574" class="h">AGENT RUNS,</text>
+<text x="20" y="596" class="h">CODE WRITES</text>
+<rect x="200" y="532" width="760" height="76" rx="6" class="focus"/>
+<text x="218" y="562" class="t">harness task promote</text>
+<text x="218" y="590" class="n">same digest as approved, checked again; a patch saved in DEV/ first</text>
+<line x1="390" y1="608" x2="390" y2="634" class="dat" marker-end="url(#a)"/>
+<line x1="770" y1="608" x2="770" y2="634" class="dat" marker-end="url(#a)"/>
+<rect x="200" y="636" width="370" height="100" rx="6" class="box"/>
+<text x="218" y="666" class="t">Code repository</text>
+<text x="218" y="692" class="n">new branch feature/&lt;name&gt;,</text>
+<text x="218" y="716" class="n">files written, not committed</text>
+<rect x="590" y="636" width="370" height="100" rx="6" class="box"/>
+<text x="608" y="666" class="t">Registered knowledge base</text>
+<text x="608" y="692" class="n">its base branch, one commit</text>
+<text x="608" y="716" class="n">of only these files; no push</text>
+<line x1="390" y1="736" x2="390" y2="762" class="dat" marker-end="url(#a)"/>
+
+<!-- 6 after -->
+<text x="20" y="806" class="h">PERSON</text>
+<rect x="200" y="764" width="760" height="76" rx="6" class="box"/>
+<text x="218" y="794" class="t">The person reviews and commits the branch</text>
+<text x="218" y="822" class="k">Changes tab: COMMIT-MESSAGE.md with the contributor line, and the commands</text>
+<line x1="580" y1="840" x2="580" y2="866" class="dat" marker-end="url(#a)"/>
+
+<text x="20" y="910" class="h">BOARD</text>
+<rect x="200" y="868" width="760" height="76" rx="6" class="box"/>
+<text x="218" y="898" class="t">The board closes the task, and the report is written</text>
+<text x="218" y="926" class="k">once the agent stopped and nothing waits; it does not wait for the commit</text>
+
+<!-- failure -->
+<text x="200" y="984" class="k">A write that stops halfway: task marked partial, the person runs Recover the repository (task recover).</text>
+</svg>
