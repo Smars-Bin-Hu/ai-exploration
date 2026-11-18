@@ -15,7 +15,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(HERE))
-import render, fcpxml  # noqa: E402
+import render, fcpxml, subs  # noqa: E402
 
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
@@ -209,6 +209,10 @@ def main():
     ap.add_argument('--fps', type=int, default=25, choices=[25, 30, 50, 60])
     ap.add_argument('--fcpxml-version', default='1.10', choices=['1.10', '1.11'])
     ap.add_argument('--no-mp4', action='store_true', help='skip the rough mp4')
+    ap.add_argument('--subs', default='en', help='subtitle languages, comma-separated, e.g. en,zh. en is the spoken text; '
+                    'another language <xx> reads source/courses/<video>/subs.<xx>.txt, one line per spoken line. '
+                    'The first is burned into the mp4. Empty: no subtitles')
+    ap.add_argument('--no-burn', action='store_true', help='do not burn subtitles into the rough mp4')
     ap.add_argument('--out', default=str(ROOT / '.claude/loops/video-out'), help='output root')
     args = ap.parse_args()
     t0 = time.time()
@@ -329,19 +333,41 @@ def main():
     clips = [dict(path=s['wav'], name=f'{i + 1:03d} {s["text"][:50]}', start=s['start'], dur=s['frames'])
              for i, s in enumerate(sentences)]
     frames = [dict(path=p['frame'], name=p['name'], start=p['start'], dur=p['dur']) for p in shown]
+    # subtitles: one cue per spoken line, timed as its clip (long lines split into cues in a row)
+    captions = []
+    for lang in [x.strip() for x in args.subs.split(',') if x.strip()]:
+        if lang == 'en':
+            texts = [s['text'] for s in sentences]
+        else:
+            src = (scenes_path.parent if args.scenes else ROOT / 'source/courses' / args.video) / f'subs.{lang}.txt'
+            if not src.exists():
+                die(f'--subs {lang} needs {src} (one line per spoken line, {len(sentences)} lines)')
+            texts = [x.strip() for x in src.read_text(encoding='utf-8').splitlines() if x.strip()]
+            if len(texts) != len(sentences):
+                die(f'{src.name} has {len(texts)} lines, but the scenes file has {len(sentences)} spoken lines')
+        captions.append((lang, subs.cues(texts, [s['start'] for s in sentences], [s['frames'] for s in sentences])))
+    made_subs = []
+    for lang, cl in captions:
+        f = out / f'{args.video}.{lang}.srt'
+        body = subs.srt(cl, fps)
+        if not f.exists() or f.read_text(encoding='utf-8') != body:
+            f.write_text(body, encoding='utf-8'); made_subs.append(f.name)
+    burn = captions[0][1] if captions and not args.no_burn else None
+
     tl = json.dumps([[(str(c['path']), c['start'], c['dur']) for c in clips],
                      [(str(f['path']), f['start'], f['dur']) for f in frames], title, fps, total])
-    sig, sig_mp4 = h(tl, args.fcpxml_version), h(tl)
+    sig = h(tl, args.fcpxml_version, json.dumps(captions))
+    sig_mp4 = h(tl, json.dumps(burn), subs.ass([], fps, render.W, render.H))
     fx, mp4 = out / f'{args.video}.fcpxml', out / f'{args.video}-rough.mp4'
     state_path = out / 'build-state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
-    made_out = []
+    made_out = made_subs[:]
     if state.get('fcpxml') != sig or not fx.exists():
         fcpxml.write(fx, title=title, event=f'{args.video} (video pipeline)', fps=fps, width=render.W, height=render.H,
-                     pictures=frames, clips=clips, total=total, version=args.fcpxml_version)
+                     pictures=frames, clips=clips, total=total, version=args.fcpxml_version, captions=captions)
         state['fcpxml'] = sig; made_out.append(fx.name)
     if not args.no_mp4 and (state.get('mp4') != sig_mp4 or not mp4.exists()):
-        rough(mp4, frames, clips, total, fps, out)
+        rough(mp4, frames, clips, total, fps, out, burn)
         state['mp4'] = sig_mp4; made_out.append(mp4.name)
     state_path.write_text(json.dumps(state, indent=1))
 
@@ -367,12 +393,12 @@ def main():
         print(f'  made  line {p["spec"]["line"]}: {p["spec"]["raw"][:70]}')
     if len(made_f) > 10:
         print(f'  ... and {len(made_f) - 10} more')
-    print(f'timeline: {"rebuilt " + ", ".join(made_out) if made_out else "unchanged, fcpxml and mp4 reused"}')
+    print(f'timeline: {"rebuilt " + ", ".join(made_out) if made_out else "unchanged, srt, fcpxml and mp4 reused"}')
     print(f'out: {out}')
     print(f'done in {time.time() - t0:.1f} s')
 
 
-def rough(mp4, frames, clips, total, fps, out):
+def rough(mp4, frames, clips, total, fps, out, burn=None):
     """Stills plus one audio track, no transitions: a quick check that words and pictures line up."""
     spf = RATE // fps
     track = bytearray(total * spf * 2)
@@ -390,7 +416,11 @@ def rough(mp4, frames, clips, total, fps, out):
         for i, f in enumerate(frames):
             ins += ['-loop', '1', '-framerate', str(fps), '-i', str(f['path'])]
             graph.append(f'[{i}:v]trim=end_frame={f["dur"]},setpts=PTS-STARTPTS,format=yuv420p[v{i}]')
-        graph.append(''.join(f'[v{i}]' for i in range(len(frames))) + f'concat=n={len(frames)}:v=1:a=0[v]')
+        graph.append(''.join(f'[v{i}]' for i in range(len(frames))) + f'concat=n={len(frames)}:v=1:a=0' + ('[c]' if burn else '[v]'))
+        if burn:  # subtitles drawn by libass from an .ass file sized for 1080p
+            ass = Path(td) / 'subs.ass'
+            ass.write_text(subs.ass(burn, fps, render.W, render.H), encoding='utf-8')
+            graph.append(f"[c]ass='{ass}'[v]")
         tmp = mp4.with_suffix('.part.mp4')
         r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-i', str(wav), '-filter_complex', ';'.join(graph),
                             '-map', '[v]', '-map', f'{len(frames)}:a', '-r', str(fps), '-c:v', 'libx264', '-preset', 'veryfast',

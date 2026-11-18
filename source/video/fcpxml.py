@@ -10,9 +10,10 @@ def _url(path):
     return 'file://' + quote(str(Path(path).resolve()))
 
 
-def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10'):
+def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10', captions=()):
     """pictures: [dict(path, name, start, dur)] in frames, contiguous from 0 to total.
-    clips: [dict(path, name, start, dur)] in frames, absolute; each must fall inside one picture."""
+    clips: [dict(path, name, start, dur)] in frames, absolute; each must fall inside one picture.
+    captions: [(lang, [(start, dur, rows)])]: SRT captions (role SRT?captionFormat=SRT.<lang>), one caption lane per language."""
     unit = {25: (100, 2500), 30: (100, 3000), 50: (100, 5000), 60: (100, 6000)}[fps]
 
     def t(frames):
@@ -52,7 +53,8 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
     seq = ET.SubElement(proj, 'sequence', format='r1', duration=t(total), tcStart='0s', tcFormat='NDF',
                         audioLayout='stereo', audioRate='48k')
     spine = ET.SubElement(seq, 'spine')
-    ci = 0
+    ci, ts = 0, 0
+    caps = [(lane, lang, c) for lane, (lang, cl) in enumerate(captions, 1) for c in cl]
     for p in pictures:
         v = ET.SubElement(spine, 'video', ref=ids[str(p['path'])], offset=t(p['start']), name=p['name'],
                           start='0s', duration=t(p['dur']))
@@ -64,7 +66,19 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
             ET.SubElement(v, 'asset-clip', ref=ids[str(c['path'])], lane='-1', offset=t(c['start'] - p['start']),
                           name=c['name'], start='0s', duration=t(c['dur']), audioRole='dialogue')
             ci += 1
+        for lane, lang, (cs, cd, rows) in caps:
+            if p['start'] <= cs < end:
+                ts += 1
+                cap = ET.SubElement(v, 'caption', lane=str(lane), offset=t(cs - p['start']), name=' '.join(rows)[:60],
+                                    start='0s', duration=t(cd), role=f'SRT?captionFormat=SRT.{lang}')
+                ET.SubElement(ET.SubElement(cap, 'text'), 'text-style', ref=f'ts{ts}').text = '\n'.join(rows)
+                ET.SubElement(ET.SubElement(cap, 'text-style-def', id=f'ts{ts}'), 'text-style', font='.AppleSystemUIFont',
+                              fontSize='13', fontFace='Regular', fontColor='1 1 1 1', backgroundColor='0 0 0 1')
     assert ci == len(clips), 'audio clips run past the last picture'
     ET.indent(root, space='  ')
+    for tx in root.iter('text'):  # a caption's text is mixed content: no indentation whitespace inside it
+        tx.text = None
+        for c in tx:
+            c.tail = None
     body = ET.tostring(root, encoding='unicode')
     Path(out).write_text('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n\n' + body + '\n', encoding='utf-8')
