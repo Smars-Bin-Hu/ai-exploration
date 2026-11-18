@@ -45,8 +45,13 @@ def expand(meta, body):
     body = re.sub(r'\{src:([^}]+)\}', one, body)
     tail = [f'\n\n## {meta["subject"]}: code locations\n',
             f'All code locations are in the harness repository at version {tag} ({HARNESS_REPO}/tree/{tag}).\n']
-    for r in refs:
-        url, label = gh(tag, r); tail.append(f'- {label}: {url}')
+    if meta['layer'] == 'reference':  # hundreds of locations: the URL pattern once in visible text, then the path and lines of each
+        tail.append(f'Every location below is at `{HARNESS_REPO}/blob/{tag}/<path>#L<a>-L<b>`: the path, then its first and last line '
+                    f'(a location with no lines is the whole file).\n')
+        tail.append('; '.join(gh(tag, r)[1] for r in refs) + '.')
+    else:
+        for r in refs:
+            url, label = gh(tag, r); tail.append(f'- {label}: {url}')
     if meta['courses']:
         tail.append(f'\n\n## {meta["subject"]}: courses to learn more\n')
         for t, u in meta['courses']: tail.append(f'- {t}: {u}')
