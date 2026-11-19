@@ -93,7 +93,7 @@ def lint(scene_file, zh_file=None):
                     flags.append((no, 'short-alone', s))
                 if re.search(r'\b(this|these|that|those|them)[.!?:;,]?$', s, re.I) or re.search(r'\b(these|those)\s*[,:;.!?]', s, re.I):
                     flags.append((no, 'bare-referent', s[:80]))
-                body = re.sub(r'^[^:]{1,12}:\s*', '', s)  # "Three: ..." lead-ins
+                body = re.sub(r'^(but|and|so|ok|okay|well)\b,?\s*', '', re.sub(r'^[^:]{1,12}:\s*', '', s), flags=re.I)  # "Three: ..." lead-ins, "But what…?"
                 asks = (re.match(QWORDS, body, re.I) or re.search(r',\s*' + QWORDS, body, re.I)) and not re.match(r'(which|what|how|when|where|who)\b[^?]*\b(is|are)\b[^?]*\.$', body, re.I)
                 if s.endswith('?') and not asks and ' or ' not in s:
                     flags.append((no, 'question', f'ends with "?" but reads as a statement: {s[:80]}'))
