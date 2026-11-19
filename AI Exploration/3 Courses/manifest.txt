@@ -1,4 +1,18 @@
-Exported 2026-11-11 13:33 from smarshu.com
+Courses in this folder. The planned topics may change.
 
-Basic/basic-01-stop-using-ai-the-2024-way.pdf	24 pages	Stop using AI the 2024 way: why you need a harness
-Basic/basic-06-prompt-cannot-stop.pdf	18 pages	A prompt cannot stop a dangerous action: a harness can
+Published
+  Basic 01     13 min   Basic/01 - Stop Using AI like 2024 way, what's the Harness Engineering.mp4
+
+Planned
+  Basic 02     Stop writing long prompts
+  Basic 03     Plan before you build
+  Basic 04     Protect your context
+  Basic 05     Models, capability and cost
+  Basic 06     A prompt cannot stop a dangerous action
+  Advanced 01  Subagents: what they are and when they help
+  Advanced 02  Enforce with code, not with prompts
+  Advanced 03  Onboarding an agent: a standard way to build a knowledge base
+  Advanced 04  Progressive disclosure and context loading
+  ...          and more to come
+
+Harness tutorials/: picture-book PDFs for now, each replaced when its video is ready.

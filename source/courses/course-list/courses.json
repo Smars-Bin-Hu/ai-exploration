@@ -1,0 +1,17 @@
+{
+  "published": [
+    {"series": "Basic", "n": "01", "title": "Stop Using AI like 2024 way, what's the Harness Engineering?",
+     "file": "Basic/01 - Stop Using AI like 2024 way, what's the Harness Engineering.mp4", "length": "13 min"}
+  ],
+  "planned": [
+    {"series": "Basic", "n": "02", "title": "Stop writing long prompts"},
+    {"series": "Basic", "n": "03", "title": "Plan before you build"},
+    {"series": "Basic", "n": "04", "title": "Protect your context"},
+    {"series": "Basic", "n": "05", "title": "Models, capability and cost"},
+    {"series": "Basic", "n": "06", "title": "A prompt cannot stop a dangerous action"},
+    {"series": "Advanced", "n": "01", "title": "Subagents: what they are and when they help"},
+    {"series": "Advanced", "n": "02", "title": "Enforce with code, not with prompts"},
+    {"series": "Advanced", "n": "03", "title": "Onboarding an agent: a standard way to build a knowledge base"},
+    {"series": "Advanced", "n": "04", "title": "Progressive disclosure and context loading"}
+  ]
+}
