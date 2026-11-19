@@ -15,7 +15,7 @@ How to read each entry:
 
 - **Layer · type · grain.** Type is one of `use` (what it does for me), `how` (how a feature works), `safety` (is it safe, can it be bypassed), `code` (where in the code, which test), `version` (what changed, which bug), `idea`, `operate`, `not-covered`. Grain is `broad` (the whole design) or `detail` (one mechanism).
 - **Key points:** each one a fact checked against the harness code at tag `1.8.3` (`git -C ~/Developer/DE-agentic-harness show 1.8.3:<path>`), with its location as `path:lines`. The locations are for the grader: a right answer gives the Guide's own links for what it says; it need not repeat every location listed here. A right answer has every point; it may say them in other words.
-- **Should cite:** the Guide files the answer should be built on, by their names. The knowledge is 23 files: 00 Harness at a glance · 01 Glossary · 11 Task · 12 The board · 13 Requirement and intake · 14 Plans and approvals · 15 The gate and guardrails · 16 Write-back · 17 Independent checks · 18 Knowledge base · 19 Tool packs, connections and MCP · 20 Autorun · 21 Super agent · 22 Cost and usage · 23 Skills · 24 Setup, doctor and upgrade · 31 How it is built · 32 Code map · 33 Test map and evals · 34 Version history · 35 Known limits · 36 Design decisions · 41 Ideas behind the harness. Citing another file that holds the same fact is not wrong. `21 Start a task and give it the requirement` is not knowledge: an answer that cites it, or sends the reader to it, is wrong.
+- **Should cite:** the Guide files the answer should be built on, by their names. The knowledge is 23 files: 00 Harness at a glance · 01 Glossary · 11 Task · 12 The board · 13 Requirement and intake · 14 Plans and approvals · 15 The gate and guardrails · 16 Write-back · 17 Independent checks · 18 Knowledge base · 19 Tool packs, connections and MCP · 20 Autorun · 21 Super agent · 22 Cost and usage · 23 Skills · 24 Setup, doctor and upgrade · 31 How it is built · 32 Code map · 33 Test map · 34 Version history · 35 Known limits · 36 Design decisions · 41 Ideas behind the harness. Citing another file that holds the same fact is not wrong. `21 Start a task and give it the requirement` is not knowledge: an answer that cites it, or sends the reader to it, is wrong.
 - **Course:** the link the answer should give, when one fits. A Layer 4 answer always gives one. `AGENT.md` tells the agent to link the course of the file its answer is mostly built on, so any course listed in that file's front matter is also right.
 - **Wrong if:** what makes an otherwise good answer wrong.
 - Every answer must come from the Guide only. An answer that uses the asker's own work (their repository, mail, chats, files) to make an example is wrong, whatever else it gets right.
@@ -492,7 +492,7 @@ Layer 3 · code · detail.
 - `.harness/tests/test_task.py:150-170`: the code is bound to the plan, and a plan changed after the approval closes `DEV/` again; `.harness/tests/test_reqbinding.py:65` (`test_a_plan_is_approved_for_its_requirement`).
 - The tests run with `python -m unittest discover -s .harness/tests` (`.harness/INDEX.md:109`).
 
-Should cite: 33 Test map and evals. Course: The book · 4.4 Build the enforcement layer like software.
+Should cite: 33 Test map. Course: The book · 4.4 Build the enforcement layer like software.
 
 ### Q38. How is the harness itself tested? What are the eval scenarios?
 
@@ -503,7 +503,7 @@ Layer 3 · code · broad.
 - Four fixed scenarios in `.harness/eval/scenarios/`: G1 an edit of a guardrail file is refused, G2 a terminal write to one is refused, G5 a dangerous command is refused, T1 `DEV/` cannot be written before the plan is approved (`.harness/eval/scenarios/g1/scenario.md:1`; `.harness/eval/scenarios/t1/scenario.md:1`).
 - `harness eval check <scenario>` judges a finished run from its session log and the files it left, yes or no with a reason, no model (`.harness/engine/modules/evalcheck/commands.py:1-6`; `.harness/engine/modules/evalcheck/checks.py:1`).
 
-Should cite: 33 Test map and evals. Course: The book · 6.3 Fixed tasks, scored by a script (https://smarshu.com/book/read/6-3-eval-tasks.html).
+Should cite: 33 Test map. Course: The book · 6.3 Fixed tasks, scored by a script (https://smarshu.com/book/read/6-3-eval-tasks.html).
 
 Wrong if: it claims a quality score of the agent across tasks (there is none).
 
