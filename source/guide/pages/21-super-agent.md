@@ -55,7 +55,7 @@ The super agent chat spends at most `super.daily_credits` Credits a local day, s
 
 The person may ask the super agent for anything; it does nothing itself and may end its answer with a block of at most 8 proposals, which the board turns into a card headed "The agent proposes. Nothing happens until you press." {src:.github/agents/super.agent.md#L21-L36} {src:.harness/engine/core/messages.en.json#L1822}. Three kinds:
 
-- **action**: any button the board offers for that task at that moment (archive, pause, resume, close, accept, approve plan or write-back, confirm requirement, recover, more or waived checks, approve a held call, autorun on), plus set checks 0 to 9, steer and stop. {src:.harness/engine/modules/task/superact.py#L23-L25} {src:.harness/engine/modules/task/superact.py#L96}. The card shows the board's own button, so a code or a dialog is asked as on the board;
+- **action**: any button the board offers for that task at that moment (archive, pause, resume, close, accept, approve plan or write-back, confirm requirement, recover, more or waived checks, approve a held call, autorun on), plus set checks (the card takes 0 to 9, but the board's own setting then refuses more than the policy's cap, 5 by default), steer and stop. {src:.harness/engine/modules/task/superact.py#L23-L25} {src:.harness/engine/modules/task/superact.py#L96}. The card shows the board's own button, so a code or a dialog is asked as on the board;
 - **send**: a message to the task that owns the work, in an editable box with **Send**, sent as a normal message;
 - **new**: the board's New task window, filled in; the person still creates the task {src:.harness/engine/modules/task/web/super.js#L235-L311}.
 

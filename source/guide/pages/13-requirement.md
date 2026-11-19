@@ -47,7 +47,7 @@ What is text: at every prompt of a task with a `REQ.md`, the hook tells the agen
 
 ## Requirement and intake: linked tickets
 
-A task may name tickets of an outside tool (`ado:300100`), given in the New task window, on the task page, or by the agent with `task link add` for an id the person gave {src:.github/skills/harness-my-task/SKILL.md#L79-L110}. The harness keeps only the type and id; it copies nothing of the ticket into `REQ/` or `REQ.md` {src:.harness/engine/modules/task/tasklife.py#L612-L640}. Nothing tells the agent to read a linked ticket for the requirement; when the person names it, the tool pack's reads run without asking, and what the agent takes from it goes into `REQ.md` to be confirmed like any source {src:.harness/toolpacks/ado/skills/ado-workitem/SKILL.md#L14-L30}. Writes to tickets: the file 19.
+A task may name tickets of an outside tool (`ado:300100`), given in the New task window, on the task page, or by the agent with `task link add` for an id the person gave {src:.github/skills/harness-my-task/SKILL.md#L79-L110}. The harness keeps only the type and id; it copies nothing of the ticket into `REQ/` or `REQ.md` {src:.harness/engine/modules/task/tasklife.py#L612-L640}. Nothing tells the agent to read a linked ticket for the requirement; when the person names it, the tool pack's reads run without asking, and what the agent takes from it goes into `REQ.md` to be confirmed like any source {src:.harness/toolpacks/ado/skills/ado-workitem/SKILL.md#L14-L30}. Writes to tickets: the file 19 Tool packs, connections and MCP.
 
 ## Requirement and intake: which tasks need a confirmed requirement
 
