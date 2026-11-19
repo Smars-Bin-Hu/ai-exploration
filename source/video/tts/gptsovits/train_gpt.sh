@@ -11,7 +11,7 @@ import yaml
 d = yaml.safe_load(open("GPT_SoVITS/configs/s1longer-v2.yaml"))
 d["train"].update(precision="32", batch_size=$BS, epochs=$EPOCHS, save_every_n_epoch=5, if_save_every_weights=True,
                   if_save_latest=True, if_dpo=False, half_weights_save_dir="GPT_weights_v2ProPlus", exp_name="$EXP")
-d["data"]["num_workers"] = 0
+d["data"]["num_workers"] = 2
 d["pretrained_s1"] = "GPT_SoVITS/pretrained_models/s1v3.ckpt"
 d["train_semantic_path"] = "logs/$EXP/6-name2semantic.tsv"
 d["train_phoneme_path"] = "logs/$EXP/2-name2text.txt"

@@ -42,7 +42,7 @@ def scenes(path):
         elif line.startswith(('@', '//', '# ')) or not out:
             continue
         else:
-            para.append((no, line))
+            para.append((no, re.sub(r'\s+', ' ', re.sub(r'\[(\d*\.\d+|\d+(?:\.\d+)?)\]', ' ', line)).strip()))  # pause marks [.3] are not words
     if out and para:
         out[-1][1].append(para)
     return out
@@ -95,7 +95,8 @@ def lint(scene_file, zh_file=None):
                     flags.append((no, 'bare-referent', s[:80]))
                 body = re.sub(r'^(but|and|so|ok|okay|well)\b,?\s*', '', re.sub(r'^[^:]{1,12}:\s*', '', s), flags=re.I)  # "Three: ..." lead-ins, "But what…?"
                 asks = (re.match(QWORDS, body, re.I) or re.search(r',\s*' + QWORDS, body, re.I)) and not re.match(r'(which|what|how|when|where|who)\b[^?]*\b(is|are)\b[^?]*\.$', body, re.I)
-                if s.endswith('?') and not asks and ' or ' not in s:
+                tag = re.search(r',\s*right\?$', s, re.I)  # a tag question ("…, right?") rises like one
+                if s.endswith('?') and not asks and not tag and ' or ' not in s:
                     flags.append((no, 'question', f'ends with "?" but reads as a statement: {s[:80]}'))
     return flags
 

@@ -108,11 +108,27 @@ def parse(path):
         if line.startswith('@'):
             scenes[-1]['items'].append(('pic', pic_spec(line, no, scenes[-1]['title'])))
         else:
-            text = re.sub(r'\s*\[>\]\s*', ' ', line).strip()
+            text, pauses = split_pauses(re.sub(r'\s*\[>\]\s*', ' ', line).strip())
             if text:
-                scenes[-1]['items'].append(('say', dict(text=text, line=no, brk=blank)))
+                scenes[-1]['items'].append(('say', dict(text=text, line=no, brk=blank, pauses=pauses)))
                 blank = False
     return title or Path(path).parent.name, scenes
+
+
+PAUSE_RX = re.compile(r'\[(\d*\.\d+|\d+(?:\.\d+)?)\]')  # a pause mark in a spoken line: [.3], [0.3], [1], seconds
+PAUSE_VERSION = 'p1'  # bump when put_pauses changes, so every clip with a pause mark is made again (from the same voice)
+
+
+def split_pauses(line):
+    """'So, [.3] number one is,' -> ('So, number one is,', [(1, 0.3)]): the line without its pause marks (they are never
+    spoken or shown), and each mark as (how many of the line's words come before it, seconds)."""
+    parts, pauses = [], []
+    for k, part in enumerate(PAUSE_RX.split(line)):
+        if k % 2:
+            pauses.append((len(' '.join(parts).split()), float(part)))
+        else:
+            parts.append(part)
+    return re.sub(r'\s+', ' ', ' '.join(parts)).strip(), pauses
 
 
 def pic_spec(line, no, scene_title):
@@ -422,7 +438,7 @@ def sentence_id(text):
 
 def spoken_lines(scenes):
     """The spoken lines of a parsed scenes file, in order: [dict(text, line, scene, brk)]."""
-    return [dict(text=it['text'], line=it['line'], scene=si, brk=it['brk'])
+    return [dict(text=it['text'], line=it['line'], scene=si, brk=it['brk'], pauses=it.get('pauses', []))
             for si, sc in enumerate(scenes) for kind, it in sc['items'] if kind == 'say']
 
 
@@ -1818,6 +1834,104 @@ def align_all(sents, adir, args):
     return len(todo)
 
 
+def chunk_pauses(c, sents, lines):
+    """The pause marks of a clip's lines -> [(how many of the clip's words come before it, seconds)]. A mark before the
+    clip's first word or after its last is left out: the timeline sets the time between clips (--para-gap, --gap)."""
+    out, n = [], 0
+    for i in c['sents']:
+        for g in sents[i]['lines']:
+            out += [(n + k, sec) for k, sec in lines[g].get('pauses', [])]
+            n += len(lines[g]['text'].split())
+    return [(k, sec) for k, sec in out if 0 < k < n]
+
+
+def put_pauses(todo, adir, args):
+    """Pause marks -> silence in the made voice. Each clip in todo has src (the voice as made from its text, marks left
+    out, so the voice says the paragraph in one go), text, pauses [(words before, seconds)] and raw (where the clip with
+    its pauses goes). The words' times come from mlx-whisper on src (cached like align_all); a mark between word k-1 and
+    word k tops the pause there up to its length: the quiet already between the two words counts (the voice's own comma
+    or sentence pause), and silence is put in at the quietest 10 ms of it. Without word times, where the letters say.
+    -> dict(marks, added (seconds), already (marks the voice's own pause already covered), letters (placed by letters))."""
+    import difflib
+    rep = dict(marks=0, added=0.0, already=0, letters=0)
+    jobs = [dict(wav=c['src'], text=c['text']) for c in todo]
+    align_all(jobs, adir, args)
+    for c, job in zip(todo, jobs):
+        with wave.open(str(c['src'])) as w:
+            data = w.readframes(w.getnframes())
+        db = _db10(data)
+        thr = max(max(db, default=-90) - 40, -60)
+        quiet = [d < thr for d in db]
+        voiced = [k for k, q in enumerate(quiet) if not q]
+        vs, ve = (voiced[0] / 100, (voiced[-1] + 1) / 100) if voiced else (0, len(db) / 100)
+        words = c['text'].split()
+        hyp = []
+        if job['align'].exists():
+            hyp = [(align.norm(wd), a, b) for wd, a, b in json.loads(job['align'].read_text(encoding='utf-8')).get('words', [])
+                   if align.norm(wd)]
+        toks = [(align.norm(wd), i) for i, wd in enumerate(words) if align.norm(wd)]
+        at = {}  # word index -> (start, end) in src
+        if toks and hyp:
+            sm = difflib.SequenceMatcher(None, [t[0] for t in toks], [x[0] for x in hyp], autojunk=False)
+            for a, b, n in sm.get_matching_blocks():
+                for q in range(n):
+                    at[toks[a + q][1]] = hyp[b + q][1:]
+        use_words = len(at) >= 0.5 * max(len(toks), 1)
+        chars = [0]
+        for wd in words:
+            chars.append(chars[-1] + len(wd) + 1)
+        inserts = []  # (10 ms frame where silence goes in, seconds of silence)
+        for k, sec in c['pauses']:
+            rep['marks'] += 1
+            before = [at[i][1] for i in range(k - 1, -1, -1) if i in at][:1]
+            after = [at[i][0] for i in range(k, len(words)) if i in at][:1]
+            if use_words and before and after:
+                lo, hi = min(before[0], after[0]) - 0.1, max(before[0], after[0]) + 0.1
+            else:  # where the letters say, with room either side
+                mid = vs + (ve - vs) * chars[k] / max(chars[-1], 1)
+                lo, hi = mid - 0.4, mid + 0.4
+                rep['letters'] += 1
+            f0, f1 = max(0, int(lo * 100)), min(len(db), int(hi * 100) + 1)
+            best, run, start = (0, None), 0, f0  # the longest quiet run in the window: the pause the voice made
+            for f in range(f0, f1):
+                if quiet[f]:
+                    run += 1
+                    if run > best[0]:
+                        best = (run, f - run + 1)
+                else:
+                    run = 0
+            if best[1] is not None:
+                have = best[0] / 100
+                at_f = min(range(best[1], best[1] + best[0]), key=lambda f: (db[f], abs(f - (best[1] + best[0] / 2))))
+            else:
+                have = 0.0
+                at_f = min(range(f0, max(f1, f0 + 1)), key=lambda f: db[f] if f < len(db) else 0)
+            if sec - have < 0.01:
+                rep['already'] += 1
+                continue
+            inserts.append((at_f, round(sec - have, 3)))
+            rep['added'] += sec - have
+        pcm = array.array('h', data)
+        out, last = array.array('h'), 0
+        hop, fade = RATE // 100, RATE // 200  # 10 ms frames; 5 ms fades into and out of the silence
+        for f, sec in sorted(inserts):
+            cut = min(f * hop + hop // 2, len(pcm))  # the middle of the quietest 10 ms
+            piece = pcm[last:cut]
+            for j in range(min(fade, len(piece))):  # fade out into the silence
+                piece[len(piece) - 1 - j] = int(piece[len(piece) - 1 - j] * j / fade)
+            out += piece
+            out += array.array('h', bytes(2 * round(sec * RATE)))
+            last = cut
+            for j in range(min(fade, len(pcm) - cut)):  # fade back in after it
+                pcm[cut + j] = int(pcm[cut + j] * j / fade)
+        out += pcm[last:]
+        tmp = Path(str(c['raw']) + '.part.wav')
+        with wave.open(str(tmp), 'wb') as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(out.tobytes())
+        tmp.replace(c['raw'])
+    return rep
+
+
 # ---------- build ----------
 
 def main():
@@ -1906,6 +2020,7 @@ def main():
     ap.add_argument('--timing-json', help='also write the timeline (sentences, pictures, merges) to this file, to check it')
     ap.add_argument('--out', default=str(ROOT / '.claude/loops/video-out'), help='output root')
     args = ap.parse_args()
+    args.out = str(Path(args.out).resolve())  # ffmpeg's concat list is read from a temp folder: relative paths break it
     t0 = time.time()
 
     if args.scenes:
@@ -2111,6 +2226,24 @@ def main():
         if todo:
             print(f'making {len(todo)} paragraph clip(s) with {voice.spec} ...', flush=True)
             voice.make_all([(c['text'], c['raw'], c['around']) for c in todo])
+        # pause marks ([.3]): the voice speaks the paragraph without them (the clip above, shared with the same text
+        # unmarked), then silence goes in at the marked word boundaries; the clip with its pauses has its own key
+        todo_p, seen_p = [], set()
+        for c in chunks:
+            c['pauses'] = chunk_pauses(c, sents, lines)
+            if c['pauses']:
+                c['src'] = c['raw']
+                c['key'] = h(c['key'], 'pauses', json.dumps(c['pauses']), PAUSE_VERSION)
+                c['raw'] = adir / f'{c["key"]}.wav'
+                c['wav'] = adir / f'{c["key"]}-{fps}p.wav'
+                if not c['raw'].exists() and c['key'] not in seen_p:
+                    todo_p.append(c); seen_p.add(c['key'])
+        if todo_p:
+            pr = put_pauses(todo_p, adir, args)
+            print(f'pause marks: {pr["marks"]} in {len(todo_p)} clip(s), {pr["added"]:.1f} s of silence put in; '
+                  f'{pr["already"]} already as long in the voice'
+                  + (f'; {pr["letters"]} placed by letter count (no word times)' if pr['letters'] else ''))
+        todo += [c for c in todo_p if c not in todo]  # a clip made just now and given its pauses is listed once
     made_keys = {c['key'] for c in todo}
 
     meta_path = adir / 'durations.json'
