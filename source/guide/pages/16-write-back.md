@@ -105,7 +105,7 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/promote_target.py#L1-
 - **The rules need target repositories set up;** without them git is checked only by the ask list {src:.harness/engine/modules/gate/handler.py#L815-L824}.
 - **The gate reads command text.** A script, an alias or a path made at run time can write a repository unseen; a git command the person approves can also write there {src:.harness/engine/modules/gate/gitcmd.py#L1-L9}.
 - **The harness runs `git fetch` and moves the base branch forward** at a first fetch and every dry run, by fast-forward only, although the design doc says "no automatic fetch or pull" {src:docs/05-design.md#L224}.
-- **No undo across repositories,** and recovery acts only in a repository still on the write-back branch.
+- **No undo across repositories,** and recovery acts only in a repository still on the write-back branch {src:.harness/engine/modules/task/promote_target.py#L13-L14} {src:.harness/engine/modules/task/promote_target.py#L350-L386}.
 - **A person can approve without reading.** The digest stops a swap, not a careless yes; the dry run checks base versions, not whether the code is right.
 - **One task per repository at a time:** the next write-back waits until the person commits the previous one.
 
