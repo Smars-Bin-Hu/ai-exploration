@@ -331,3 +331,7 @@ Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: th
 `--ref-text "..."` overrides `ref.txt`. `--out` ending in `.mp3` or `.m4a` is converted with ffmpeg. `--seed` (default 1) makes a run repeatable; change it to get another take of a sentence. Timings go to stderr.
 
 `say.py` uses only the standard library. It picks the environment for the model, runs `backends/<model>_backend.py` with that environment's Python, and passes the job as JSON on stdin. To add a model, add a backend with a `load` and a `speak` function (see `backends/_common.py`) and one line in `MODELS` in `say.py`; the backend gets the preset's settings in `job["options"]`.
+
+## Removed (2026-11-18)
+
+Rejected after listening, deleted to free disk (~19 GB): F5-TTS, Chatterbox and Chatterbox Turbo, VoxCPM2, Qwen3-TTS 0.6B, Kokoro + OpenVoice / Chatterbox converter (the `kvc` env). Their backends stay in `say.py` for the record but need a reinstall (install steps above) before use. Kept: Qwen3-TTS 1.7B, VibeVoice, Kokoro + Seed-VC (the `seedvc` env has Kokoro), Demucs, DeepFilterNet, mlx-whisper, WavLM, GPT-SoVITS.
