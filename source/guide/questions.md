@@ -490,7 +490,7 @@ Layer 3 · code · detail.
 - `.harness/tests/test_task.py:172-179` (`test_only_a_person_at_a_terminal_approves`): the command line refuses `task approve-plan` and `task confirm-req` without a person's terminal, and the hook denies `approve-plan`, `confirm-req`, `approve-promote` and `recover` typed by the agent.
 - `.harness/tests/test_c13_f2.py:1552-1570`: other spellings of the person-only commands (quotes, `python -m cli`, `task allow --conn`) are refused the same way.
 - `.harness/tests/test_task.py:150-170`: the code is bound to the plan, and a plan changed after the approval closes `DEV/` again; `.harness/tests/test_reqbinding.py:65` (`test_a_plan_is_approved_for_its_requirement`).
-- The tests run with `python -m unittest discover -s .harness/tests` (`.harness/INDEX.md:109`).
+- (Sub-clause, not required:) the tests run with `python -m unittest discover -s .harness/tests` (`.harness/INDEX.md:109`).
 
 Should cite: 33 Test map. Course: The book · 4.4 Build the enforcement layer like software.
 
