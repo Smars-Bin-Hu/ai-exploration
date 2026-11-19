@@ -1,129 +1,120 @@
-# Basic 01 · Stop using AI the 2024 way
+# Basic 01 · English casual script (v2)
 
 ## 0 Hook
 
-It's 2026, and a lot of teams want AI to be a real part of how they build software. Plenty of companies already pay for an AI chat tool or a coding agent, like Claude Code, Codex or GitHub Copilot. But what we actually see is that many teams still use AI for only a small slice of their work. And lots of people even still use it the same old way, as a chat: ask a question, get an answer.
+You know, it's 2026, and a lot of teams want AI to really stick in their dev work. Lots of companies have already paid for AI chat or coding agents for their people, like Claude Code, Codex, or GitHub Copilot. But here's the thing: what we keep seeing is, a lot of teams still only use AI for a tiny slice of their work. And plenty of people are even still using it like a Q&A chat.
 
-// picture: Claude Code, Codex and GitHub Copilot need to appear
+// picture: Claude Code, Codex, and GitHub Copilot must appear
 
-Here's what I mean: say you're a software engineer, and you've got a huge legacy system on your hands. The business side gives you a requirement. You've built plenty of features like this, and you know the best way to do it: which code to change, how to test it, what depends on what, what it might break. You've seen it all. Now you're told to do it with AI. What do you do?
+So, say you're a software engineer, and you've got this huge legacy system on your hands. A request comes in from the business side, and you've built a bunch of features like it before. You know exactly what the best fix is: which code to change, how to test it, what it depends on and what depends on it, and what else it could break. You've done all of it before. Now you're told you have to use AI for it. What do you do?
 
-Probably something like this: first, you dig out the files you think matter, one by one, and paste them into the chat. Then you write a long explanation of what the code does and how it all fits together. Then you paste in the requirement. And finally, a whole screen of "do this", "add that", "whatever you do, don't touch that".
+Pretty much this: first, you dig up the code files you think matter, one by one, and drop them into the chat box. Then you write this long explanation of what the code does and how it all fits together. Then you paste in the request. And finally, you write a whole screen of "do this", "add that", "never touch that".
 
-The AI hasn't written a single line yet, and you've already spent half an hour. Then you hit Enter and hope it gets it right.
+The AI hasn't written a single line of code yet, and you've already spent half an hour. Then you hit Enter and hope it gets it right.
+But what usually happens? The AI gives you something you're, like, 80 to 90% happy with. You paste its code back in, run the tests yourself, check the results yourself... and some of it's still wrong. So now you're spending even more time reviewing the code... And in the end you're thinking, using AI is slower than just writing it myself. Because it can't understand your complex system, and it can't see the traps you already know about.
 
-But what you usually get is an answer you're maybe eighty or ninety percent happy with. You paste its code back in, run the tests yourself, check the results yourself, and some of it's still wrong, so you spend even longer reviewing it. In the end, it feels faster to just write it yourself, because the AI doesn't get your complex system, and it can't see the traps you know are there.
+// picture: a long prompt, the AI's answer, you breaking down
 
-// picture: a long prompt, the AI's answer, you falling apart
-
-In this video I want to make three things clear: what's wrong with using AI this way, why it's so hard for development teams to really adopt AI, and what the missing piece is called.
+So in this video I want to make three things clear: where this way of using AI goes wrong, why it's so hard for dev teams to really put AI to work, and what the missing piece is called.
 
 ## 1 Your pain points
 
-If you've used AI like this, you've probably run into every one of the following problems.
+If you've used AI like this, you've probably hit every one of the things I'm about to list.
 
 One: it doesn't know your project. Every single time, you have to find the code, paste the code, explain the code.
 
-Two: it forgets. Open a new chat, and everything you said before is gone, so you have to say it all again. And the longer you stay in the same chat, the worse the AI seems to do: it forgets things you agreed on at the start.
+Two: it forgets. Open a new chat, and everything you told it is gone. You have to say it all again from scratch. And you'll notice, the longer you chat in the same conversation, the worse it seems to get. Stuff you agreed on earlier, it forgets later.
 
-Three: you give it a list of dos and don'ts, and it doesn't always follow them. Most of the time it listens, but every so often it skips exactly the step you care about most. That's especially true in long chats: the more history piles up, the more its attention drifts, and the less it remembers from earlier.
+Three: you give it a bunch of dos and don'ts, but it doesn't always follow them. Most of the time it listens, but every now and then it skips exactly the step you care about most. And it gets worse the longer the chat goes: the more history there is, the more its attention drifts, and the less it remembers the older stuff.
 
-Four: it's always sure of its own work. "Done, and all the tests pass." Then you look for yourself, and there's still a pile of mistakes.
+Four: it's always super confident when it checks its own work. "Done, all tests pass." Then you look, and there are still tons of errors.
 
-Five: you can't see what it actually did. Which files did it change, which commands did it run, why did it do it that way? After the fact, it's hard to tell.
+Five: you can't see what it actually did. Which files it changed, which commands it ran, why it made those changes... it's hard to explain any of that afterwards.
 
 // picture: one image per pain point
 
-## 2 The root cause
+## 2 Root cause
 
-Is this how you use AI right now?
+So, is this how you use AI right now?
 
-Well, that's how people used AI in 2024: as a chatbot.
+Well, this is how people used AI back in 2024: treating it like a chatbot.
 
-Back then, most people were busy learning to write better prompts to get better answers. That was called prompt engineering. But here's the problem: even if the model is smart enough, you're still treating it like someone who just answers questions. You haven't let it get its hands on the work. It answers your questions, and everything else is still on you: finding the code, sorting out the requirement, running the tests, remembering the context, making sure it follows the process, checking its results. You do all of it by hand.
+In 2024, most people were still figuring out how to write a good prompt so the AI would do better. So that's what people called Prompt Engineering. But the problem is, even if the model is smart enough, you're still treating it as someone who just answers questions. You haven't let it actually do the work. Apart from answering you, everything else is still on you: finding the code, sorting out the request, running the tests, remembering the context, watching it to make sure it sticks to the process, checking its results. All of that, you do by hand.
 
-And in the end, you hear the same old lines: AI isn't reliable, AI makes mistakes, AI can only help with part of my work.
+And so in the end, you hear the same thing everywhere: AI isn't reliable, AI makes mistakes, AI can only help with part of my work...
 
 ## 3 What is an agent
 
-So let me explain what an AI agent is.
+So here we've got to explain what an AI agent is.
 
-When you chat with AI, you're talking straight to the large language model, the LLM: it thinks, then writes you an answer in text. An agent is an LLM plus tool calling, meaning it can use tools. Think of tools as its hands: once it's thought things through, it can go and change the code on your machine itself, run commands, search the web, open a browser. But hands alone aren't enough, the key is that it loops. It calls a tool, looks at the result, and decides what to do next. Then it calls again, looks again, and keeps going until the job's done.
+When you normally chat with AI, you're really talking straight to the large model, the LLM. It thinks, then writes some text back to answer you. An agent adds tool calling on top of the LLM, basically, the ability to use tools. Think of tools as its hands: once it's thought things through, it can change code files on your machine by itself, run commands, search the web, open a browser. But having hands isn't enough. Here's the key: it loops. It calls a tool, looks at the result, then decides what to do next. Then it calls again, looks again, and keeps going until the job's done.
 
-Give an LLM hands and a loop of its own, and you've got an agent. It doesn't just answer you anymore, it can finish a piece of work on its own.
+Hands, plus the ability to loop on its own, and that's when you get an agent. It doesn't just answer you anymore. It can finish a task by itself.
 
 // picture: LLM → tool → result → next step, in a circle
 
 ## 4 What is a harness
 
-But once an agent can work on its own, you get a new set of problems.
+OK, so now agents can do work on their own. But that brings new problems.
 
-Look back over the last few years: in 2024, people were figuring out how to write good prompts. In 2025, people found that to get steady results, you have to manage the AI's context well, and that's context engineering. And by 2026, coding agents like Claude Code, Codex and GitHub Copilot can really get work done for you. And that's where the new problems start.
+Look back at the last few years. In 2024, people were working on how to write good prompts. In 2025, people figured out they needed to get context engineering right, you know, managing what's in the AI's context, so it'd perform consistently. And by 2026, coding agents like Claude Code, Codex, and GitHub Copilot can really do work for you. And being able to do work brings new problems too.
 
-Companies found that to really adopt agents, they have to solve these problems.
+Companies found that to really put agents to work, they have to solve these problems:
 
-One: the agent doesn't know your systems or your projects, so someone still has to explain them every time.
+- It doesn't know your systems and projects, so someone still has to walk it through them every time.
+- How do you keep memory across sessions? If one session breaks, how does another one pick up the task?
+- People only use the agent to change code. Everything else, like running tests, the CI/CD pipeline, updating tickets, people still do themselves.
+- It doesn't always follow the rules you agreed on.
+- People don't dare give it access to servers, because it might do something dangerous, like dropping a table.
+- When it finishes a task, it tends to be totally sure its result is right.
+- Where did the money and time go, and how do you cut them down? The plan, the logs, the traces of how the task went... none of it gets recorded.
+- One person can keep an eye on five sessions, tops. So human attention becomes the bottleneck for the agent's work.
+- On a long or complex task, the agent always stops partway through.
 
-Two: how do you keep its memory from one session to the next? If a session dies, how does a new one pick up the task?
+That's way too many problems. And the skill of getting an agent to work both steadily and well, that's called harness engineering.
 
-Three: people only use the agent to change code, and still handle the tests, the CI-CD pipeline and the tickets themselves.
+There's a formula: Agent = Model + Harness. Everything outside the model is the harness.
 
-Four: it doesn't always follow the rules you agreed on.
-
-Five: you don't dare give it access to your servers, in case it does something dangerous, like dropping a table.
-
-Six: when it finishes a task, it's usually sure it got it right.
-
-Seven: where did the time and money go, and how do you spend less? The plan, the logs, the steps it took: none of it gets recorded.
-
-Eight: one person can keep an eye on five sessions at most, so human attention becomes the bottleneck.
-
-Nine: on a long or complex task, the agent always stops partway through.
-
-That's a lot of problems. Getting an agent to work well, and keep working well, is a craft of its own. It's called harness engineering.
-
-There's a simple formula: agent equals model plus harness. Everything outside the model is the harness.
-
-All of this used to be you, reminding it in the prompt, but now a program does it. A program is deterministic, it doesn't spend tokens, and it doesn't depend on the model behaving itself, so jobs with a fixed answer go to programs, and anything that needs judgment goes to the agent.
+Before, all of this depended on you reminding it in the prompt. Now it's handed over to programs. Because a program does the same thing every time, it doesn't cost tokens, and it doesn't depend on the model behaving itself. So the fixed, predictable stuff goes to programs, and the stuff that needs judgment and thinking goes to the agent.
 
 // picture: Agent = Model + Harness, five things around the model
 
 ## 5 My harness
 
-I've built my own harness framework, on top of GitHub Copilot in VS Code.
+So I built a harness framework myself, and it runs on GitHub Copilot in VS Code.
 
-If your company uses Microsoft, you're probably using two Copilots at once: M365 Copilot and GitHub Copilot. GitHub Copilot is what we call a coding agent, and my harness helps you steer it better.
+If your team's a Microsoft customer, you're most likely using two Copilots at once: M365 Copilot and GitHub Copilot. GitHub Copilot is the one we call a coding agent, and my harness helps you drive GitHub Copilot better.
 
-Let's go back to those problems and see how my harness handles each one.
+So let's go back to the gaps on that list and see what each one looks like in my harness.
 
-First: the agent doesn't know your systems or your projects, so someone has to explain them every time.
+- It doesn't know your systems and projects, so someone still has to walk it through them every time.
 
-I built a standard framework that turns a codebase into a knowledge base. A set of tools studies your codebase, finds the hidden dependencies between files, and writes them up as cards. When it's done, it produces a summary file and an index. So the agent doesn't have to reread the code every time: it just loads the summary and a few cards, and it gets a rough picture of your codebase. And when it needs more, the index takes it straight to the right file.
+I built a standard framework that turns a codebase into a knowledge base. It uses a set of tools to learn your codebase, find the hidden dependencies between files, and write what it finds into cards. Once it's done learning, it generates a summary file and an index, kind of like a table of contents. So the agent doesn't have to re-read the code every time. It just loads the summary file and a few of the cards, and it gets a rough picture of your codebase. And if it needs to, it can jump straight to the right files through the index.
 
-Second: how do you keep its memory from one session to the next? If a session dies, how does a new one pick up the task?
+- How do you keep memory across sessions? If one session breaks, how does another one pick up the task?
 
-Every task is a folder. It holds everything from the task's whole life: the plan, the history log, the status, the requirement doc, the test scripts, the changed code, and anything else the agent produces along the way. So if a session dies, a new one just scans the folder and carries on right away.
+Each task is a folder. It holds the files for the task's whole life: the task plan, history logs, status, requirement docs, test scripts, the changed code, and anything the agent produces while it works. It all gets saved in there. So even if one session dies, another session just scans that task folder and picks right up.
 
-Third: people only use the agent to change code, and still handle the tests, the CI-CD pipeline and the tickets themselves. And you don't dare give it access to your servers, in case it does something dangerous, like dropping a table.
+- People only use the agent to change code. Everything else, like running tests, the CI/CD pipeline, updating tickets, people still do themselves. And people don't dare give it access to servers, because it might do something dangerous, like dropping a table.
 
-Give the agent access to your dev and test environments, and it can build things, write its own test scripts, run them, and fix what fails. To keep that safe, here's what I do: with a standard tool pack, the agent gets read-only access to the lower environments. Anything that writes or executes needs a person to approve it. Take Microsoft's SQL Server: I've tested my harness against thousands of injected dangerous commands. Between a blacklist, a whitelist, a human making the call, and the account's own permissions, the agent's access stays safe.
+So I give the agent access to the dev and test environments, so it can develop on its own, write test scripts on its own, run them on its own, and fix things on its own. For safety, here's how I did it: through a standard Toolpack, the agent gets read-only access to the non-prod environments, and anything that writes or executes needs a person to approve it. For example, with Microsoft's SQL Server, I've tested my harness against thousands of attempts to sneak in dangerous commands. And between a blacklist, a whitelist, a person making the call, and the account's own permissions, the agent's access stays safe.
 
-Fourth: when it finishes a task, it's usually sure it got it right.
+- When it finishes a task, it tends to be totally sure its result is right.
 
-I bring in an independent reviewer as a subagent. It reviews everything the agent did on the task and gives a test verdict. In practice, the reviewer catches lots of cases the main agent never thought of.
+I bring in an independent reviewer as a subagent. The subagent reviews everything the main agent did and gives a test verdict. And in practice, the reviewer catches a lot of cases the main agent didn't think of.
 
-Fifth: where did the time and money go, and how do you spend less? The plan, the logs, the steps it took: none of it gets recorded.
+- Where did the money and time go, and how do you cut them down? The plan, the logs, the traces of how the task went... none of it gets recorded.
 
-I built a report panel that shows the numbers for the whole task: where the time went, where the money went, which tool calls failed. It's all there at a glance.
+I built a task report dashboard just for looking at the stats of a whole task: where the time went, where the money went, which tool calls failed. All the conclusions, right there at a glance.
 
-There are plenty of other problems too, but there's no time to go through them all here.
+- And there's a lot more, but to save time, I won't list it all here.
 
 ## 6 Summary
 
-So, AI hasn't gotten dumber, it's the way we use it that's still stuck in 2024. We treat it as a chatbot, and people still do the copying and pasting, watch the process, and do the checks.
+So, AI hasn't gotten dumber. It's that the way we use it is still stuck in 2024: treating it like a chatbot, with people doing all the legwork in between, watching the process, and doing the checks.
 
-With an agent, a program does the copying and pasting. With a harness, a program also handles the process, the checks and the boundaries. And people can finally step back, and just make the calls and sign off.
+The agent hands that legwork over to programs, and the harness hands the process, the checks, and the boundaries over to programs too. So people can finally step back, and just make the calls and be the gatekeepers.
 
-If you're rolling out AI on your team, don't rush to ask, "Which stronger model should we switch to?" Ask this first: "What's missing around our AI?"
+If you're trying to get your team using AI, don't rush to ask "which stronger model should we switch to?" First ask: "What's missing around our AI?"
 
-If you want to try it yourself, in the next video I'll walk you through installing this harness and starting your first task.
+And if you want to try it yourself, in the next video I'll help you install this harness and kick off your first task.
