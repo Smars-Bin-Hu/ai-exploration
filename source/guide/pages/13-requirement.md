@@ -25,7 +25,7 @@ The person gives documents on the **Intake** tab of the task page or with `harne
 
 - **convert**: the original is kept untouched in `REQ/originals/`, its text is written beside it, and `<name>.convert.md` reports what was left out {src:.harness/engine/modules/task/intake.py#L278-L332}. A `.docx` becomes Markdown (headings, lists with Word's numbers as text, tables, footnotes, pictures in `REQ/media/`, tracked insertions, comments in a file of their own; headers, footers and contents dropped). An `.xlsx` becomes a CSV per sheet (hidden sheets, rows and columns skipped unless asked, merged cells repeated, formulas as last saved, colours counted, not kept) {src:.harness/engine/modules/task/intakeconvert.py#L1-L15}.
 - **No AI**: a `.docx` or `.xlsx` is zipped XML read with Python's standard library, so it costs no tokens and changes no number. `.xls` and PDF need `xlrd` or `pypdf`, installed by the person; the harness never runs an install {src:.harness/policies/tools.json#L8-L11}.
-- Text and pictures are kept as they are; `.doc`, `.pptx` and unknown types only as originals with a note; over 60 MB is refused {src:.harness/engine/modules/task/intake.py#L37-L44}.
+- Text and pictures are kept as they are; `.doc`, `.pptx` and unknown types only as originals with a note; a file over 28 MB is refused on the Intake tab, over 60 MB by `task intake convert` in a terminal {src:.harness/engine/modules/task/intake.py#L37-L44} {src:.harness/engine/modules/task/taskdesk.py#L509-L516}.
 - **paste** saves a copied table or text, the way out for a file too odd to convert; **init** makes `REQ/INTAKE.md`, a short goal (the kind of task, ask only what does not fit, "Human adds" for the person's lines, the knowledge base domain to scan) {src:.harness/contracts/templates/task/en/INTAKE.md#L1-L15}.
 - On the tab the person trims a file (a CSV opens as a table), puts it back as converted, deletes, and copies a ready message that tells the agent to read `INTAKE.md` and the converted files and write `REQ.md` {src:.harness/engine/modules/task/intake.py#L1-L11}.
 
@@ -37,7 +37,7 @@ The person presses **Confirm requirement** on the task page or runs `harness tas
 
 With a plan waiting, **Approve plan** (`task approve-plan --with-req`) confirms the requirement and approves the plan with one code over both files; the file 14 Plans and approvals explains that code.
 
-What is only text: the code reads the confirmation line, not who wrote it, and the agent's edit tools may write `REQ.md` {src:.harness/engine/modules/task/taskreview.py#L88-L116}. Before any confirmation is on record, a line the agent filled counts as confirmed; a `REQ.md` with no such line, or none, counts as nothing to confirm, and the plan is approved alone {src:.harness/engine/modules/task/task.py#L551-L567}. Once a confirmation is on record, a change to the three sections counts as changed whatever the line says. The agent is told never to touch the line {src:AGENTS.md#L51}.
+What is only text: the code reads the confirmation line, not who wrote it, and the agent's edit tools may write `REQ.md` {src:.harness/engine/modules/task/taskreview.py#L88-L116}. A line the agent filled counts as confirmed only while no confirmation by the person is on record; after one, a change to the three sections counts as changed whatever the line says. At any time, deleting the line or `REQ.md` makes the state "none": nothing to confirm, and `approve-plan` approves the plan alone, with the person's code over `PLAN.md` only {src:.harness/engine/modules/task/task.py#L551-L567}. The agent is told never to touch the line {src:AGENTS.md#L51}.
 
 ## Requirement and intake: what happens when it changes after the plan was approved
 
@@ -87,17 +87,17 @@ The templates in `.harness/contracts/templates/task/en/`; under `.harness/engine
 
 **Q: Can the agent confirm its own requirement?** Not with the command: the gate refuses it, and it asks a person for a code. But the code reads a text line of `REQ.md`, which the agent can write {src:.harness/engine/modules/task/taskreview.py#L88-L116}.
 
-**Q: What if I change my mind after approving the plan?** Once `REQ.md` says so in its three sections, the plan's approval lapses and `DEV/` closes; you approve both again with one code {src:.harness/engine/core/tasks.py#L152-L164}.
+**Q: What if I change my mind after approving the plan?** Once `REQ.md` says so in its three sections, the plan's approval lapses: the task chat's edit tools are refused in `DEV/` (a terminal command is not checked there) and the write-back is refused until you approve both again with one code {src:.harness/engine/core/tasks.py#L152-L164}.
 
 **Q: Does an RCA or design task need a confirmed requirement?** No: only a `full` task waits for it; a Q&A task has no `REQ.md` {src:.harness/engine/modules/task/taskdesk.py#L533-L535}.
 
 ## Requirement and intake: limits
 
-- **The confirmation is a text line**: before any confirmation on record, a filled line counts; no line, or no `REQ.md`, means nothing to confirm. The plan still needs the person's code {src:.harness/engine/modules/task/task.py#L551-L567}.
+- **The confirmation is a text line**: a line the agent filled counts only before the person's first confirmation; deleting the line or `REQ.md` at any time means nothing to confirm. The plan still needs the person's code {src:.harness/engine/modules/task/task.py#L551-L567}.
 - **The person's folders are closed to the edit tools only.** `task intake` is not a person-only command, and the terminal checks do not cover `REQ/`, `REF/` or `INBOX/`, so a terminal copy or `harness task intake convert` run by the agent is not refused {src:.harness/engine/modules/gate/handler.py#L117-L139}.
 - **Not reading the originals is an instruction**; nothing stops a read of `REQ/originals/` {src:.github/instructions/workspace.instructions.md#L13}.
 - **The converter copies, it does not understand**: it cannot tell the important sheet, drops colours, and a number only in a picture is not read reliably {src:.harness/engine/modules/task/intakeconvert.py#L1-L15}.
-- **A `medium` task has no gate on its requirement**: a changed `REQ.md` stops nothing {src:.harness/engine/modules/task/taskdesk.py#L533-L535}.
+- **A `medium` task does not wait for its requirement**: with no plan, a changed `REQ.md` stops nothing; with a `PLAN.md`, `approve-plan` holds it like any tier {src:.harness/engine/modules/task/taskdesk.py#L533-L535}.
 
 ## Requirement and intake: related files
 
