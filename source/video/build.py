@@ -10,6 +10,7 @@
     .venv/bin/python source/video/build.py basic-01 --list-paragraphs         # paragraphs and points as JSON, for the recorder
     .venv/bin/python source/video/build.py basic-01 --check-scene <sid>       # a talked scene take checked, JSON
     .venv/bin/python source/video/build.py basic-01 --check-para <id>         # a paragraph punch-in checked, JSON
+    .venv/bin/python source/video/build.py basic-01 --polish-preview <sid>    # a scene take (or punch-in) polished, to listen to
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
 Writes .claude/loops/video-out/<video>/: audio/ (one wav per paragraph, and its sentences cut out of it), frames/ (one png
@@ -29,7 +30,9 @@ Talk (--voice rec, as soon as there is any scene/<sid>.wav or para/<id>.wav in t
 scene in their own words; talk.py cuts fillers, stutters and restarts and finds where each point (script line) was said;
 the take is cut into paragraphs at the pauses between them, pictures land on their points, subtitles are what was said,
 and spoken.md (next to the scenes file) gets the cleaned transcript. A paragraph take newer than its scene take replaces
-that paragraph. See FORMAT.md, Recorded voice, Talk.
+that paragraph. --polish-preview <sid|id> polishes one scene take (or punch-in) only, for the author to hear and approve
+before any build: preview/<sid>-raw.mp3, -polished.mp3 and -polish.md in the take folder. See FORMAT.md, Recorded voice,
+Talk.
 """
 import argparse, array, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
 from concurrent.futures import ThreadPoolExecutor
@@ -61,13 +64,16 @@ REC_LEVEL = -20.0     # each take is set to this loudness (LUFS) before compress
 # after the denoise: rumble off, the level, a gentle compressor (2:1 above -18 dB, 6 dB knee: only the loud words), and
 # a de-esser to take back the s the compressor brings forward (measured on say-made takes, each band 80 Hz-16 kHz within
 # -0.1 to +1.1 dB of the take; 2.5:1 above -24 dB lifted 3-16 kHz by 2.5 to 4.5 dB, which a de-esser at 0.3 did not undo)
+# de-plosive: a short low-frequency burst (a 'p' or 'b' hitting the mic) is pulled down by up to 12 dB; voice above 300 Hz unchanged
+DEPLOSIVE = ('adynamicequalizer=dfrequency=120:dftype=lowpass:tfrequency=150:tftype=lowshelf:mode=cutabove:attack=1:'
+             'release=80:ratio=4:range=12:auto=adaptive')
+# DEPLOSIVE is off: on the author's first real take its adaptive threshold took ~8 dB off everything under 200 Hz (the
+# voice itself got thin), and a fixed threshold did nothing. The 80 Hz high-pass and the compressor handle the rest.
 REC_DYN = ('highpass=f=80,'
-           # de-plosive: a short low-frequency burst (a 'p' or 'b' hitting the mic) is pulled down by up to 12 dB; voice above 300 Hz unchanged
-           'adynamicequalizer=dfrequency=120:dftype=lowpass:tfrequency=150:tftype=lowshelf:mode=cutabove:attack=1:release=80:ratio=4:range=12:auto=adaptive,'
            'volume={gain}dB,acompressor=threshold=-18dB:ratio=2:attack=15:release=200:knee=6,'
            'deesser=i=0.4')
 REC_HEAD, REC_TAIL = 0.08, 0.15   # seconds kept before and after the voice of each take
-REC_VERSION = 'r2'    # bump when the polish changes (here or in rec.py), so every take is polished again
+REC_VERSION = 'r3'    # bump when the polish changes (here or in rec.py), so every take is polished again
 
 
 def die(msg):
@@ -646,6 +652,218 @@ def check_talk(args, paras, lines, rdir, adir):
     print(body)
 
 
+def talk_settings(args):
+    """-> (denoiser, tag): what a polished talk take depends on besides the take itself (its file name has both)."""
+    den, tag = rec_settings(args)
+    return den, h(tag, talk.TALK_VERSION, talk.PAUSE_MAX, talk.PAUSE_KEEP, talk.PROMPT_VERSION)[:8]
+
+
+def polish_talk(items, tdir, args, den, tag):
+    """Talk takes (talk_item) -> each polished once into tdir (cached under the take's hash and the settings, what was
+    cut and heard in tdir/takes.json); sets s['cut_take'] and s['rec']. -> the items polished now."""
+    tdir.mkdir(parents=True, exist_ok=True)
+    meta_path = tdir / 'takes.json'
+    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    for s in items:
+        s['take_hash'] = hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
+        s['cut_take'] = tdir / f'{s["take_hash"]}-{tag}.wav'
+    todo, seen = [], set()
+    for s in items:
+        if (s['cut_take'].name not in meta or not s['cut_take'].exists()) and s['cut_take'] not in seen:
+            todo.append(s); seen.add(s['cut_take'])
+    if todo:
+        take_words(todo, tdir / 'words', args)
+        print(f'polishing {len(todo)} talk take(s) (denoise: {den}) ...', flush=True)
+        made = polish_takes(todo, tdir, args, den)
+        meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}  # another run may have added some
+        meta.update(made)
+        meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
+    for s in items:
+        s['rec'] = meta[s['cut_take'].name]
+    return todo
+
+
+def plosives(pcm, td):
+    """What the de-plosive (DEPLOSIVE, in REC_DYN) does to a take. -> (bursts, voice): bursts [(t, dB)] are the p and b
+    pops: runs of 80 ms or less, starting sharply, where the sound is as loud as voiced speech and the band under 100 Hz
+    carries most of it (within 4 dB of the whole band; in speech it is about 12 dB under), at their start in seconds, with the
+    most the de-plosive took off the band under 200 Hz there; voice is the median dB it took off that band over the
+    rest of the voice. Per 10 ms, the take with and without DEPLOSIVE, as given (not denoised: near enough, the
+    denoiser takes at most 12 dB off, and off the room tone, not off a pop)."""
+    src = td / 'plos-in.wav'
+    write_pcm(src, pcm)
+    out = []
+    for name, af in (('a', 'highpass=f=80,lowpass=f=200'), ('b', f'highpass=f=80,{DEPLOSIVE},lowpass=f=200'),
+                     ('v', 'lowpass=f=100')):
+        r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(src), '-af', af, '-c:a', 'pcm_s16le',
+                            str(td / f'plos-{name}.wav')], capture_output=True, text=True)
+        if r.returncode:
+            return [], None
+        out.append(rec.db10(read_pcm(td / f'plos-{name}.wav')))
+    a, b, v = out
+    full = rec.db10(pcm)
+    n = min(len(a), len(b), len(v), len(full))
+    vfloor = rec.thresholds(v)[1]
+    _, _, hi, lo = rec.thresholds(full)
+    hits = [k for k in range(n) if v[k] > vfloor + 20 and v[k] >= full[k] - 4 and full[k] > hi]
+    runs = []
+    for k in hits:
+        if runs and k - runs[-1][-1] <= 3:
+            runs[-1].append(k)
+        else:
+            runs.append([k])
+    # a pop starts sharply (6 dB up under 100 Hz within 30 ms); a word dying away, where the low band lasts longest, does not
+    runs = [r for r in runs if r[-1] - r[0] < 8 and r[0] >= 3 and v[r[0]] - min(v[r[0] - 3:r[0]]) >= 6]
+    burst = {q for r in runs for q in range(r[0] - 2, r[-1] + 3)}
+    rest = sorted(a[k] - b[k] for k in range(n) if full[k] > lo and k not in burst)
+    return ([(r[0] / 100, round(max(a[q] - b[q] for q in range(r[0], r[-1] + 2) if q < n), 1)) for r in runs],
+            round(rest[len(rest) // 2], 1) if rest else None)
+
+
+def mp3(src, dst):
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(src), '-c:a', 'libmp3lame', '-q:a', '2', str(dst)],
+                       capture_output=True, text=True)
+    if r.returncode:
+        die(f'ffmpeg could not write {dst}: {r.stderr.strip()[-300:]}')
+
+
+def clock(t):
+    return f'{int(t // 60)}:{t % 60:05.2f}'
+
+
+def polish_preview(args, scenes, paras, lines, rdir, adir):
+    """--polish-preview: one scene take (sid) or punch-in (paragraph id) polished as the build polishes it, before any
+    picture or subtitle is made, for the author to listen to: rdir/preview/<sid>-raw.mp3, <sid>-polished.mp3 and
+    <sid>-polish.md (what was cut or changed, at what time in the raw take; the transcript cleaned; the points missing
+    or out of order; "like"; loudness). The polished take lands in the build's cache (audio/rec/), so the build that
+    follows does not polish it again (FORMAT.md, Recorded voice, Talk)."""
+    want = args.polish_preview
+    mine = [p for p in paras if p['sid'] == want]
+    kind, take = 'scene', current(rdir / 'scene', want) if mine else None
+    if not take and any(p['id'] == want for p in paras):
+        mine = [p for p in paras if p['id'] == want]
+        kind, take = 'para', current(rdir / 'para', want)
+    if not mine:
+        die(f'{want} is no scene (sid) or paragraph (id) of this video; --list-paragraphs prints them')
+    if not take:
+        die(f'no take {rdir / kind / (want + ".wav")}')
+    s = talk_item(take, ' '.join(p['text'] for p in mine), kind, want)
+    tdir = adir / 'rec'
+    take_words([s], tdir / 'words', args)
+    den, tag = talk_settings(args)
+    fresh = polish_talk([s], tdir, args, den, tag)
+    m = s['rec']
+    pdir = rdir / 'preview'
+    pdir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        raw = decode(take, td / 'raw.wav')
+        pl = talk_plan(s, raw)
+        loud_raw = ebur128(td / 'raw.wav')
+        mp3(td / 'raw.wav', pdir / f'{want}-raw.mp3')
+        loud = normalise(s['cut_take'], td / 'pol.wav', LOUDNESS)  # as the build sets every clip
+        mp3(td / 'pol.wav', pdir / f'{want}-polished.mp3')
+        pol = read_pcm(td / 'pol.wav')
+        plos, plos_voice = plosives(rec.apply_cuts(raw, pl['cuts']), td)
+    words = s.get('words') or []
+    cuts = pl['cuts']
+    rows = []  # (start, end, what, detail), seconds in the raw take
+    for t0, t1, why in cuts:
+        said = [w for w, a, b in words if t0 <= (a + b) / 2 <= t1]
+        rows.append((t0, t1, why, '"' + ' '.join(said) + '"' if said else ''))
+    for a, b in m.get('pauses') or []:
+        rows.append((to_take_time(a, cuts), to_take_time(b, cuts), 'pause shortened',
+                     f'{b - a + talk.PAUSE_KEEP:.2f} s → {talk.PAUSE_KEEP:.2f} s'))
+    for t, db in plos:
+        t = to_take_time(t, cuts)
+        w = next((w for w, a, b in words if a - 0.05 <= t <= b + 0.05), '')
+        rows.append((t, None, 'plosive', f'{db:.0f} dB off under 200 Hz' + (f', in "{w}"' if w else '')))
+    rows.sort(key=lambda r: r[0])
+    kept = pl['kept']
+    # the points against the script
+    issues, heard_parts, n_pts = [], [], 0
+    if kind == 'scene':
+        per, found, spans, pcuts = talk.paragraphs([para_lines(p, lines) for p in mine], kept)
+        bounds = sorted(i for i, _ in pcuts.values())
+        at = 0
+        segs = []
+        for i in bounds + [len(kept) - 1]:
+            segs.append(kept[at:i + 1]); at = i + 1
+        labels = [p for p, f in zip(mine, found) if f]
+        heard_parts = list(zip(labels, segs)) if labels else [(None, kept)]
+    else:
+        per = [talk.points(para_lines(mine[0], lines), kept)]
+        heard_parts = [(mine[0], kept)]
+    for p, pts in zip(mine, per):
+        _, order_ok, missing = talk.summary(pts)
+        n_pts += len(pts)
+        for q in pts:
+            txt = lines[p['lines'][q['k']]]['text']
+            if not q['said']:
+                issues.append(f'- missing: paragraph {p["para"]}, point {q["k"] + 1}: "{txt}"')
+            elif q['order'] is False:
+                issues.append(f'- not found in order: paragraph {p["para"]}, point {q["k"] + 1}; nearest match out of order at '
+                              f'{clock(q["t"])} (check it was said): "{txt}"')
+        if order_ok is False and not any(q['order'] is False for q in pts if q['said']):
+            issues.append(f'- out of order in time: paragraph {p["para"]} ("{p["text"][:50]}…")')
+    n_like, dens, flagged = pl['like']
+    likes = [clock(a) for w, a, b in kept if rec.norm(w) == 'like']
+    pk_raw, f_raw = rec.thresholds(rec.db10(raw))[:2]
+    pk_pol, f_pol = rec.thresholds(rec.db10(pol))[:2]
+    title = scenes[mine[0]['scene']]['title']
+    what = f'scene "{title}"' if kind == 'scene' else f'punch-in, paragraph {mine[0]["para"]} of "{title}"'
+    counts = {}
+    for r in rows:
+        counts[r[2]] = counts.get(r[2], 0) + 1
+    md = [f'# Polish preview: {what}', '',
+          f'Take `{take}` ({len(raw) / RATE:.1f} s) → polished {m["dur"]:.1f} s. '
+          f'Listen: `{want}-raw.mp3`, `{want}-polished.mp3` (next to this file).',
+          f'Denoise: {den}. Polished {"now" if fresh else "earlier (from the build cache)"}: '
+          f'`{s["cut_take"].relative_to(ROOT) if s["cut_take"].is_relative_to(ROOT) else s["cut_take"]}`; '
+          f'the build uses it as is.', '']
+    if s.get('words') is None:
+        md += ['**No Whisper** (no venv at --whisper-python): nothing was cut, the points were not checked.', '']
+    md += ['## Verdict', '',
+           ('All ' + str(n_pts) + ' points said, in order.' if not issues else f'{len(issues)} of {n_pts} points need a look (below).')
+           + ' Changes: ' + (', '.join(f'{v} {k}' for k, v in sorted(counts.items())) or 'none') + '.'
+           + (f' "like" is dense ({n_like}, one in {1 / dens:.0f} words).' if flagged else ''), '',
+           '## Cut or changed (times in the raw take)', '']
+    if rows:
+        md += ['| at | to | what | words / detail |', '| --- | --- | --- | --- |']
+        md += [f'| {clock(a)} | {clock(b) if b is not None else ""} | {w} | {d} |' for a, b, w, d in rows]
+    else:
+        md += ['Nothing.']
+    md += ['', 'filler: um, uh, er, hmm (cut). stutter: a word or fragment said twice, the first copy cut. restart: a '
+           'false start, cut back to the last attempt. pause shortened: over '
+           f'{talk.PAUSE_MAX} s, cut to {talk.PAUSE_KEEP} s. plosive: a p or b burst pulled down (nothing cut).'
+           + (f' Away from bursts the de-plosive took a median {plos_voice:.0f} dB off the voice under 200 Hz.'
+              if plos_voice is not None else ''),
+           '', '## Points against the script', '']
+    md += issues or [f'All {n_pts} points found, in order.']
+    md += ['', '## "like"', '',
+           f'{n_like} beyond the script\'s own, one in {1 / dens:.0f} words heard' if n_like else 'None beyond the script\'s own.']
+    if n_like:
+        md[-1] += (f': **flagged** (more than one in {round(1 / talk.LIKE_DENSITY)}).' if flagged else
+                   f': fine (flagged above one in {round(1 / talk.LIKE_DENSITY)}).') + ' Every "like" heard: ' + ', '.join(likes) + '.'
+    md += ['', f'Fillers (um, uh, er, hmm) heard: {pl["fillers"]}, all cut.', '',
+           '## Loudness', '', '| | raw | polished |', '| --- | --- | --- |',
+           f'| integrated | {loud_raw[0]:.1f} LUFS | {loud["lufs_out"]:.1f} LUFS |',
+           f'| true peak | {loud_raw[1]:.1f} dBTP | {loud["peak_out"]:.1f} dBTP |',
+           f'| voice above room tone | {pk_raw - f_raw:.0f} dB | {pk_pol - f_pol:.0f} dB |', '',
+           f'Polished = what the build puts on the timeline: denoised, levelled, compressed, set to {LOUDNESS:.0f} LUFS '
+           f'(peaks at most {PEAK} dBTP{", a few limited" if loud["limited"] else ""}).', '',
+           '## Heard, cleaned', '']
+    for p, seg in heard_parts:
+        txt = ' '.join(w for w, _, _ in seg).strip()
+        if p is not None and kind == 'scene':
+            md += [f'**Paragraph {p["para"]}** ({clock(seg[0][1]) if seg else "-"}): {txt[:1].upper() + txt[1:]}', '']
+        else:
+            md += [txt[:1].upper() + txt[1:] if txt else '(nothing heard)', '']
+    (pdir / f'{want}-polish.md').write_text('\n'.join(md).rstrip() + '\n', encoding='utf-8')
+    print(f'{pdir / (want + "-raw.mp3")}\n{pdir / (want + "-polished.mp3")}\n{pdir / (want + "-polish.md")}')
+    print(md[md.index('## Verdict') + 2])
+
+
 def talk_chunks(paras, units, lines, args, adir, rdir):
     """--voice rec with talk takes: the clips, one or more per scene. A scene take is polished as a whole, its points
     aligned over what was said, and it is cut into its paragraphs at the pause between them; a run of paragraphs from
@@ -653,11 +871,7 @@ def talk_chunks(paras, units, lines, args, adir, rdir):
     (a punch-in) replaces its paragraph; a paragraph in neither is spoken by the --rec-missing voice from the script.
     units[i] is paragraph i. -> (chunks, filled units, takes polished now, notes)."""
     tdir = adir / 'rec'
-    tdir.mkdir(exist_ok=True)
-    meta_path = tdir / 'takes.json'
-    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-    den, tag = rec_settings(args)
-    tag = h(tag, talk.TALK_VERSION, talk.PAUSE_MAX, talk.PAUSE_KEEP, talk.PROMPT_VERSION)[:8]
+    den, tag = talk_settings(args)
     items, by_scene, by_para = [], {}, {}
     for si in sorted({p['scene'] for p in paras}):
         mine = [p for p in paras if p['scene'] == si]
@@ -674,20 +888,7 @@ def talk_chunks(paras, units, lines, args, adir, rdir):
         elif f:
             stale.append(p)
     notes = [f'punch-in older than the scene take, unused: paragraph {p["para"]} ({p["id"]}): {p["text"][:50]}' for p in stale]
-    for s in items:
-        s['take_hash'] = hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
-        s['cut_take'] = tdir / f'{s["take_hash"]}-{tag}.wav'
-    todo, seen = [], set()
-    for s in items:
-        if (s['cut_take'].name not in meta or not s['cut_take'].exists()) and s['cut_take'] not in seen:
-            todo.append(s); seen.add(s['cut_take'])
-    if todo:
-        take_words(todo, tdir / 'words', args)
-        print(f'polishing {len(todo)} talk take(s) (denoise: {den}) ...', flush=True)
-        meta.update(polish_takes(todo, tdir, args, den))
-        meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
-    for s in items:
-        s['rec'] = meta[s['cut_take'].name]
+    todo = polish_talk(items, tdir, args, den, tag)
     # where each paragraph comes from
     src = {}
     for si, s in by_scene.items():
@@ -1273,6 +1474,11 @@ def main():
                     '"points": [{"k", "said", "t"}], "order_ok", "missing", "fillers", "seconds"}; also <id>.check.json')
     ap.add_argument('--check-scene', metavar='SID', help='rec: check a scene take, JSON: {"sid", "ok", "heard", "paras": '
                     '[{"id", "para", "t0", "t1", "points", "order_ok", "missing"}], "fillers", "seconds"}; also <sid>.check.json')
+    ap.add_argument('--polish-preview', metavar='SID|ID', help='rec: polish one scene take (sid) or punch-in (paragraph '
+                    'id) as the build would, and stop, before any picture or subtitle: <rec-dir>/preview/<sid>-raw.mp3, '
+                    '<sid>-polished.mp3 and <sid>-polish.md (what was cut or changed, at what time in the raw take; the '
+                    'transcript cleaned; points missing or out of order; "like"; loudness before and after). The polished '
+                    'take goes into the build\'s cache, so the build after it does not polish it again')
     ap.add_argument('--rec-status', action='store_true', help='print per scene how many sentences have a take, and the '
                     'ones that do not, and stop')
     ap.add_argument('--rec-dir', help='rec: the folder of takes, <id>.wav each (default .claude/loops/voice/rec/<video>/; '
@@ -1361,6 +1567,10 @@ def main():
                                           ensure_ascii=False) for p in paras) + ']')
         return
     rdir = Path(args.rec_dir).resolve() if args.rec_dir else REC_DIR / args.video
+    if args.polish_preview:
+        (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
+        polish_preview(args, scenes, paras, lines, rdir, Path(args.out) / args.video / 'audio')
+        return
     if args.check_para or args.check_scene:
         (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
         check_talk(args, paras, lines, rdir, Path(args.out) / args.video / 'audio')
