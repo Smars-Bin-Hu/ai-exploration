@@ -35,6 +35,7 @@ course: The book · 6.2 A report a person can read in five minutes | https://sma
 course: The book · 7.3 What I cut, and what the data says | https://smarshu.com/book/read/7-3-what-we-cut.html
 course: The book · 8.1 A knowledge base: an honest index of the code | https://smarshu.com/book/read/8-1-why-a-knowledge-base.html
 course: The book · 8.2 The toolkit: scripts that draw a map of the code | https://smarshu.com/book/read/8-2-kb-toolkit.html
+course: The book · 8.3 Is the map right? A blind audit | https://smarshu.com/book/read/8-3-kb-audit.html
 ---
 ## Ideas: how to use this file
 
@@ -60,7 +61,7 @@ Learn more: The book · 2.1 How does an Agent actually work? — https://smarshu
 
 The idea: a hook is code the platform runs at fixed points of every turn, inside subagents too, so it is where the rules that must hold every time live. A hook sees the text of a call, not what a command does once it runs, and it can fail quietly: in Copilot as the book observed it, a hook that times out counts as a pass. The enforcement layer is software and will fail, so decide in advance whether a failure lets the call through (fail open) or blocks it (fail closed), write that down, and build the layer so it can be tested.
 
-In the harness: one hook entry point serves every event and fails closed: when the engine cannot load, a guardrail module fails, or the session state cannot be read, it refuses every terminal command and every tool that may change a file and keeps reads, while only helpers such as the log may fail without stopping work {src:.harness/engine/hook.py#L1-L15} {src:AGENTS.md#L56-L59}; see the file 15 The gate and guardrails.
+In the harness: one hook entry point serves every event and fails closed: when the engine cannot load, a guardrail module fails, or the session state cannot be read, it refuses every terminal command and every tool that may change a file and keeps reads, while only helpers such as the log may fail without stopping work (chapter 4.4 describes an earlier version, whose hook failed open; it fails closed since 1.7.38) {src:.harness/engine/hook.py#L1-L15} {src:AGENTS.md#L56-L59}; see the file 15 The gate and guardrails.
 
 Learn more: The book · 2.2 Hooks, the point every call passes through — https://smarshu.com/book/read/2-2-hooks.html ; The book · 4.4 Build the enforcement layer like software — https://smarshu.com/book/read/4-4-enforcement-design.html
 
@@ -68,7 +69,7 @@ Learn more: The book · 2.2 Hooks, the point every call passes through — https
 
 The idea: text in a prompt, a rule file or a skill asks the model, which may ignore it or never receive it; only code that runs before the call holds a rule every time. Words still do most of the work, because they tell the agent the goal, the background and the order of work. A rule moves into code when it keeps being broken, when breaking it once does harm that cannot be undone, or when other steps rely on it. And a rule the agent can edit is a rule it can remove, so the files that hold the code rules must be out of its reach, with any human override limited and recorded.
 
-In the harness: opening a task is asked only by text, while keeping `DEV/` closed to the task's chat until the plan is approved is code, and the code rules (engine, policies, hook files) are guardrail paths the agent's edit tools and named terminal writes cannot change outside admin mode, while the text rules (`AGENTS.md`, instructions, skills) are not protected {src:AGENTS.md#L46-L47} {src:.harness/engine/modules/gate/handler.py#L64-L94} {src:.harness/policies/gate.json#L4-L19}; the file 00 Harness at a glance gives the full split between code, text and person.
+In the harness: opening a task is asked only by text, while keeping `DEV/` closed to the task chat's edit tools until the plan is approved is code, and so is the rule that nothing is fetched into it or written back without that approval, and the code rules (engine, policies, hook files) are guardrail paths the agent's edit tools and named terminal writes cannot change outside admin mode, while the text rules (`AGENTS.md`, instructions, skills) are not protected {src:AGENTS.md#L46-L47} {src:.harness/engine/modules/gate/handler.py#L64-L94} {src:.harness/engine/modules/task/task.py#L404-L406} {src:.harness/policies/gate.json#L4-L19}; the file 00 Harness at a glance gives the full split between code, text and person.
 
 Learn more: Basic 06 · A prompt cannot stop a dangerous action: a harness can — https://smarshu.com/writing/basic-06-prompt-cannot-stop ; The book · 4.1 A rule in a prompt is a request — https://smarshu.com/book/read/4-1-requests-and-rules.html ; The book · 4.3 Guard the files that hold the rules — https://smarshu.com/book/read/4-3-guardrails.html
 
@@ -148,7 +149,7 @@ Learn more: The book · 2.3 Use subagents sparingly — https://smarshu.com/book
 
 The idea: once the person leaves, they are no longer the stop rule, and a run can loop for hours, spend a night's usage on a step that cannot succeed, or stop early and say it is finished. So the stop rules are set before the run, as a total budget and not only a step count, every stop hands back a reason, and "done" is decided from facts, not from the agent's word.
 
-In the harness: code decides autorun's stops from facts, without asking a model: the run is done only when no step is open, the questions are answered, the checks passed and the write-back plan is made, and it stops at the spend limit the person picked, the step or time limit, a stall or a changed plan, as well as when the agent says going on would do harm or the person turns it off {src:.harness/engine/modules/task/autorun.py#L1-L23}; outside autorun a task has no total budget, see the files 20 Autorun and 22 Cost and usage.
+In the harness: code decides autorun's stops from facts, without asking a model: the run is done only when no step is open, the questions are answered, the checks passed and the write-back plan is made, and it stops at the spend limit the person picked, the step or time limit, a stall or a changed plan, as well as when the agent says going on would do harm or the person turns it off (chapter 5.7 describes an earlier version with no total budget; the spend limit came in 1.8.0) {src:.harness/engine/modules/task/autorun.py#L1-L23} {src:.harness/engine/modules/task/autorun_spend.py#L1-L5}; outside autorun a task has no total budget, see the files 20 Autorun and 22 Cost and usage.
 
 Learn more: The book · 5.7 Unattended: when it must stop — https://smarshu.com/book/read/5-7-when-to-stop.html
 
@@ -182,4 +183,4 @@ The idea: the code is the truth, and a knowledge base is an index and summary of
 
 In the harness: the knowledge base instructions say a page that is no longer cheaper than the code is the problem, a fixed form lets scripts check the base, each object keeps the git blob of its source so `kb stale` asks git what changed, and `kb audit` measures the map's recall and precision against blind readings {src:.github/instructions/knowledgebase.instructions.md#L8} {src:.harness/engine/core/kbstd.py#L1-L12} {src:.harness/engine/core/kbaudit.py#L1-L9}; see the file 18 Knowledge base.
 
-Learn more: The book · 8.1 A knowledge base: an honest index of the code — https://smarshu.com/book/read/8-1-why-a-knowledge-base.html ; The book · 8.2 The toolkit: scripts that draw a map of the code — https://smarshu.com/book/read/8-2-kb-toolkit.html
+Learn more: The book · 8.1 A knowledge base: an honest index of the code — https://smarshu.com/book/read/8-1-why-a-knowledge-base.html ; The book · 8.2 The toolkit: scripts that draw a map of the code — https://smarshu.com/book/read/8-2-kb-toolkit.html ; The book · 8.3 Is the map right? A blind audit — https://smarshu.com/book/read/8-3-kb-audit.html
