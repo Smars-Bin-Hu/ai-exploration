@@ -93,6 +93,29 @@ def resolve_model(model):
     return model
 
 
+def windowed(mlx_whisper, model, wav, prompt, window):
+    """Transcribe a long take in windows of at most `window` seconds, each cut at the quietest 50 ms in its last 8
+    seconds, each with the prompt. -> [[word, start, end]] in the take's seconds."""
+    import numpy as np
+    from mlx_whisper.audio import load_audio, SAMPLE_RATE
+    audio = np.array(load_audio(wav))
+    n, hop = len(audio), SAMPLE_RATE // 20
+    out, a = [], 0
+    while a < n:
+        b = n
+        if n - a > window * SAMPLE_RATE:
+            lo, hi = a + (window - 8) * SAMPLE_RATE, a + window * SAMPLE_RATE
+            e = [float(np.mean(audio[k:k + hop] ** 2)) for k in range(int(lo), int(hi) - hop, hop)]
+            b = int(lo) + hop * int(np.argmin(e)) + hop // 2
+        r = mlx_whisper.transcribe(audio[a:b], path_or_hf_repo=model, word_timestamps=True, language='en',
+                                   initial_prompt=prompt, condition_on_previous_text=False, verbose=None)
+        off = a / SAMPLE_RATE
+        out += [[w['word'].strip(), round(w['start'] + off, 3), round(w['end'] + off, 3)]
+                for s in r.get('segments', []) for w in s.get('words', [])]
+        a = b
+    return out
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser()
@@ -104,10 +127,13 @@ def main():
     jobs = json.loads(Path(a.batch).read_text(encoding='utf-8'))
     for i, j in enumerate(jobs, 1):
         try:
-            r = mlx_whisper.transcribe(j['wav'], path_or_hf_repo=model, word_timestamps=True, language='en',
-                                       initial_prompt=j.get('prompt', j['text']), condition_on_previous_text=False, verbose=None)
-            words = [[w['word'].strip(), round(w['start'], 3), round(w['end'], 3)]
-                     for s in r.get('segments', []) for w in s.get('words', [])]
+            if j.get('window'):  # a long take: its own windows, each with the prompt (Whisper keeps it for the first only)
+                words = windowed(mlx_whisper, model, j['wav'], j.get('prompt', j['text']), j['window'])
+            else:
+                r = mlx_whisper.transcribe(j['wav'], path_or_hf_repo=model, word_timestamps=True, language='en',
+                                           initial_prompt=j.get('prompt', j['text']), condition_on_previous_text=False, verbose=None)
+                words = [[w['word'].strip(), round(w['start'], 3), round(w['end'], 3)]
+                         for s in r.get('segments', []) for w in s.get('words', [])]
         except Exception as e:  # one bad clip falls back to proportional timing in build.py, it does not stop the run
             print(f'align.py: {Path(j["wav"]).name}: {e}', file=sys.stderr)
             words = None

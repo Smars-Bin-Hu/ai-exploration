@@ -7,6 +7,9 @@
     .venv/bin/python source/video/build.py basic-01 --rec-status              # which sentences are recorded
     .venv/bin/python source/video/build.py basic-01 --list-sentences          # the sentences as JSON, for the recorder
     .venv/bin/python source/video/build.py basic-01 --check-take <id>         # one take checked, JSON
+    .venv/bin/python source/video/build.py basic-01 --list-paragraphs         # paragraphs and points as JSON, for the recorder
+    .venv/bin/python source/video/build.py basic-01 --check-scene <sid>       # a talked scene take checked, JSON
+    .venv/bin/python source/video/build.py basic-01 --check-para <id>         # a paragraph punch-in checked, JSON
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
 Writes .claude/loops/video-out/<video>/: audio/ (one wav per paragraph, and its sentences cut out of it), frames/ (one png
@@ -21,6 +24,12 @@ voice); a paragraph's takes are joined --rec-gap apart over their room tone and 
 (loudness, word times, cut into sentences, timeline). A new take makes only its paragraph again. Missing takes stop the
 build, unless --rec-missing tts. --check-take <id> checks one take for the recording pane (JSON). See FORMAT.md,
 Recorded voice.
+
+Talk (--voice rec, as soon as there is any scene/<sid>.wav or para/<id>.wav in the take folder): the author talks each
+scene in their own words; talk.py cuts fillers, stutters and restarts and finds where each point (script line) was said;
+the take is cut into paragraphs at the pauses between them, pictures land on their points, subtitles are what was said,
+and spoken.md (next to the scenes file) gets the cleaned transcript. A paragraph take newer than its scene take replaces
+that paragraph. See FORMAT.md, Recorded voice, Talk.
 """
 import argparse, array, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
 from concurrent.futures import ThreadPoolExecutor
@@ -29,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(HERE))
-import render, fcpxml, subs, align, timing, rec, avatar as speaker  # noqa: E402
+import render, fcpxml, subs, align, timing, rec, talk, avatar as speaker  # noqa: E402
 
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
@@ -331,7 +340,8 @@ def probe_seconds(path):
 def trim_and_pad(src, dst, fps, head=0.06, tail=0.15):
     """Copy a 48 kHz mono wav cut to its voice (by loudness, keeping `head` and `tail` seconds of what is around it, so no
     word is cut), padded with silence to a whole number of frames, so every time in the timeline is exact.
-    -> (frames, vs, ve): the clip's length, and where the voice starts and ends in it (seconds)."""
+    -> (frames, vs, ve, off): the clip's length, where the voice starts and ends in it, and where the clip starts in
+    src (seconds)."""
     import audioop, warnings
     with wave.open(str(src)) as w:
         data, n = w.readframes(w.getnframes()), w.getnframes()
@@ -353,7 +363,7 @@ def trim_and_pad(src, dst, fps, head=0.06, tail=0.15):
     data += b'\0\0' * (frames * spf - m)
     with wave.open(str(dst), 'wb') as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(data)
-    return frames, round((v0 - a) / RATE, 4), round((v1 - a) / RATE, 4)
+    return frames, round((v0 - a) / RATE, 4), round((v1 - a) / RATE, 4), round(a / RATE, 4)
 
 
 def ebur128(path):
@@ -452,8 +462,8 @@ def write_pcm(path, pcm):
 def take_words(ss, wdir, args):
     """Whisper word times of each take, fillers and repeats kept (rec.verbatim), cached under the take's hash in wdir.
     Sets s['words'] ([[word, start, end]] in the take's seconds, or None when there is no Whisper)."""
-    tag = h(args.whisper_model, rec.PROMPT_VERSION)[:6]
-    for s in ss:
+    for s in ss:  # a talk take has its own prompt (talk.prompt) and is heard in windows
+        tag = h(args.whisper_model, s.get('ptag', rec.PROMPT_VERSION))[:6]
         s['take_hash'] = s.get('take_hash') or hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
         s['words_file'] = wdir / f'{s["take_hash"]}-{tag}.json'
     todo = [s for s in ss if not s['words_file'].exists()]
@@ -463,10 +473,11 @@ def take_words(ss, wdir, args):
         wdir.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory() as td:
             jobs = Path(td) / 'jobs.json'
-            jobs.write_text(json.dumps([dict(wav=str(s['take']), text=s['text'], prompt=rec.verbatim(s['text']),
-                                             out=str(s['words_file'])) for s in todo]), encoding='utf-8')
+            jobs.write_text(json.dumps([dict(wav=str(s['take']), text=s['text'], prompt=s.get('prompt') or rec.verbatim(s['text']),
+                                             out=str(s['words_file']), window=s.get('window')) for s in todo]), encoding='utf-8')
+            quiet_out = args.check_take or args.check_para or args.check_scene
             r = subprocess.run([args.whisper_python, str(HERE / 'align.py'), '--model', args.whisper_model, '--batch', str(jobs)],
-                               stdout=subprocess.DEVNULL if args.check_take else None)
+                               stdout=subprocess.DEVNULL if quiet_out else None)
             if r.returncode:
                 print(f'  note: align.py failed (exit {r.returncode}); those takes are not checked', file=sys.stderr)
     for s in ss:
@@ -510,6 +521,343 @@ def check_take(sents, scenes, rdir, adir, args):
                           seconds=round((span[1] - span[0]) / RATE, 2) if span else 0.0), ensure_ascii=False))
 
 
+# ---------- talk: a scene (or a paragraph, punched in) said in the author's own words (talk.py has the text work) ----------
+
+def paragraph_list(scenes, lines, bold):
+    """The paragraphs of the video: [dict(id, sid, scene, para, lines: [global line indexes], text, beats, bold)].
+    id: sentence_id of the paragraph's lines joined by spaces; sid: the same of its scene's lines; beats: the lines a
+    picture changes at (an @ line before them)."""
+    beat, g, pending = set(), 0, False
+    for sc in scenes:
+        for kind, it in sc['items']:
+            if kind == 'pic':
+                pending = True
+            else:
+                if pending:
+                    beat.add(g)
+                pending = False; g += 1
+    out = []
+    for g, ln in enumerate(lines):
+        if not out or out[-1]['scene'] != ln['scene'] or ln['brk']:
+            out.append(dict(scene=ln['scene'], para=len(out), lines=[]))
+        out[-1]['lines'].append(g)
+    for p in out:
+        p['text'] = re.sub(r'\s+', ' ', ' '.join(lines[g]['text'] for g in p['lines'])).strip()
+        p['id'] = sentence_id(p['text'])
+        p['beats'] = [g in beat for g in p['lines']]
+        p['bold'] = [bold.get(lines[g]['text'], []) for g in p['lines']]
+        p['line'] = lines[p['lines'][0]]['line']
+    for si in {p['scene'] for p in out}:
+        sid = sentence_id(' '.join(lines[g]['text'] for p in out if p['scene'] == si for g in p['lines']))
+        for p in out:
+            if p['scene'] == si:
+                p['sid'] = sid
+    return out
+
+
+def load_bold(scenes_path, video):
+    """bold.json next to the scenes file, else in source/courses/<video>/: {line text: [key phrases]}."""
+    for f in (scenes_path.parent / 'bold.json', ROOT / 'source/courses' / video / 'bold.json'):
+        if f.exists():
+            return json.loads(f.read_text(encoding='utf-8'))
+    return {}
+
+
+def current(folder, name):
+    f = folder / f'{name}.wav'
+    return f if f.exists() else None
+
+
+def talk_mode(rdir):
+    """Talk takes are used when the take folder has any scene or paragraph take."""
+    return any(not re.search(r'\.take\d+$', f.stem) for d in ('scene', 'para') for f in (rdir / d).glob('*.wav'))
+
+
+def punch_in_used(para_take, scene_item):
+    """A paragraph take replaces its part of the scene take only while it is newer than the scene take (as the recording
+    pane does): a scene recorded again after it wins."""
+    return scene_item is None or para_take.stat().st_mtime > scene_item['take'].stat().st_mtime
+
+
+def talk_item(take, text, kind, key):
+    """A talk take to hear and polish (the dict take_words and polish_takes work on)."""
+    return dict(take=take, text=text, talk=True, prompt=talk.prompt(text), ptag=talk.PROMPT_VERSION, window=25,
+                kind=kind, key=key)
+
+
+def talk_plan(s, raw):
+    """A talk take's cuts (talk.plan) on its decoded samples, and what was heard."""
+    words = s.get('words') or []
+    p = talk.plan(words, rec.db10(raw), len(raw) / RATE, talk.PAUSE_KEEP, s['text']) if words else dict(cuts=[], keep=[])
+    kept = []
+    for n, k in enumerate(p['keep']):  # a word after a cut filler that Whisper capitalised as if a sentence began
+        w = list(words[k])
+        if n and p['keep'][n - 1] != k - 1 and w[0][:1].isupper() and w[0] != 'I' and talk.base(w[0]) in talk.STOP \
+                and not re.search(r'[.?!]["\')]*$', words[p['keep'][n - 1]][0]):
+            w[0] = w[0][:1].lower() + w[0][1:]
+        kept.append(w)
+    return dict(cuts=p['cuts'], kept=kept, heard=' '.join(w for w, _, _ in words) if words else None,
+                missing=[], extra=[], ok=None, like=talk.like_flag(kept, s['text']), fillers=talk.fillers(words),
+                why={str(k): v for k, v in p.get('why', {}).items()})
+
+
+def para_lines(p, lines):
+    return [dict(text=lines[g]['text'], bold=b) for g, b in zip(p['lines'], p['bold'])]
+
+
+def check_talk(args, paras, lines, rdir, adir):
+    """--check-para / --check-scene: one talk take checked for the recording pane, JSON on stdout and in
+    <id>.check.json next to the take (FORMAT.md, Recorded voice, Talk)."""
+    scene = bool(args.check_scene)
+    want = args.check_scene or args.check_para
+    mine = [p for p in paras if (p['sid'] if scene else p['id']) == want]
+    take = current(rdir / ('scene' if scene else 'para'), want)
+    key = 'sid' if scene else 'id'
+    if not mine or not take:
+        print(json.dumps({key: want, 'ok': False, 'error': 'no such ' + ('scene' if scene else 'paragraph') + ' in this video'
+                          if not mine else f'no take {rdir / ("scene" if scene else "para") / (want + ".wav")}'}))
+        sys.exit(1)
+    s = talk_item(take, ' '.join(p['text'] for p in mine), 'scene' if scene else 'para', want)
+    take_words([s], adir / 'rec' / 'words', args)
+    with tempfile.TemporaryDirectory() as td:
+        raw = decode(take, Path(td) / 'raw.wav')
+    pl = talk_plan(s, raw)
+    short, _ = rec.shorten_pauses(rec.apply_cuts(raw, pl['cuts']), most=talk.PAUSE_MAX, keep=talk.PAUSE_KEEP)
+    span = rec.voice_span(short)
+    seconds = round((span[1] - span[0]) / RATE, 2) if span else 0.0
+    heard = pl['heard'] or ''
+    if scene:
+        per, found, spans, _ = talk.paragraphs([para_lines(p, lines) for p in mine], pl['kept'])
+        out_p = []
+        for p, pts, sp in zip(mine, per, spans):
+            pj, order_ok, missing = talk.summary(pts)
+            out_p.append(dict(id=p['id'], para=p['para'], t0=pl['kept'][sp[0]][1] if sp else None,
+                              t1=pl['kept'][sp[1]][2] if sp else None, points=pj, order_ok=order_ok, missing=missing))
+        res = dict(sid=want, ok=all(x['order_ok'] and not x['missing'] for x in out_p), heard=heard, paras=out_p,
+                   fillers=pl['fillers'], seconds=seconds)
+    else:
+        pj, order_ok, missing = talk.summary(talk.points(para_lines(mine[0], lines), pl['kept']))
+        res = dict(id=want, ok=order_ok and not missing, heard=heard, points=pj, order_ok=order_ok, missing=missing,
+                   fillers=pl['fillers'], seconds=seconds)
+    if s.get('words') is None:
+        res['ok'] = None
+    body = json.dumps(res, ensure_ascii=False)
+    take.with_name(f'{want}.check.json').write_text(body + '\n', encoding='utf-8')
+    print(body)
+
+
+def talk_chunks(paras, units, lines, args, adir, rdir):
+    """--voice rec with talk takes: the clips, one or more per scene. A scene take is polished as a whole, its points
+    aligned over what was said, and it is cut into its paragraphs at the pause between them; a run of paragraphs from
+    one scene take is one clip (back to back in the timeline, the author's own pauses between them). A paragraph take
+    (a punch-in) replaces its paragraph; a paragraph in neither is spoken by the --rec-missing voice from the script.
+    units[i] is paragraph i. -> (chunks, filled units, takes polished now, notes)."""
+    tdir = adir / 'rec'
+    tdir.mkdir(exist_ok=True)
+    meta_path = tdir / 'takes.json'
+    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    den, tag = rec_settings(args)
+    tag = h(tag, talk.TALK_VERSION, talk.PAUSE_MAX, talk.PAUSE_KEEP, talk.PROMPT_VERSION)[:8]
+    items, by_scene, by_para = [], {}, {}
+    for si in sorted({p['scene'] for p in paras}):
+        mine = [p for p in paras if p['scene'] == si]
+        f = current(rdir / 'scene', mine[0]['sid'])
+        if f:
+            by_scene[si] = talk_item(f, ' '.join(p['text'] for p in mine), 'scene', mine[0]['sid'])
+            items.append(by_scene[si])
+    stale = []
+    for p in paras:
+        f = current(rdir / 'para', p['id'])
+        if f and punch_in_used(f, by_scene.get(p['scene'])):
+            by_para[p['para']] = talk_item(f, p['text'], 'para', p['id'])
+            items.append(by_para[p['para']])
+        elif f:
+            stale.append(p)
+    notes = [f'punch-in older than the scene take, unused: paragraph {p["para"]} ({p["id"]}): {p["text"][:50]}' for p in stale]
+    for s in items:
+        s['take_hash'] = hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
+        s['cut_take'] = tdir / f'{s["take_hash"]}-{tag}.wav'
+    todo, seen = [], set()
+    for s in items:
+        if (s['cut_take'].name not in meta or not s['cut_take'].exists()) and s['cut_take'] not in seen:
+            todo.append(s); seen.add(s['cut_take'])
+    if todo:
+        take_words(todo, tdir / 'words', args)
+        print(f'polishing {len(todo)} talk take(s) (denoise: {den}) ...', flush=True)
+        meta.update(polish_takes(todo, tdir, args, den))
+        meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
+    for s in items:
+        s['rec'] = meta[s['cut_take'].name]
+    # where each paragraph comes from
+    src = {}
+    for si, s in by_scene.items():
+        mine = [p for p in paras if p['scene'] == si]
+        words = s['rec'].get('words') or []
+        per, found, spans, cuts = talk.paragraphs([para_lines(p, lines) for p in mine], words)
+        s['found'] = found
+        s['cuts'] = cuts
+        s['order'] = [p['para'] for p in mine]
+        for p, pts, f in zip(mine, per, found):
+            if f:
+                src[p['para']] = ('scene', s, pts)
+            elif p['para'] not in by_para:
+                notes.append(f'not found in the scene take: {p["text"][:60]}')
+    for pi, s in by_para.items():
+        p = paras[pi]
+        src[pi] = ('para', s, talk.points(para_lines(p, lines), s['rec'].get('words') or []))
+    missing = [p for p in paras if p['para'] not in src]
+    if missing and args.rec_missing == 'stop':
+        die(f'{len(missing)} of {len(paras)} paragraphs have no take (no scene take with them in it, no paragraph take) in {rdir}:\n'
+            + '\n'.join(f'  {p["scene"]}, paragraph {p["para"]} ({p["id"]}, scene {p["sid"]}): {p["text"][:70]}' for p in missing)
+            + '\nrecord them, or add --rec-missing tts to speak them with the default voice for a preview')
+    # the clips
+    chunks = []
+
+    def quiet_cut(s, i):  # the cut between word i and i+1 of a scene take's piece: the quietest point in the pause
+        w = s['rec']['words']
+        if 'db' not in s:
+            s['db'] = rec.db10(read_pcm(s['cut_take']))
+        a, b = w[i][2], w[i + 1][1]
+        return rec.quiet(s['db'], a - 0.05, max(b, a) + 0.05, (a + max(a, b)) / 2)
+
+    k = 0
+    while k < len(paras):
+        p = paras[k]
+        kind = src[p['para']][0] if p['para'] in src else 'fill'
+        if kind == 'scene':  # a run of paragraphs from one scene take, in the take's order
+            s = src[p['para']][1]
+            run = [p]
+            while k + len(run) < len(paras):
+                q = paras[k + len(run)]
+                if q['scene'] != p['scene'] or src.get(q['para'], (None,))[0] != 'scene':
+                    break
+                run.append(q)
+            found_order = [pi for pi, f in zip(s['order'], s['found']) if f]
+            w = s['rec']['words']
+            first, last = found_order.index(run[0]['para']), found_order.index(run[-1]['para'])
+            b0 = 0.0 if first == 0 else quiet_cut(s, s['cuts'][(s['order'].index(found_order[first - 1]),
+                                                                 s['order'].index(run[0]['para']))][0])
+            b1 = s['rec']['dur'] if last == len(found_order) - 1 else quiet_cut(
+                s, s['cuts'][(s['order'].index(run[-1]['para']), s['order'].index(found_order[last + 1]))][0])
+            bounds = []
+            for a_, b_ in zip(run, run[1:]):
+                i, j = s['cuts'][(s['order'].index(a_['para']), s['order'].index(b_['para']))]
+                bounds.append((w[i][2] - b0, w[j][1] - b0))
+            cw = [[x, round(t0 - b0, 3), round(t1 - b0, 3)] for x, t0, t1 in w if b0 <= (t0 + t1) / 2 < b1]
+            pts = [[dict(q, t=None if q['t'] is None else round(q['t'] - b0, 3)) for q in src[r['para']][2]] for r in run]
+            key = 'talk-' + h('scene', s['cut_take'].name, b0, b1)
+            c = dict(key=key, raw=adir / f'{key}.wav', talk=True, take=s, words=cw, bounds=bounds, pts=pts,
+                     paras=[r['para'] for r in run], cut=(b0, b1))
+            k += len(run)
+        elif kind == 'para':
+            s = src[p['para']][1]
+            key = 'talk-' + h('para', s['cut_take'].name)
+            c = dict(key=key, raw=adir / f'{key}.wav', talk=True, take=s, words=s['rec'].get('words') or [], bounds=[],
+                     pts=[src[p['para']][2]], paras=[p['para']], cut=(0.0, s['rec']['dur']))
+            k += 1
+        else:
+            c = dict(fill=True, paras=[p['para']], text=p['text'])
+            k += 1
+        c['sents'] = c['paras']
+        c['scene'], c['para'], c['line'] = p['scene'], p['para'], p['line']
+        c['text'] = ' '.join(paras[i]['text'] for i in c['paras'])
+        c['around'] = ('', '')
+        for i in c['paras']:
+            units[i]['chunk'] = len(chunks)
+        chunks.append(c)
+    made = []
+    for c in chunks:
+        if c.get('talk'):
+            c['wav'] = adir / f'{c["key"]}-{args.fps}p.wav'
+            if not c['raw'].exists():
+                pcm = read_pcm(c['take']['cut_take'])
+                piece = pcm[round(c['cut'][0] * RATE):round(c['cut'][1] * RATE)]
+                rec.fade(piece, rec.XFADE, rec.XFADE)
+                write_pcm(c['raw'], piece)
+                made.append(c)
+    filled = [c for c in chunks if c.get('fill')]
+    if filled:  # missing paragraphs, spoken from the script by a voice, cut to their voice and set to the takes' level
+        fargs = argparse.Namespace(**vars(args))
+        fargs.voice = DEFAULT_VOICE if args.rec_missing == 'tts' else args.rec_missing
+        fv = Voice(fargs)
+        items_f, seen = [], set()
+        for c in filled:
+            c['fill_key'] = fv.key(c['text'])
+            c['fill_raw'] = adir / f'{c["fill_key"]}.wav'
+            if not c['fill_raw'].exists() and c['fill_key'] not in seen:
+                items_f.append((c['text'], c['fill_raw'])); seen.add(c['fill_key'])
+        if items_f:
+            print(f'speaking {len(items_f)} missing paragraph(s) with {fv.spec} ...', flush=True)
+            fv.make_all(items_f)
+        args.fill_spec = fv.spec
+        for c in filled:
+            c['key'] = f'fill-{c["fill_key"]}-{tag}'
+            c['raw'] = tdir / f'{c["key"]}.wav'
+            c['wav'] = adir / f'{c["key"]}-{args.fps}p.wav'
+            if not c['raw'].exists():
+                pcm = read_pcm(c['fill_raw'])
+                span = rec.voice_span(pcm) or (0, len(pcm))
+                a, b = max(0, span[0] - round(REC_HEAD * RATE)), min(len(pcm), span[1] + round(REC_TAIL * RATE))
+                piece = pcm[a:b]
+                rec.fade(piece, rec.XFADE, rec.XFADE)
+                write_pcm(tdir / f'{c["key"]}-cut.wav', piece)
+                normalise(tdir / f'{c["key"]}-cut.wav', c['raw'], REC_LEVEL)
+                made.append(c)
+    return chunks, [units[c['paras'][0]] for c in filled], todo, notes, made
+
+
+def talk_starts(s, pts, t0, texts):
+    """A talked paragraph's line starts (seconds in its piece) from where its points were said (pts, t in the clip),
+    t0: where the piece starts in the clip. A point not said in order is placed by letter count between the points
+    either side of it. -> (starts, placed: the k of the points placed so)."""
+    n = len(texts)
+    known = {}
+    for q in pts:
+        if q['said'] and q.get('order', True) and q['t'] is not None:
+            known[q['k']] = min(max(q['t'] - t0, s['vs']), s['ve'])
+    known[0] = s['vs']
+    pos, p_ = [], 0
+    for tx in texts:
+        pos.append(p_); p_ += len(tx) + 1
+    anchors = sorted((pos[k], t) for k, t in known.items()) + [(p_, s['ve'])]
+    starts, placed = [], []
+    for k in range(n):
+        if k in known:
+            t = known[k]
+        else:
+            placed.append(k)
+            lo = max((a for a in anchors if a[0] <= pos[k]), key=lambda a: a[0])
+            hi = min((a for a in anchors if a[0] > pos[k]), key=lambda a: a[0])
+            t = lo[1] + (hi[1] - lo[1]) * (pos[k] - lo[0]) / max(hi[0] - lo[0], 1)
+        starts.append(t)
+    for k in range(1, n):  # never backwards
+        starts[k] = min(max(starts[k], starts[k - 1] + 0.1), max(s['ve'], starts[k - 1] + 0.1))
+    return starts, placed
+
+
+def write_spoken(path, title, scenes, paras, units, chunks):
+    """spoken.md: per scene and paragraph what was said (the words kept, as the subtitles show them); a paragraph not
+    recorded yet is the script's, under a // line."""
+    out = [f'# {title}', '', '// What was said, from the takes (build.py writes this on every build with talk takes).', '']
+    for si, sc in enumerate(scenes):
+        mine = [p for p in paras if p['scene'] == si]
+        if not mine:
+            continue
+        out += [f'## {sc["title"]}', '']
+        for p in mine:
+            u = units[p['para']]
+            if chunks[u['chunk']].get('talk'):
+                said = ' '.join(w for w, _, _ in (u.get('words') or [])).strip()
+                out += [said[:1].upper() + said[1:] if said else '// (nothing heard)', '']
+            else:
+                out += ['// not recorded yet: the script', p['text'], '']
+    body = '\n'.join(out).rstrip() + '\n'
+    if not path.exists() or path.read_text(encoding='utf-8') != body:
+        path.write_text(body, encoding='utf-8')
+        return True
+    return False
+
+
 def polish_takes(ss, rdir, args, den):
     """Each take -> its piece (s['cut_take']) and room tone (…-tone.wav), as rec.py's header says: cuts (fillers,
     repeats, a false start), denoise, high-pass, level, compression, de-ess, long pauses shortened, cut to the voice.
@@ -521,7 +869,8 @@ def polish_takes(ss, rdir, args, den):
         def first(i):
             s = ss[i]
             raw = decode(s['take'], td / f'{i}-raw.wav')
-            s['plan'] = take_plan(s, raw)
+            s['plan'] = talk_plan(s, raw) if s.get('talk') else take_plan(s, raw)
+            s['raw_len'] = len(raw) / RATE
             write_pcm(td / f'{i}-cut.wav', rec.apply_cuts(raw, s['plan']['cuts']))
         with ThreadPoolExecutor(6) as ex:
             list(ex.map(first, range(len(ss))))
@@ -544,7 +893,11 @@ def polish_takes(ss, rdir, args, den):
                                capture_output=True, text=True)
             if r.returncode:
                 die(f'ffmpeg could not clean the take {s["take"]}: {r.stderr.strip()[-300:]}')
-            pcm, pauses = rec.shorten_pauses(read_pcm(td / f'{i}-dyn.wav'))
+            dyn = read_pcm(td / f'{i}-dyn.wav')
+            if s.get('talk'):
+                pcm, pauses = rec.shorten_pauses(dyn, most=talk.PAUSE_MAX, keep=talk.PAUSE_KEEP)
+            else:
+                pcm, pauses = rec.shorten_pauses(dyn)
             db = rec.db10(pcm)
             span = rec.voice_span(pcm, db)
             if span is None:
@@ -557,10 +910,14 @@ def polish_takes(ss, rdir, args, den):
             write_pcm(s['cut_take'], piece)
             write_pcm(tone_of(s['cut_take']), tone)
             p = s['plan']
-            out[s['cut_take'].name] = dict(dur=round((b - a) / RATE, 4), vs=round((v0 - a) / RATE, 4), ve=round((v1 - a) / RATE, 4),
-                                           lufs=ebur128(s['cut_take'])[0], gain=round(gain, 2), tone=round(len(tone) / RATE, 2),
-                                           cuts=p['cuts'], pauses=pauses, ok=p['ok'], missing=p['missing'], extra=p['extra'],
-                                           heard=p['heard'])
+            out[s['cut_take'].name] = m = dict(dur=round((b - a) / RATE, 4), vs=round((v0 - a) / RATE, 4), ve=round((v1 - a) / RATE, 4),
+                                               lufs=ebur128(s['cut_take'])[0], gain=round(gain, 2), tone=round(len(tone) / RATE, 2),
+                                               cuts=p['cuts'], pauses=pauses, ok=p['ok'], missing=p['missing'], extra=p['extra'],
+                                               heard=p['heard'])
+            if s.get('talk'):  # the words kept, moved to the piece's time: through the cuts, the pauses shortened, the trim
+                f1, f2 = rec.time_map(p['cuts'], s['raw_len']), rec.time_map(pauses, len(dyn) / RATE)
+                at = lambda t: round(min(max(f2(f1(t)) - a / RATE, 0.0), (b - a) / RATE), 3)
+                m.update(words=[[w, at(t0), at(t1)] for w, t0, t1 in p['kept']], like=p['like'], fillers=p['fillers'])
         with ThreadPoolExecutor(6) as ex:
             list(ex.map(second, range(len(ss))))
     return out
@@ -729,7 +1086,9 @@ def cut_chunk(c, sents, lines, fps, adir):
     times, s within the piece), cut (how the cut before it was found)."""
     idx = c['sents']
     words = None
-    if c['align'].exists():
+    if c.get('talk'):  # a talked clip: what was said, its paragraphs cut at the pauses talk.py chose (c['bounds'])
+        words = c['words_c']
+    elif c['align'].exists():
         words = json.loads(c['align'].read_text(encoding='utf-8')).get('words')
     with wave.open(str(c['norm'])) as w:
         data = w.readframes(w.getnframes())
@@ -737,7 +1096,7 @@ def cut_chunk(c, sents, lines, fps, adir):
     n_frames = len(data) // 2 // spf
     db = _db10(data)
     thr = max(max(db, default=-90) - 40, -55)
-    hyp = [(align.norm(wd), a, b) for wd, a, b in (words or []) if align.norm(wd)]
+    hyp = [] if c.get('talk') else [(align.norm(wd), a, b) for wd, a, b in (words or []) if align.norm(wd)]
     toks = []  # (normalised word, sentence position in chunk, char position in chunk text)
     pos = 0
     for j, i in enumerate(idx):
@@ -758,7 +1117,9 @@ def cut_chunk(c, sents, lines, fps, adir):
     for j in range(1, len(idx)):
         before = [at[q][2] for q, t in enumerate(toks) if t[1] == j - 1 and q in at]
         after = [at[q][1] for q, t in enumerate(toks) if t[1] == j and q in at]
-        if matched >= 0.5 and before and after and after[0] > before[-1] - 0.05:
+        if c.get('talk'):
+            lo, hi, how = c['bounds_c'][j - 1][0] - 0.04, max(c['bounds_c'][j - 1]) + 0.04, 'talk'
+        elif matched >= 0.5 and before and after and after[0] > before[-1] - 0.05:
             lo, hi, how = before[-1] - 0.04, after[0] + 0.04, 'words'
         else:  # where the letters say, with room either side
             first = next(t[2] for t in toks if t[1] == j) if any(t[1] == j for t in toks) else 0
@@ -788,6 +1149,7 @@ def cut_chunk(c, sents, lines, fps, adir):
                     w.writeframes(data[2 * f0 * spf:2 * f1 * spf])
                 tmp.replace(s['norm'])
         t0, t1 = f0 / fps, f1 / fps
+        s['clip_t0'] = t0
         loud = [k for k in range(int(t0 * 100), min(len(db), int(t1 * 100))) if db[k] > thr]
         s['frames'] = f1 - f0
         s['vs'] = round(loud[0] / 100 - t0, 4) if loud else 0.0
@@ -904,6 +1266,13 @@ def main():
                     '(source/video/tts/say.py), or rec: the author\'s own takes, one per sentence (see --rec-dir)')
     ap.add_argument('--list-sentences', action='store_true', help='print the sentences as JSON and stop: [{"id", "scene", '
                     '"para", "n", "text"}]; id = first 12 hex of sha1(text), para and n count from 0 over the whole video')
+    ap.add_argument('--list-paragraphs', action='store_true', help='print the paragraphs as JSON and stop: [{"id", "sid", '
+                    '"scene", "para", "text", "lines": [{"k", "text", "beat", "bold"}]}]; id / sid = first 12 hex of sha1 of '
+                    'the paragraph\'s / scene\'s spoken lines joined by spaces')
+    ap.add_argument('--check-para', metavar='ID', help='rec: check a paragraph take (a punch-in), JSON: {"id", "ok", "heard", '
+                    '"points": [{"k", "said", "t"}], "order_ok", "missing", "fillers", "seconds"}; also <id>.check.json')
+    ap.add_argument('--check-scene', metavar='SID', help='rec: check a scene take, JSON: {"sid", "ok", "heard", "paras": '
+                    '[{"id", "para", "t0", "t1", "points", "order_ok", "missing"}], "fillers", "seconds"}; also <sid>.check.json')
     ap.add_argument('--rec-status', action='store_true', help='print per scene how many sentences have a take, and the '
                     'ones that do not, and stop')
     ap.add_argument('--rec-dir', help='rec: the folder of takes, <id>.wav each (default .claude/loops/voice/rec/<video>/; '
@@ -984,8 +1353,42 @@ def main():
                                                n=n, text=re.sub(r'\s+', ' ', s['text']).strip()), ensure_ascii=False)
                                     for n, s in enumerate(sents)) + ']')
         return
+    paras = paragraph_list(scenes, lines, load_bold(scenes_path, args.video))
+    if args.list_paragraphs:
+        print('[' + ',\n'.join(json.dumps(dict(id=p['id'], sid=p['sid'], scene=scenes[p['scene']]['title'], para=p['para'],
+                                               text=p['text'], lines=[dict(k=k, text=lines[g]['text'], beat=b, bold=bd)
+                                                                      for k, (g, b, bd) in enumerate(zip(p['lines'], p['beats'], p['bold']))]),
+                                          ensure_ascii=False) for p in paras) + ']')
+        return
     rdir = Path(args.rec_dir).resolve() if args.rec_dir else REC_DIR / args.video
-    if args.rec_status or args.voice == 'rec' or args.check_take:
+    if args.check_para or args.check_scene:
+        (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
+        check_talk(args, paras, lines, rdir, Path(args.out) / args.video / 'audio')
+        return
+    is_talk = args.voice == 'rec' and talk_mode(rdir) or (args.rec_status and talk_mode(rdir))
+    if args.rec_status and is_talk:
+        print(f'{rdir}  (talk: one take per scene, paragraph takes punched in)')
+        n_sc = n_rec = 0
+        for si, sc in enumerate(scenes):
+            mine = [p for p in paras if p['scene'] == si]
+            if not mine:
+                continue
+            n_sc += 1
+            st = current(rdir / 'scene', mine[0]['sid'])
+            n_rec += bool(st)
+            print(f'{sc["title"][:40]:<40} {"recorded" if st else "missing ":<9} scene {mine[0]["sid"]}, {len(mine)} paragraphs')
+            for p in mine:
+                f = current(rdir / 'para', p['id'])
+                if f:
+                    used = punch_in_used(f, dict(take=st) if st else None)
+                    print(f'    punch-in  paragraph {p["para"]:<3} {p["id"]}  '
+                          + ('' if used else '(older than the scene take, unused) ') + p['text'][:50])
+                elif not st:
+                    print(f'    missing   paragraph {p["para"]:<3} {p["id"]}  {p["text"][:50]}')
+        print(f'{"total":<40} {n_rec:>3} / {n_sc:<3} scenes recorded, '
+              f'{sum(1 for p in paras if current(rdir / "para", p["id"]))} paragraph take(s)')
+        return
+    if (args.rec_status or args.voice == 'rec' or args.check_take) and not is_talk:
         missing_rec = rec_paths(sents, rdir)
         if args.rec_status:
             print(f'{rdir}')
@@ -997,16 +1400,18 @@ def main():
                     for n, s in miss:
                         print(f'    missing  #{n:<3} {s["text"][:70]}')
             print(f'{"total":<40} {len(sents) - len(missing_rec):>3} / {len(sents):<3} recorded')
+            print(f'(no scene or paragraph takes in {rdir / "scene"} or {rdir / "para"}: talk takes are used once there are)')
             return
         if args.check_take:
             (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
             check_take(sents, scenes, rdir, Path(args.out) / args.video / 'audio', args)
             return
-        if missing_rec and args.rec_missing == 'stop':
+        if missing_rec and args.rec_missing == 'stop' and not args.check_take:
             die(f'{len(missing_rec)} of {len(sents)} sentences have no take in {rdir}:\n'
                 + '\n'.join(f'  {scenes[s["scene"]]["title"]}, sentence {sents.index(s)} ({s["id"]}): {s["text"][:70]}'
                             for s in missing_rec)
                 + '\nrecord them, or add --rec-missing tts to speak them with the default voice for a preview')
+    if args.voice == 'rec':
         if args.rec_missing.startswith('rec') or not (args.rec_missing in ('stop', 'tts', 'say')
                                                       or args.rec_missing.startswith(('say:', 'tts:'))):
             die(f'--rec-missing takes stop, tts, say, say:<voice> or tts:<model>, not {args.rec_missing}')
@@ -1092,8 +1497,12 @@ def main():
     # 2. audio: one clip per paragraph (or per run of its sentences, when long), cached by (its text, voice settings);
     # then cut back into one piece per sentence at the quiet point between the words
     is_rec = args.voice == 'rec'
-    filled = []
-    if is_rec:  # the author's takes: one clip per paragraph, however long (--para-max is for a made voice)
+    filled, talk_notes = [], []
+    if is_talk:  # the author talked each scene (and maybe punched in paragraphs): one unit per paragraph
+        sents = [dict(scene=p['scene'], para=p['para'], lines=p['lines'], text=p['text'], line=p['line']) for p in paras]
+        chunks, filled, polished, talk_notes, todo = talk_chunks(paras, sents, lines, args, adir, rdir)
+        kept_old, failed_old = [], []
+    elif is_rec:  # the author's takes: one clip per paragraph, however long (--para-max is for a made voice)
         chunks = make_chunks(sents, math.inf, CPS)
         todo, filled, polished = rec_chunks(chunks, sents, args, adir)
         kept_old, failed_old = [], []
@@ -1120,9 +1529,13 @@ def main():
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     for c in chunks:
         k = f'{c["key"]}-{fps}-{TRIM_VERSION}'
-        if c['key'] in made_keys or k not in meta or not c['wav'].exists():
+        if c['key'] in made_keys or k not in meta or len(meta[k]) < 4 or not c['wav'].exists():
             meta[k] = trim_and_pad(c['raw'], c['wav'], fps, head=REC_HEAD if is_rec else 0.06)
-        c['frames'], c['vs'], c['ve'] = meta[k]
+        c['frames'], c['vs'], c['ve'], c['off'] = meta[k]
+        if c.get('talk'):  # what was said, in the trimmed clip's time
+            o = c['off']
+            c['words_c'] = [[w, round(a - o, 3), round(b - o, 3)] for w, a, b in c['words']]
+            c['bounds_c'] = [(a - o, b - o) for a, b in c['bounds']]
     meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
 
     # every clip at one loudness (LOUDNESS, PEAK), one gain for the whole paragraph clip
@@ -1143,14 +1556,26 @@ def main():
         c['loud'] = loud[c['lk']]
 
     # word times of each paragraph clip; they say where to cut it into sentences, and where each line starts
-    n_aligned = align_all(chunks, adir, args)
+    n_aligned = align_all([c for c in chunks if not c.get('talk')], adir, args)
     for c in chunks:
         cut_chunk(c, sents, lines, fps, adir)
-    hows = {'aligned': 0, 'interpolated': 0, 'proportional': 0}
+    spoken_made = is_talk and write_spoken(scenes_path.parent / 'spoken.md', title, scenes, paras, sents, chunks)
+    hows = {'aligned': 0, 'interpolated': 0, 'proportional': 0, 'talk': 0}
     inner = dict(word=0, interpolated=0, proportional=0)  # line starts inside sentences
     for s in sents:
         s['loud'] = chunks[s['chunk']]['loud']
         texts = [lines[g]['text'] for g in s['lines']]
+        c = chunks[s['chunk']]
+        if c.get('talk'):  # a talked paragraph: each line starts where its point was said (talk.points)
+            pts = [dict(q, t=None if q['t'] is None else q['t'] - c['off']) for q in c['pts'][c['paras'].index(s['para'])]]
+            s['starts'], s['placed'] = talk_starts(s, pts, s['clip_t0'], texts)
+            s['points'], s['how'] = pts, 'talk'
+            s['matched'] = sum(1 for q in pts if q['said']) / max(len(pts), 1)
+            s['take'] = c['take']['take']
+            hows['talk'] += 1
+            for j in range(1, len(texts)):
+                inner['interpolated' if j in s['placed'] else 'word'] += 1
+            continue
         s['starts'], s['how'], s['matched'] = align.line_times(texts, s['words'], s['vs'], s['ve'])
         hows[s['how']] += 1
         if len(texts) > 1:
@@ -1193,6 +1618,20 @@ def main():
             l_dur[g] = max(1, (st[j + 1] if j + 1 < len(st) else end_last) - st[j])
     captions = []
     for lang in [x.strip() for x in args.subs.split(',') if x.strip()]:
+        if lang == 'en' and is_talk:  # what was said, for a talked paragraph; the script's lines for one filled in
+            cl = []
+            for k, s in enumerate(sents):
+                if chunks[s['chunk']].get('talk'):
+                    nxt = sents[k + 1]['start'] + round(sents[k + 1]['vs'] * fps) if k + 1 < len(sents) else total
+                    cl += subs.word_cues(s['words'] or [], s['start'], fps, end=nxt)
+                else:
+                    cl += subs.cues([lines[g]['text'] for g in s['lines']], [l_start[g] for g in s['lines']],
+                                    [l_dur[g] for g in s['lines']])
+            for a, b in zip(cl, cl[1:]):  # a cue never runs into the next paragraph's first
+                if a[0] + a[1] > b[0]:
+                    cl[cl.index(a)] = (a[0], max(1, b[0] - a[0]), a[2])
+            captions.append((lang, cl))
+            continue
         if lang == 'en':
             texts = [s['text'] for s in lines]
         else:
@@ -1260,11 +1699,47 @@ def main():
     print(f'{"total":<40} {len(lines):>5} {len(sents):>9} {len({s["para"] for s in sents}):>10} {"":>7} {sec(total):>8.1f}')
     n_audio = len({c['key'] for c in chunks})
     n_para = len({s['para'] for s in sents})
-    print(f'\naudio:  {len(chunks)} clip(s) for {n_para} paragraphs ({len(chunks) - n_para} split for length), '
-          f'{len(made_keys)} made, {n_audio - len(made_keys)} reused; cut into {len(sents)} sentence pieces '
-          f'({sum(1 for s in sents if s["cut"] == "words")} cuts between matched words, '
-          f'{sum(1 for s in sents if s["cut"] == "letters")} by letter count)')
-    if is_rec:
+    if is_talk:
+        print(f'\naudio:  {len(chunks)} clip(s) for {n_para} paragraphs (a run of paragraphs from one scene take is one '
+              f'clip), {len(made_keys)} made, {n_audio - len(made_keys)} reused; cut into {len(sents)} paragraph pieces '
+              f'({sum(1 for s in sents if s["cut"] == "talk")} at the pause between two talked paragraphs)')
+    else:
+        print(f'\naudio:  {len(chunks)} clip(s) for {n_para} paragraphs ({len(chunks) - n_para} split for length), '
+              f'{len(made_keys)} made, {n_audio - len(made_keys)} reused; cut into {len(sents)} sentence pieces '
+              f'({sum(1 for s in sents if s["cut"] == "words")} cuts between matched words, '
+              f'{sum(1 for s in sents if s["cut"] == "letters")} by letter count)')
+    if is_talk:
+        tu = [s for s in sents if chunks[s['chunk']].get('talk')]
+        takes = {c['take']['cut_take'].name: c['take'] for c in chunks if c.get('talk')}
+        print(f'voice:  talked, {len(tu)} of {len(sents)} paragraphs from {sum(1 for t in takes.values() if t["kind"] == "scene")} '
+              f'scene take(s) and {sum(1 for t in takes.values() if t["kind"] == "para")} punch-in(s) in {rdir}'
+              + (f'; {len(filled)} filled in with {args.fill_spec} (not recorded yet):' if filled else ''))
+        for s in filled:
+            print(f'  filled  {scenes[s["scene"]]["title"][:24]}, paragraph {s["para"]}: {s["text"][:60]}')
+        for n in talk_notes:
+            print(f'  note    {n}')
+        whys = {}
+        for t in takes.values():
+            for c in t['rec']['cuts']:
+                whys[c[2]] = whys.get(c[2], 0) + 1
+        print(f'polish: {len(polished)} take(s) polished now, {len(takes) - len(polished)} reused; cut '
+              + (', '.join(f'{n} {w}' for w, n in sorted(whys.items())) or 'nothing')
+              + f'; {sum(len(t["rec"]["pauses"]) for t in takes.values())} pause(s) over {talk.PAUSE_MAX} s shortened to '
+              f'{talk.PAUSE_KEEP} s' if takes else 'polish: no takes')
+        for t in takes.values():
+            n, d, flag = t['rec']['like']
+            if flag:
+                print(f'  like    {t["kind"]} take {t["key"]}: "like" {n} times beyond the script, {d:.0%} of the words '
+                      f'(over 1 in {round(1 / talk.LIKE_DENSITY)}); not cut')
+        for s in tu:
+            nf = [q['k'] for q in s['points'] if not q['said']]
+            oo = [q['k'] for q in s['points'] if q['said'] and q.get('order') is False]
+            if s['placed']:
+                print(f'  points  paragraph {s["para"]}: line(s) {", ".join(str(k) for k in s["placed"])} placed between their '
+                      f'neighbours' + (f' (not said: {nf})' if nf else '') + (f' (said out of order: {oo})' if oo else '')
+                      + f': {s["text"][:50]}')
+        print(f'spoken: {scenes_path.parent / "spoken.md"} {"written" if spoken_made else "unchanged"}')
+    elif is_rec:
         print(f'voice:  recorded, {len(sents) - len(filled)} of {len(sents)} sentences from takes in {rdir}'
               + (f'; {len(filled)} filled in with {args.fill_spec} (not recorded yet):' if filled else ''))
         for s in filled:
@@ -1304,7 +1779,7 @@ def main():
           f'{inner["word"]} line starts on a matched word, {inner["interpolated"]} in sentences with some interpolated '
           f'starts, {inner["proportional"]} by character count ({hows["proportional"]} sentence(s) fell back)')
     for s in sents:
-        if s['how'] != 'aligned' and len(s['lines']) > 1:
+        if s['how'] not in ('aligned', 'talk') and len(s['lines']) > 1:
             print(f'  {s["how"]:<12} line {s["line"]} ({s["matched"]:.0%} of words matched): {s["text"][:70]}')
     holds = lay['hold']
     print(f'pictures: {len(shown)} shown, shortest hold {sec(min(holds)):.2f} s (min {args.min_hold} s, '

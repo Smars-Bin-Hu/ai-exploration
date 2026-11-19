@@ -72,6 +72,45 @@ def cues(lines, starts, durs):
     return out
 
 
+def word_cues(words, start, fps, end=None):
+    """What was said, with word times -> cues: a talked paragraph's subtitles. words: [[word, t0, t1]] in seconds from
+    `start` (a frame); end: the frame the last cue must end by. Cut at clause breaks (and pauses over 0.6 s), clauses
+    packed into cues of two rows at most, a new cue after a sentence end once a cue has 25 letters; a clause too long
+    for two rows is cut at the last word that fits. Each cue shows from its first word to its last word's end + 0.5 s
+    (at least 0.8 s), never into the next cue; the first cue starts with a capital. -> [(start, dur, [rows])] in frames."""
+    words = [w for w in words if w[0].strip()]
+    clauses, cur = [], []
+    for k, w in enumerate(words):
+        cur.append(w)
+        nxt = words[k + 1] if k + 1 < len(words) else None
+        if nxt is None or re.search(r'[,;:.!?\u2014\u2013]["\'\u201d\u2019)]*$', w[0]) or nxt[1] - w[2] > 0.6:
+            clauses.append(cur); cur = []
+    txt = lambda ws: ' '.join(x[0] for x in ws)
+    groups, cur = [], []
+    for c in clauses:
+        if cur and (not fits(txt(cur + c)) or (re.search(r'[.!?]["\'\u201d\u2019)]*$', cur[-1][0]) and len(txt(cur)) >= 25)):
+            groups.append(cur); cur = []
+        for w in c:
+            if cur and not fits(txt(cur + [w])):
+                groups.append(cur); cur = []
+            cur.append(w)
+    if cur:
+        groups.append(cur)
+    out = []
+    for k, g in enumerate(groups):
+        s = start + round(g[0][1] * fps)
+        nxt = start + round(groups[k + 1][0][1] * fps) if k + 1 < len(groups) else end
+        e = max(start + round((g[-1][2] + 0.5) * fps), s + round(0.8 * fps))
+        if nxt is not None:
+            e = min(e, nxt)
+        if out and s < out[-1][0] + out[-1][1]:
+            s = out[-1][0] + out[-1][1]
+        if e > s:
+            text = txt(g)
+            out.append((s, e - s, wrap(text[:1].upper() + text[1:] if not k else text)))
+    return out
+
+
 def _ts(frames, fps, sep):
     ms = round(frames * 1000 / fps)
     return f'{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d}{sep}{ms % 1000:03d}'

@@ -195,7 +195,14 @@ def plan(text, words, db, length):
             missing += [w for w in text.split() if norm(w)][i1:i2]
         if t in ('insert', 'replace'):
             extra += [hyp[keep[q]][3] for q in range(j1, j2)]
-    # word indexes -> time ranges
+    cuts = cut_ranges(hyp, why, keep, db, length)
+    return dict(cuts=cuts, heard=heard, missing=missing, extra=extra, ok=not missing and not extra)
+
+
+def cut_ranges(hyp, why, keep, db, length, keep_pause=PAUSE_KEEP):
+    """Words to cut -> time ranges [(t0, t1, why)]. hyp: [(norm, start, end, word)]; why: {index: reason}; keep: the
+    indexes kept. Each cut is at the quietest point near the edges of the words cut, keeping the pause around them up
+    to keep_pause."""
     cuts, k = [], 0
     while k < len(hyp):
         if k not in why:
@@ -206,7 +213,7 @@ def plan(text, words, db, length):
         prev = max((q for q in keep if q < k), default=None)
         nxt = min((q for q in keep if q > j), default=None)
         room = ((hyp[k][1] - hyp[prev][2]) if prev is not None else 0) + ((hyp[nxt][1] - hyp[j][2]) if nxt is not None else 0)
-        p = min(PAUSE_KEEP, max(0.0, room))
+        p = min(keep_pause, max(0.0, room))
         # Whisper's word edges can be 0.1 to 0.3 s off: look for the quiet a little either side of them
         t0 = 0.0 if prev is None else quiet(db, hyp[prev][2] - 0.1, hyp[k][1] + 0.1, hyp[prev][2] + p / 2)
         t1 = length if nxt is None else quiet(db, hyp[j][2] - 0.1, hyp[nxt][1] + 0.1,
@@ -215,7 +222,7 @@ def plan(text, words, db, length):
             cuts.append((round(t0, 3), round(t1, 3), why[k] if all(why[q] == why[k] for q in range(k, j + 1)) else
                          '+'.join(sorted({why[q] for q in range(k, j + 1)}))))
         k = j + 1
-    return dict(cuts=cuts, heard=heard, missing=missing, extra=extra, ok=not missing and not extra)
+    return cuts
 
 
 def quiet(db, a, b, target):
@@ -243,8 +250,36 @@ def apply_cuts(pcm, cuts):
     return splice([s for s in segs if len(s)])
 
 
-def shorten_pauses(pcm, db=None):
-    """A pause inside the voice longer than PAUSE_MAX is cut to PAUSE_KEEP (its middle goes). -> (pcm, [(t0, t1)]):
+def time_map(cuts, length):
+    """The cuts [(t0, t1, ...)] apply_cuts makes in a take of `length` seconds -> f(t): where a moment of the take is
+    after them (a moment inside a cut goes to its join), counting the crossfade at each join."""
+    segs, at = [], 0
+    for t0, t1, *_ in sorted(cuts):
+        a, b = round(t0 * RATE), round(t1 * RATE)
+        if a > at:
+            segs.append((at, a))
+        at = max(at, b)
+    segs.append((at, round(length * RATE)))
+    segs = [s for s in segs if s[1] > s[0]]
+    outs, pos = [], 0
+    for k, (a, b) in enumerate(segs):
+        pos -= min(XFADE, pos, b - a) if k else 0
+        outs.append(pos)
+        pos += b - a
+
+    def f(t):
+        x = t * RATE
+        for (a, b), o in zip(segs, outs):
+            if x < a:
+                return o / RATE
+            if x <= b:
+                return (o + x - a) / RATE
+        return pos / RATE
+    return f
+
+
+def shorten_pauses(pcm, db=None, most=PAUSE_MAX, keep=PAUSE_KEEP):
+    """A pause inside the voice longer than `most` (PAUSE_MAX) is cut to `keep` (PAUSE_KEEP) (its middle goes). -> (pcm, [(t0, t1)]):
     the new take and the stretches cut, in the take's seconds before the cut."""
     db = db or db10(pcm)
     span = voice_span(pcm, db)
@@ -259,8 +294,8 @@ def shorten_pauses(pcm, db=None):
         j = k
         while j < k1 and db[j] <= lo:
             j += 1
-        if (j - k) / 100 > PAUSE_MAX:
-            half = PAUSE_KEEP / 2
+        if (j - k) / 100 > most:
+            half = keep / 2
             cuts.append((round(k / 100 + half, 3), round(j / 100 - half, 3), 'pause'))
         k = j
     return apply_cuts(pcm, cuts), [(a, b) for a, b, _ in cuts]
