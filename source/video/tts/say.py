@@ -11,8 +11,9 @@ A batch line may name the sentences around it: "out<TAB>text<TAB>before<TAB>afte
 checked model (vibevoice) a line under 7 words is then spoken between its two neighbours (or with the one there is)
 and cut out again.
 
-qwen3: every take is heard by Whisper and measured (length against its words, word errors, stretches without words);
-a take that fails is retaken with another seed, up to --retakes times (LIGHT_CHECKED below).
+qwen3: every take is heard by Whisper and measured (length against its words, word errors, stretches without words,
+and every content word heard: content_missing); a take that fails is retaken with another seed, up to --retakes times
+(LIGHT_CHECKED below).
 
 Checked models (vibevoice): every take goes through Demucs (vocals kept: removes the background music VibeVoice
 sometimes adds), Whisper and the voice gate (likeness.py: WavLM likeness to the reference and median pitch); a take
@@ -208,7 +209,8 @@ def hear(wavs):
 
 def _light_tokens(text):
     """Words for the light check: symbols read out (Agent = Model + Harness), hyphens split (read-only)."""
-    return _tokens(re.sub(r"[-\u2010-\u2014/]", " ", text.replace("=", " equals ").replace("+", " plus ")))
+    return _tokens(re.sub(r"[-\u2010-\u2014/]", " ", text.replace("=", " equals ").replace("+", " plus ")
+                          .replace("%", " percent")))
 
 
 def _join_compounds(a, b):
@@ -222,7 +224,69 @@ def _join_compounds(a, b):
     return out
 
 
-def take_flags(text, dur, words):
+# The strict check (qwen3, since c5): every content word of the text must be heard. A slip of a function word (the, a,
+# of, is ...) is allowed; a content word (noun, verb, number, product name) that Whisper does not hear, or hears as
+# another word, fails the take. Spellings that are the same word are no error: HEARD and NUM (above), compounds
+# (_join_compounds), plural or -ed/-ing endings, and the forms Whisper writes for respelled words (HEARD_AS).
+FUNCTION_WORDS = set("""a an the and or but so if then than that this these those there here it its it's is are was were
+be been being am do does did doing done have has had having i you he she we they me him her us them my your his our
+their mine yours of to in on at by for from with as into onto about over under up down out off just like kind sort
+really right okay ok well yeah you're we're they're i'm i've you've we've don't doesn't didn't isn't aren't wasn't can't
+won't not no yes all any some one's what which who whom whose when where why how also too very much many more most
+own same such only even still now gonna wanna let's let can could will would should shall may might must ll ve re s t
+d m""".split())
+HEARD_AS = {"m365": "m three sixty five", "cicd": "c i c d", "365": "three sixty five", "vscode": "vs code"}
+
+
+def _same_word(r, h):
+    if r == h:
+        return True
+    a, b = sorted((r, h), key=len)
+    if b.startswith(a) and len(b) - len(a) <= 3 and len(a) >= 3:  # harness / harnesses, learn / learned
+        return True
+    import difflib
+    return len(a) >= 5 and difflib.SequenceMatcher(None, r, h).ratio() >= 0.85  # one letter off in a long word
+
+
+def content_missing(text, words, detail=False):
+    """Content words of text that the take does not say. words: Whisper's [[word, start, end], ...].
+    -> [word] (detail: [dict(word, heard, kind: missing|garbled, frac: position in the voice 0..1)])."""
+    import difflib
+    ref = _light_tokens(text)
+    hyp = []  # (token, start, end)
+    for w, s0, e0, *_ in words:
+        for t in _light_tokens(w):
+            for u in HEARD_AS.get(t, t).split():
+                hyp.append((u, s0, e0))
+    hs = _join_compounds([h[0] for h in hyp], ref)
+    if len(hs) != len(hyp):  # compounds joined: keep each joined token's times
+        out, j = [], 0
+        for t in hs:
+            if t == hyp[j][0]:
+                out.append(hyp[j]); j += 1
+            else:
+                out.append((t, hyp[j][1], hyp[j + 1][2])); j += 2
+        hyp = out
+    ref = _join_compounds(ref, [h[0] for h in hyp])
+    t0, t1 = (hyp[0][1], hyp[-1][2]) if hyp else (0.0, 1.0)
+    sm = difflib.SequenceMatcher(None, ref, [h[0] for h in hyp], autojunk=False)
+    out = []
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op not in ("delete", "replace"):
+            continue
+        got = [hyp[j][0] for j in range(j1, j2)]
+        at = hyp[j1][1] if j1 < len(hyp) else t1
+        for i in range(i1, i2):
+            r = ref[i]
+            pairs = [a + b for a, b in zip(got, got[1:])]  # code base / codebase, where the halves are words elsewhere
+            if r in FUNCTION_WORDS or len(r) < 2 or any(_same_word(r, g) for g in got + pairs):
+                continue
+            out.append(dict(word=r, heard=" ".join(got), kind="garbled" if got else "missing",
+                            frac=round((at - t0) / max(t1 - t0, 0.01), 2)))
+    return out if detail else [m["word"] for m in out]
+
+
+def take_flags(text, dur, words, strict=False):
     """A light-checked take -> (flags, measures). text: what the model was given; dur: seconds of the take; words:
     Whisper's [[word, start, end], ...]."""
     exp = expected_s(text)
@@ -245,8 +309,11 @@ def take_flags(text, dur, words):
         flags.append(f"word errors {wer:.0%}")
     if gap > MAX_GAP:
         flags.append(f"{gap:.1f} s without words")
+    missing = content_missing(text, words) if strict else []
+    if missing:
+        flags.append("not heard: " + ", ".join(missing))
     m = dict(dur=round(dur, 2), expected=round(exp, 2), voice_s=round(voice, 2), ratio=round(voice / exp, 2),
-             wer=round(wer, 3), gap=round(gap, 2), heard=" ".join(w[0] for w in ws))
+             wer=round(wer, 3), gap=round(gap, 2), heard=" ".join(w[0] for w in ws), missing=missing)
     return flags, m
 
 
@@ -254,9 +321,12 @@ def light_checked(a, items, job, python, backend, env_vars, tmp):
     """Speak, hear (Whisper) and measure each take; retake a failing one with another seed, keep the best."""
     takes = [[] for _ in items]
     pending = list(range(len(items)))
+    if a.retakes is None:
+        a.retakes = 3 if a.lenient else 4
     for k in range(a.retakes + 1):
         seed = a.seed + 101 * k
         outs = {i: str(tmp / f"{i:04d}-t{k}.wav") for i in pending}
+        # one model process: two at once (2026-11-19, M1 Pro) were only 10% faster, they share the GPU
         sub = dict(job, seed=seed, items=[{"out": outs[i], "text": items[i]["text"]} for i in pending])
         r = subprocess.run([str(python), str(HERE / "backends" / backend)], input=json.dumps(sub), text=True,
                            env=env_vars)
@@ -265,7 +335,7 @@ def light_checked(a, items, job, python, backend, env_vars, tmp):
         heard = hear(outs.values())
         still = []
         for i in pending:
-            flags, m = take_flags(items[i]["text"], wav_seconds(outs[i]), heard[outs[i]]["words"])
+            flags, m = take_flags(items[i]["text"], wav_seconds(outs[i]), heard[outs[i]]["words"], strict=not a.lenient)
             takes[i].append(dict(m, take=k, seed=seed, flags=flags, wav=outs[i]))
             if flags:
                 still.append(i)
@@ -276,7 +346,8 @@ def light_checked(a, items, job, python, backend, env_vars, tmp):
             break
     report = []
     for it, tk in zip(items, takes):
-        best = min(tk, key=lambda t: (bool(t["flags"]), t["wer"], len(t["flags"]), abs(math.log(max(t["ratio"], 0.01)))))
+        best = min(tk, key=lambda t: (bool(t["flags"]), len(t.get("missing") or []), t["wer"], len(t["flags"]),
+                                       abs(math.log(max(t["ratio"], 0.01)))))  # none passed: fewest content words lost
         shutil.copyfile(best["wav"], it["out"])
         if len(tk) > 1 or best["flags"]:
             print(f'[check] {Path(it["out"]).name}: take {best["take"]} of {len(tk)} kept, '
@@ -312,6 +383,8 @@ def checked(a, items, job, python, backend, env_vars, tmp):
 
     takes = [[] for _ in items]
     pending = list(range(len(items)))
+    if a.retakes is None:
+        a.retakes = 3
     for k in range(a.retakes + 1):
         seed = a.seed + 101 * k
         plan = {i: plan_for(items[i], k) for i in pending}
@@ -421,7 +494,9 @@ def main():
     p.add_argument("--no-merge", action="store_true", help="checked models: speak short lines on their own")
     p.add_argument("--short-words", type=int, default=SHORT_WORDS,
                    help=f"checked models: a line under this many words is spoken with its neighbours (default {SHORT_WORDS})")
-    p.add_argument("--retakes", type=int, default=3, help="checked models (and qwen3): retakes of a flagged clip (default 3)")
+    p.add_argument("--retakes", type=int, help="checked models (and qwen3): retakes of a flagged clip (default 3; qwen3 "
+                   "with the content-word rule: 4)")
+    p.add_argument("--lenient", action="store_true", help="qwen3: no content-word rule in the take check")
     p.add_argument("--keep-takes", metavar="DIR", help="checked models: keep every raw and cleaned take here")
     p.add_argument("--report", metavar="FILE", help="checked models (and qwen3): write every take's measures here (JSON)")
     a = p.parse_args()

@@ -243,6 +243,7 @@ class Voice:
             ref_txt = self.ref.with_suffix('.txt')
             self.python = args.tts_python or sys.executable
             self.seed = args.seed
+            self.strict = not getattr(args, 'lenient', False)  # qwen3 take check: every content word heard
             self.settings = ('tts', self.model, hashlib.sha1(self.ref.read_bytes()).hexdigest()[:16],
                              ref_txt.read_text(encoding='utf-8').strip() if ref_txt.exists() else '', self.seed)
             sys.path.insert(0, str(self.script.parent))
@@ -343,13 +344,15 @@ class Voice:
             return [], []
         path = adir / 'take-check.json'
         book = json.loads(path.read_text()) if path.exists() else {}
+        rule = 'strict1' if self.strict else 'lenient'  # a clip checked under another rule is heard again
+        book = {k: b for k, b in book.items() if b.get('rule', 'lenient') == rule}
         sha = lambda f: hashlib.sha1(f.read_bytes()).hexdigest()[:16]
         if report:
             by_out = {str(c['raw']): c for c in chunks}
             for r in json.loads(Path(report).read_text()):
                 c = by_out.get(self.report_outs.get(r['out'], r['out']))
                 if c:
-                    book[c['key']] = dict(sha=sha(c['raw']), flags=r['flags'], retaken=True,
+                    book[c['key']] = dict(sha=sha(c['raw']), flags=r['flags'], retaken=True, rule=rule,
                                           takes=[{k: t[k] for k in ('take', 'seed', 'flags', 'dur', 'ratio', 'wer', 'gap')}
                                                  for t in r['takes']])
         need = {}
@@ -361,8 +364,8 @@ class Voice:
             heard = self.say.hear([c['raw'] for c in need.values()])
             for k, c in need.items():
                 flags, m = self.say.take_flags(self.spoken(c['text']), self.say.wav_seconds(c['raw']),
-                                               heard[str(c['raw'])]['words'])
-                book[k] = dict(m, sha=sha(c['raw']), flags=flags)
+                                               heard[str(c['raw'])]['words'], strict=self.strict)
+                book[k] = dict(m, sha=sha(c['raw']), flags=flags, rule=rule)
         path.write_text(json.dumps(book, indent=0, sort_keys=True))
         remake, never, seen = [], [], set()
         for c in chunks:
@@ -396,7 +399,8 @@ class Voice:
                 report = ['--report', str(self.report)] if self.report else []
                 self.report_outs = {str(raws[i]): str(it[1]) for i, it in enumerate(items)}  # say.py's out -> clip
                 r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
-                                    '--seed', str(self.seed), '--batch', str(batch)] + report)
+                                    '--seed', str(self.seed), '--batch', str(batch)] + report
+                                   + ([] if self.strict or not getattr(self, 'light', False) else ['--lenient']))
                 if r.returncode:
                     die(f'tts/say.py failed (exit {r.returncode})')
             for raw, (text, out_wav, *_) in zip(raws, items):
@@ -1856,9 +1860,10 @@ def _split_even(size, n):
     return out
 
 
-def make_chunks(sents, max_s, cps):
+def make_chunks(sents, max_s, cps, target_s=None):
     """Sentences -> the units the voice speaks in one call: a whole paragraph, or, when it would take longer than max_s
-    seconds (cps letters per second), a run of whole sentences of it, the runs about equally long. Sets s['chunk'].
+    seconds (cps letters per second), a run of whole sentences of it, the runs about equally long; with target_s, as
+    many runs as make them about target_s long (never over max_s, never cut inside a sentence). Sets s['chunk'].
     -> [dict(text, sents: [sentence indexes], para, scene)]"""
     out, k = [], 0
     while k < len(sents):
@@ -1869,6 +1874,8 @@ def make_chunks(sents, max_s, cps):
         size = [len(sents[i]['text']) + 1 for i in para]
         limit = max_s * cps
         n = max(1, math.ceil(sum(size) / limit))
+        if target_s and sum(size) > limit:  # a long paragraph: runs of about target_s
+            n = max(n, round(sum(size) / (target_s * cps)))
         while True:  # the fewest runs that fit, split so the longest run is as short as it can be
             groups = _split_even(size, n)
             if n >= len(size) or max(sum(size[a:b]) for a, b in groups) <= limit:
@@ -2220,8 +2227,13 @@ def main():
     ap.add_argument('--gap', type=float, default=R.gap, help='seconds of room tone between two clips of one long paragraph '
                     '(inside a clip the voice keeps its own pauses)')
     ap.add_argument('--para-gap', type=float, default=R.para_gap, help='seconds of room tone between paragraphs on the same picture')
-    ap.add_argument('--para-max', type=float, default=20.0, help='a paragraph longer than this many seconds of speech (at '
-                    f'{CPS:.0f} letters a second) is spoken in runs of whole sentences of about equal length')
+    ap.add_argument('--para-max', type=float, default=14.0, help='a paragraph longer than this many seconds of speech (at '
+                    f'{CPS:.0f} letters a second) is spoken in runs of whole sentences of about equal length (was 20 s until '
+                    '2026-11-19)')
+    ap.add_argument('--chunk-target', type=float, default=10.0, help='a paragraph over --para-max is cut into runs of '
+                    'about this many seconds (2 or 3 sentences), at sentence ends only; 0: the fewest runs under --para-max')
+    ap.add_argument('--lenient', action='store_true', help='tts qwen3: the take check without the content-word rule '
+                    '(the check before 2026-11-19)')
     ap.add_argument('--dwell', type=float, default=R.dwell, help='when the picture changes between paragraphs: seconds the '
                     'outgoing picture stays after the words end, before the next one fades in')
     ap.add_argument('--busy', type=float, default=R.busy, help='seconds added to --dwell when the outgoing picture is busy '
@@ -2446,7 +2458,7 @@ def main():
         todo, filled, polished = rec_chunks(chunks, sents, args, adir)
         kept_old, failed_old = [], []
     else:
-        chunks = make_chunks(sents, args.para_max, CPS)
+        chunks = make_chunks(sents, args.para_max, CPS, args.chunk_target or None)
         voice = Voice(args)
         for k, c in enumerate(chunks):
             c['around'] = voice.around(chunks, k)
