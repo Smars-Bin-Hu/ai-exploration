@@ -48,7 +48,7 @@ Data file of the adapters: `tool_kinds.json` {src:.harness/engine/adapters/tool_
 
 - {src:.harness/engine/core/__init__.py#L1} Engine core: config, session state, events, fail-open, logs. Modules only import from here.
 - {src:.harness/engine/core/ahp.py#L1-L13} A small client for the Agent Host Protocol of VS Code (1.6). Python standard library only.
-- {src:.harness/engine/core/approval.py#L1-L8} A person's approval at a terminal: the one mechanism behind approve-plan, approve-promote and recover.
+- {src:.harness/engine/core/approval.py#L1-L8} A person's approval at a terminal or the paired board, with a typed code: behind confirm-req, approve-plan, approve-promote, recover, review extend, waive and dismiss, autorun on and admin on. Git writes and held outside calls get their codes from `core/approvals.py` instead.
 - {src:.harness/engine/core/approvals.py#L1-L6} A person's approval of one command: a git write (A5, `approve-command`) or a call to an outside system (M43-4 …
 - {src:.harness/engine/core/askmark.py#L1-L2} The mark of a question to a task through the board (1.8.2): a message that starts with `/harness-ask`.
 - {src:.harness/engine/core/autorunfiles.py#L1-L3} The files of a task in autorun that the gate and the task module both read and write (1.8): TODO.md steps …

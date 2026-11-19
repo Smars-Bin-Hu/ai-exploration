@@ -33,7 +33,7 @@ The digests come from `task.py`, `promote_target.py` and `autorun.py`; a held ca
 
 ## Plans and approvals: how an approval works
 
-The approvals of the requirement, the plan, the write-back, autorun, more checks and a waiver each run one function, the same in the terminal and on the board, in four steps {src:.harness/engine/core/approval.py#L28-L58}:
+The approvals of the requirement, the plan, the write-back, a recovery, autorun, more checks, a waiver and a dismissed check each run their own command function, the same in the terminal and on the board, and share the person check and the typed code of `core/approval.py`; the screen and the second look are in each command's own function. A git write and a held call are approved another way: their codes are made in `core/approvals.py` (see the section "Plans and approvals: held calls and Copilot's own asks"). The steps are four {src:.harness/engine/core/approval.py#L28-L58} {src:.harness/engine/modules/task/task.py#L409-L420}:
 
 1. **A person is checked for:** a terminal with a keyboard and a screen, or the board's Terminal window, which vouches for a command with a one-time code. A pipe or a script is refused.
 2. **The screen names the file to read in the editor**, never its content, and says what the approval opens.
@@ -102,11 +102,11 @@ The person makes every decision in the table of the section "Plans and approvals
 
 ## Plans and approvals: where in the source
 
-Under `.harness/engine/` {src:.harness/engine/core/approval.py#L1-L25}: `core/approval.py` (person check, code); `core/tasks.py` (digests, whether the plan is approved now); `modules/task/task.py` (`approve-plan`, `confirm-req`, `approve-promote`, `promote`, `recover`); `modules/task/taskreview.py` (the confirmation line, the check counts); `modules/task/promote_target.py` (the write-back plan's digest); `modules/task/autorun.py` (switching autorun on); `core/approvals.py` and `core/outbox.py` (held calls and git writes); `modules/task/boardserve.py` and `web/serve.js` (the approval windows, the "do not wake" box); `modules/task/superpreview.py` (the previews). The person-only commands are in `.harness/policies/gate.json`.
+Under `.harness/engine/` {src:.harness/engine/core/approval.py#L1-L25}: `core/approval.py` (person check and typed code of the approvals above, not of a git write or a held call); `core/tasks.py` (digests, whether the plan is approved now); `modules/task/task.py` (`approve-plan`, `confirm-req`, `approve-promote`, `promote`, `recover`); `modules/task/taskreview.py` (the confirmation line, the check counts); `modules/task/promote_target.py` (the write-back plan's digest); `modules/task/autorun.py` (switching autorun on); `core/approvals.py` and `core/outbox.py` (held calls and git writes); `modules/task/boardserve.py` and `web/serve.js` (the approval windows, the "do not wake" box); `modules/task/superpreview.py` (the previews). The person-only commands are in `.harness/policies/gate.json`.
 
 ## Plans and approvals: common questions
 
-**Q: How is the code made, and can the agent read it?** The first six capitals of a sha256 of what is approved, shown with the question. Reading it does not help the agent: it cannot run the command or reach the board {src:.harness/engine/core/approval.py#L1-L25}.
+**Q: How is the code made, and can the agent read it?** For the requirement, the plan, the write-back and the other approvals of the table, the first six capitals of a sha256 of what is approved, shown with the question; for a git write and a held call, the first six capitals of a sha256 of the session, the command and the time, made by the gate when it refuses the command. Reading it does not help the agent: it cannot run the command or reach the board {src:.harness/engine/core/approval.py#L1-L25}.
 
 **Q: Can the agent approve its own plan?** Not by the ways the harness gives it. Two exceptions remain: the requirement's confirmation line is text the agent can write, and the approval records are files a script could change {src:.harness/engine/modules/gate/scriptcheck.py#L1-L11}.
 
@@ -128,6 +128,7 @@ Under `.harness/engine/` {src:.harness/engine/core/approval.py#L1-L25}: `core/ap
 
 ## Plans and approvals: related files
 
+- The code level of this file (the digest of each approval, the board's two steps, the stored approvals, the never-approved git commands): the file 14b Plans and approvals internals.
 - The task and its stages: the file 11 Task. The whole harness: the file 00 Harness at a glance. The requirement: the file 13 Requirement and intake. The write-back: the file 16 Write-back.
 - Held calls and connections: the file 19 Tool packs, connections and MCP. Git writes and person-only commands: the file 15 The gate and guardrails. Checks: the file 17 Independent checks. Autorun: the file 20 Autorun. The Super agent view: the file 21 Super agent.
 - To do it step by step, see the harness tutorials in `3 Courses/Harness tutorials/`: "1 A day with the harness", "3 When the agent is stopped", "4 Independent checks", "5 Outside systems and connections".

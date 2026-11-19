@@ -30,7 +30,7 @@ The words the Harness Guide files use, for harness version 1.8.3, by area, then 
 ## Glossary: approval and write-back terms
 
 - **Approval code** — the first six characters, in capitals, of a sha256 of what is approved, so a changed file gets a new code; held calls and git writes get a ticket for the exact command instead. See: 14 Plans and approvals.
-- **`approve-command`** — the person's approval of one exact git write, once within 10 minutes, when target repositories are set up; `push`, `reset --hard` and any force are never approved. See: 16 Write-back.
+- **`approve-command`** — the person's approval of one exact git write, once within 10 minutes, when target repositories are set up; `push`, `clean`, `reset --hard`, `branch -D`, any force and a few more are never approved (the full list: 16 Write-back). See: 16 Write-back.
 - **Confirm requirement (`task confirm-req`)** — the person's code over `REQ.md`; `--with-req` (or **Approve plan**) confirms it and approves the plan with one code. See: 13 Requirement and intake.
 - **Dry run (`task promote --dry-run`)** — checks each repository and writes `PROMOTE-PLAN.diff` but no task file to a repository; it also fetches and fast-forwards each base branch. See: 16 Write-back.
 - **Held call** — a command to an outside system that must wait for the person (by default a write); once approved on its card or with `approve-action`, that exact command may run once within 10 minutes. See: 14 Plans and approvals.

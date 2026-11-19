@@ -112,21 +112,21 @@ The terminal is not confined to the task folder. A terminal command is refused w
 
 "Waiting for you" on the board means the task's next move is the person's and its agent is not in the middle of a turn. The board picks one state per task from facts, first that holds: closed, paused, working, waiting, quiet (held by a session, nothing to do), no session {src:.harness/engine/modules/task/tasklife.py#L842-L855}. Working is read from the age of the session's hook log (five minutes by default) and running subagents {src:.harness/engine/modules/task/tasklife.py#L776-L805}.
 
-The reason a task waits is told from facts, in order of how much it blocks {src:.harness/engine/modules/task/tasklife.py#L276-L338}:
+The reason a task waits is worked out by code from facts, in order of how much it blocks; several of the facts are marks that harness code stored in `.task/task.json` (`waiting`, `deliver`, `handoff`, `paused`, `promote.state`), and the Stop hook's mark is one of them, not the only one {src:.harness/engine/modules/task/tasklife.py#L276-L338}:
 
 - the agent asks a question and waits for the answer;
 - a write-back stopped halfway and waits for **Recover the repository**;
 - the plan waits for your approval;
 - the write-back waits for your approval;
 - the independent checks are used up and wait for your decision;
-- the task was delivered and waits **to accept**;
+- the task was delivered and waits **to accept**: `task deliver` saves the summary in `task.json`, and when the agent really stops the Stop hook turns it into the waiting mark `accept` (a stop with nothing delivered gives `stopped`, so the Stop hook's mark and "to accept" are one mark with two values); the person's next message clears the mark and the delivery together (this is how **Not yet** works), a question the agent asks with its ask tool and the answer leave the task still to accept, and otherwise **Accept and close**, or **Close**, ends it {src:.harness/engine/modules/task/accept.py#L9-L10} {src:.harness/engine/modules/task/handler.py#L486-L499} {src:.harness/engine/modules/task/tasklife.py#L460-L472};
 - the requirement waits for your confirmation (`full` tier only);
 - a call to an outside system waits for your approval;
 - the agent handed you a run or a test to do;
 - the files were written back and wait for your commit;
 - you approved something and the agent has not been told yet;
 - autorun stopped;
-- the agent stopped: the Stop hook marks the task "waits for you" when the agent ends its turn, and your next message takes the mark away {src:.harness/engine/modules/task/handler.py#L486-L499} {src:.harness/engine/modules/task/handler.py#L262-L263}.
+- the agent stopped: the Stop hook marks the task "waits for you" when the agent ends its turn (the same stored mark as "to accept", with `why` = `stopped` when nothing was delivered), and your next message takes the mark away {src:.harness/engine/modules/task/handler.py#L486-L499} {src:.harness/engine/modules/task/handler.py#L262-L263}.
 - you cancelled the agent's turn in VS Code: "cancelled, waits for you" {src:.harness/engine/core/messages.en.json#L131}.
 
 A question the person asks a task through the board (`/harness-ask`, 1.8.3) leaves this as it was: the turn clears no mark, and at its end the task waits for what it waited for before {src:.harness/engine/modules/task/handler.py#L221-L244} {src:.harness/engine/modules/task/handler.py#L605-L607}.
@@ -187,6 +187,7 @@ Left to a person: confirming the requirement, approving the plan and the write-b
 
 - The whole harness, its parts and its safety guarantees: the file 00 Harness at a glance.
 - What the gate refuses, and why: the file 15 The gate and guardrails.
+- The code-level detail behind this file (functions, state fields, the order of checks, where in the code): the file 11b Task internals.
 - How autorun works down `TODO.md` with the worker: the file 20 Autorun.
 - The board's Super agent view and the questions it asks a task: the file 21 Super agent.
 - How a person starts a task, gives the requirement documents and reads the board: the harness tutorial "1 A day with the harness", in the OneDrive folder `3 Courses/Harness tutorials/`.

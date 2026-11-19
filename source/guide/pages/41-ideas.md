@@ -77,7 +77,7 @@ Learn more: Basic 06 · A prompt cannot stop a dangerous action: a harness can �
 
 The idea: "ask me first" is not a safety limit, because people click Allow the hundredth time, and the platform even offers ways to remove the box. A limit is a refusal the agent cannot argue with, graded by what the action could break, and given with a written reason the agent can act on. A question to a person is kept for the few cases that need judgment.
 
-In the harness: the gate refuses a deny list of dangerous commands outright; when target repositories are set up it never approves `git push`, `reset --hard` and the like and holds other git writes until the person approves that exact command with a code, and it leaves only a short ask list to Copilot's own confirmation, which shows no box in a chat set to Allow all {src:.harness/policies/gate.json#L88-L130} {src:.harness/engine/modules/gate/gitcmd.py#L22-L37} {src:.harness/policies/gate.json#L146-L182}; see the file 15 The gate and guardrails.
+In the harness: the gate refuses a deny list of dangerous commands outright; when target repositories are set up it never approves `git push`, `reset --hard`, any force and the others listed in 16 Write-back and holds other git writes until the person approves that exact command with a code, and it leaves only a short ask list to Copilot's own confirmation, which shows no box in a chat set to Allow all {src:.harness/policies/gate.json#L88-L130} {src:.harness/engine/modules/gate/gitcmd.py#L22-L37} {src:.harness/policies/gate.json#L146-L182}; see the file 15 The gate and guardrails.
 
 Learn more: The book · 4.2 Asking is not a limit — https://smarshu.com/book/read/4-2-ask-vs-refuse.html
 

@@ -4,11 +4,11 @@
 # pictures: every picture exists and has a caption that says what it shows; no picture failed to load
 # links: every course link answers; no footnotes (a footnote is cut away from its claim when the text is split)
 # words: no press-release words
-# totals: at most 50 knowledge files and 300 pages (the limits of an M365 Copilot agent's OneDrive knowledge)
+# totals: at most 50 knowledge files (the M365 OneDrive limit) and 450 pages (M365 recommends 300; raised for the code-level internals files, to be checked against retrieval in the company test)
 import os, re, subprocess, urllib.request
 
 HARNESS = os.path.expanduser('~/Developer/DE-agentic-harness')
-MAX_FILES, MAX_PAGES, MIN_CAPTION_WORDS = 50, 300, 5
+MAX_FILES, MAX_PAGES, MIN_CAPTION_WORDS = 50, 450, 5
 BANNED = ['seamless', 'seamlessly', 'powerful', 'revolutionary', 'game-changer', 'cutting-edge', 'unlock', 'supercharge', 'leverage',
           'effortless', 'effortlessly', 'magic', 'magical', 'state-of-the-art', 'best-in-class', 'next-generation', 'empower',
           'transformative', 'incredible', 'amazing', 'world-class', 'ai-powered', '10x', 'simply', 'just works', 'under the hood']
