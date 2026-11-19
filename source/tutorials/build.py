@@ -18,7 +18,7 @@ from pptx.dml.color import RGBColor
 from deck import Deck, T, P, R, C, W, SERIF, SANS, LS
 
 VERSION = '1.7.45'
-OUT = os.path.join(ROOT, 'AI Exploration', '3 Courses', 'Harness tutorials')
+OUT = os.path.join(ROOT, 'source', 'tutorials', '_build', 'pdf')  # retired 2026-11-19: the decks are a reference for the videos, no longer in AI Exploration/
 MUST_READ = 'AI Exploration/0 MUST READ.pdf'
 MONO, GREY = 'Courier New', '9A9A96'
 WORD_LIMIT = 60

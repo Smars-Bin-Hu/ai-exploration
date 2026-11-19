@@ -1,5 +1,7 @@
 # Harness tutorials
 
+**Retired 2026-11-19.** The Harness tutorials will be videos, like Basic and Advanced. These decks are kept here as the reference for those videos (steps, screenshots, wording); their PDFs are no longer in `AI Exploration/3 Courses/Harness tutorials/`. A build now writes the PDF to `source/tutorials/_build/pdf/` (not in git).
+
 Picture-book slidedocs for a colleague who has the harness installed and now opens tasks of their own: every small step has its own screenshot and one short line, up to four steps a page, no heading on the page. English, plain words. Same engine and look as *Install the harness* (`source/install/`, `source/tools/deck.py`).
 
 ## Build
@@ -12,7 +14,7 @@ From the repo root:
 .venv/bin/python source/tutorials/build.py sample    # the two-page test deck, into source/tutorials/_sample/
 ```
 
-Needs Chrome, and playwright-core from `~/Developer/smarshu.com`. Each deck gives two files: the PowerPoint master `source/tutorials/<slug>.pptx` and the PDF in `AI Exploration/3 Courses/Harness tutorials/`. Page images to look at are in `source/tutorials/_build/<slug>/pages/` (not in git). Once a `.pptx` is edited by hand it is the newer one: export its PDF from PowerPoint and do not rebuild over it.
+Needs Chrome, and playwright-core from `~/Developer/smarshu.com`. Each deck gives two files: the PowerPoint master `source/tutorials/<slug>.pptx` and the PDF in `source/tutorials/_build/pdf/`. Page images to look at are in `source/tutorials/_build/<slug>/pages/` (not in git). Once a `.pptx` is edited by hand it is the newer one: export its PDF from PowerPoint and do not rebuild over it.
 
 The build prints `WARNING` when a page has more than about 60 words, a step's line more than 20, a caption longer than one line, or text that runs below the page, and `overflow [...]` lists any text box whose text does not fit. It stops on a screenshot that does not exist, and on a deck (other than the sample) with no closing page.
 

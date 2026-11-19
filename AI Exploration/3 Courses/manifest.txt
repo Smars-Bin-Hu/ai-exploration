@@ -18,11 +18,10 @@ Advanced/  (The same, in depth)
   ...                 and more to come
 
 Harness tutorials/  (How to use the harness, day to day)
-  0   PDF for now     0 MUST READ.pdf
-  1   PDF for now     1 A day with the harness.pdf
-  2   PDF for now     2 A tour of the harness.pdf
-  3   PDF for now     3 When the agent is stopped.pdf
-  4   PDF for now     4 Independent checks.pdf
-  5   PDF for now     5 Outside systems and connections.pdf
-  6   PDF for now     6 Knowledge base.pdf
+  01  planned         A day with the harness
+  02  planned         A tour of the harness
+  03  planned         When the agent is stopped
+  04  planned         Independent checks
+  05  planned         Outside systems and connections
+  06  planned         Knowledge base
   ...                 and more to come
