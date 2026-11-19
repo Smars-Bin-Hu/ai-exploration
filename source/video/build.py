@@ -52,7 +52,10 @@ REC_LEVEL = -20.0     # each take is set to this loudness (LUFS) before compress
 # after the denoise: rumble off, the level, a gentle compressor (2:1 above -18 dB, 6 dB knee: only the loud words), and
 # a de-esser to take back the s the compressor brings forward (measured on say-made takes, each band 80 Hz-16 kHz within
 # -0.1 to +1.1 dB of the take; 2.5:1 above -24 dB lifted 3-16 kHz by 2.5 to 4.5 dB, which a de-esser at 0.3 did not undo)
-REC_DYN = ('highpass=f=80,volume={gain}dB,acompressor=threshold=-18dB:ratio=2:attack=15:release=200:knee=6,'
+REC_DYN = ('highpass=f=80,'
+           # de-plosive: a short low-frequency burst (a 'p' or 'b' hitting the mic) is pulled down by up to 12 dB; voice above 300 Hz unchanged
+           'adynamicequalizer=dfrequency=120:dftype=lowpass:tfrequency=150:tftype=lowshelf:mode=cutabove:attack=1:release=80:ratio=4:range=12:auto=adaptive,'
+           'volume={gain}dB,acompressor=threshold=-18dB:ratio=2:attack=15:release=200:knee=6,'
            'deesser=i=0.4')
 REC_HEAD, REC_TAIL = 0.08, 0.15   # seconds kept before and after the voice of each take
 REC_VERSION = 'r2'    # bump when the polish changes (here or in rec.py), so every take is polished again
