@@ -11,6 +11,7 @@
     .venv/bin/python source/video/build.py basic-01 --check-scene <sid>       # a talked scene take checked, JSON
     .venv/bin/python source/video/build.py basic-01 --check-para <id>         # a paragraph punch-in checked, JSON
     .venv/bin/python source/video/build.py basic-01 --polish-preview <sid>    # a scene take (or punch-in) polished, to listen to
+    .venv/bin/python source/video/build.py basic-01 --edit-draft <sid>        # the take before any cut, to write edit/<sid>.json
     .venv/bin/python source/video/build.py basic-01 --subs-draft <sid>        # heard vs script, to write subs-fix/<sid>.json
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
@@ -595,7 +596,8 @@ def talk_item(take, text, kind, key):
 def talk_plan(s, raw):
     """A talk take's cuts (talk.plan) on its decoded samples, and what was heard."""
     words = s.get('words') or []
-    p = talk.plan(words, rec.db10(raw), len(raw) / RATE, talk.PAUSE_KEEP, s['text']) if words else dict(cuts=[], keep=[])
+    p = talk.plan(words, rec.db10(raw), len(raw) / RATE, talk.PAUSE_KEEP, s['text'], s.get('edits') or ()) if words \
+        else dict(cuts=[], keep=[])
     kept = []
     for n, k in enumerate(p['keep']):  # a word after a cut filler that Whisper capitalised as if a sentence began
         w = list(words[k])
@@ -605,7 +607,8 @@ def talk_plan(s, raw):
         kept.append(w)
     return dict(cuts=p['cuts'], kept=kept, heard=' '.join(w for w, _, _ in words) if words else None,
                 missing=[], extra=[], ok=None, like=talk.like_flag(kept, s['text']), fillers=talk.fillers(words),
-                why={str(k): v for k, v in p.get('why', {}).items()})
+                why={str(k): v for k, v in p.get('why', {}).items()}, keep=p['keep'],
+                auto={k: v for k, v in p.get('auto', {}).items()}, restored=p.get('restored', []))
 
 
 def para_lines(p, lines):
@@ -626,6 +629,7 @@ def check_talk(args, paras, lines, rdir, adir):
         sys.exit(1)
     s = talk_item(take, ' '.join(p['text'] for p in mine), 'scene' if scene else 'para', want)
     take_words([s], adir / 'rec' / 'words', args)
+    load_edits(s, getattr(args, 'edit_dir', None))
     with tempfile.TemporaryDirectory() as td:
         raw = decode(take, Path(td) / 'raw.wav')
     pl = talk_plan(s, raw)
@@ -665,15 +669,16 @@ def polish_talk(items, tdir, args, den, tag):
     tdir.mkdir(parents=True, exist_ok=True)
     meta_path = tdir / 'takes.json'
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    take_words(items, tdir / 'words', args)  # cached by the take's hash: the editorial pass is checked against them
     for s in items:
-        s['take_hash'] = hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
-        s['cut_take'] = tdir / f'{s["take_hash"]}-{tag}.wav'
+        load_edits(s, getattr(args, 'edit_dir', None))
+        # the editorial pass is part of the name: new edits polish this take again, and nothing else
+        s['cut_take'] = tdir / (f'{s["take_hash"]}-{tag}' + (f'-e{s["edit_tag"]}' if s['edit_tag'] else '') + '.wav')
     todo, seen = [], set()
     for s in items:
         if (s['cut_take'].name not in meta or not s['cut_take'].exists()) and s['cut_take'] not in seen:
             todo.append(s); seen.add(s['cut_take'])
     if todo:
-        take_words(todo, tdir / 'words', args)
         print(f'polishing {len(todo)} talk take(s) (denoise: {den}) ...', flush=True)
         made = polish_takes(todo, tdir, args, den)
         meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}  # another run may have added some
@@ -772,6 +777,15 @@ def polish_preview(args, scenes, paras, lines, rdir, adir):
     for t0, t1, why in cuts:
         said = [w for w, a, b in words if t0 <= (a + b) / 2 <= t1]
         rows.append((t0, t1, why, '"' + ' '.join(said) + '"' if said else ''))
+    runs = []  # the words the editorial pass kept against an automatic cut
+    for k in pl.get('restored', []):
+        if runs and runs[-1][-1] == k - 1:
+            runs[-1].append(k)
+        else:
+            runs.append([k])
+    for r in runs:
+        rows.append((words[r[0]][1], words[r[-1]][2], 'edit: kept',
+                     f'"{" ".join(words[k][0] for k in r)}" (was cut: {pl["auto"].get(r[0], "?")})'))
     for a, b in m.get('pauses') or []:
         rows.append((to_take_time(a, cuts), to_take_time(b, cuts), 'pause shortened',
                      f'{b - a + talk.PAUSE_KEEP:.2f} s → {talk.PAUSE_KEEP:.2f} s'))
@@ -821,7 +835,10 @@ def polish_preview(args, scenes, paras, lines, rdir, adir):
           f'Listen: `{want}-raw.mp3`, `{want}-polished.mp3` (next to this file).',
           f'Denoise: {den}. Polished {"now" if fresh else "earlier (from the build cache)"}: '
           f'`{s["cut_take"].relative_to(ROOT) if s["cut_take"].is_relative_to(ROOT) else s["cut_take"]}`; '
-          f'the build uses it as is.', '']
+          f'the build uses it as is.',
+          'Editorial pass: ' + (f'`{edit_report(s["edit_rep"], want)}`'.replace('\n          ', '`; `') if s.get('edit_rep')
+                                else f'none (`{args.edit_dir.relative_to(ROOT) if args.edit_dir.is_relative_to(ROOT) else args.edit_dir}/{want}.json`; '
+                                     f'--edit-draft {want} to write one).'), '']
     if s.get('words') is None:
         md += ['**No Whisper** (no venv at --whisper-python): nothing was cut, the points were not checked.', '']
     md += ['## Verdict', '',
@@ -835,7 +852,8 @@ def polish_preview(args, scenes, paras, lines, rdir, adir):
     else:
         md += ['Nothing.']
     md += ['', 'filler: um, uh, er, hmm (cut). stutter: a word or fragment said twice, the first copy cut. restart: a '
-           'false start, cut back to the last attempt. pause shortened: over '
+           'false start, cut back to the last attempt. edit: the editorial pass (edit/<sid>.json) cut it, or kept words '
+           'an automatic cut took. pause shortened: over '
            f'{talk.PAUSE_MAX} s, cut to {talk.PAUSE_KEEP} s. plosive: a p or b burst pulled down (nothing cut).'
            + (f' Away from bursts the de-plosive took a median {plos_voice:.0f} dB off the voice under 200 Hz.'
               if plos_voice is not None else ''),
@@ -865,6 +883,171 @@ def polish_preview(args, scenes, paras, lines, rdir, adir):
     print(md[md.index('## Verdict') + 2])
 
 
+# ---------- the editorial pass: what a human editor cuts or keeps in a talk take (FORMAT.md, Recorded voice, Talk) ----------
+
+def edit_dir(scenes_path, video):
+    """edit/ next to the scenes file if it is there, else source/courses/<video>/edit/."""
+    near = scenes_path.parent / 'edit'
+    return near if near.is_dir() else ROOT / 'source/courses' / video / 'edit'
+
+
+def load_edits(s, edir):
+    """A talk take's editorial pass, edir/<key>.json: {"take": <take hash>, "edits": [{"op": "cut"|"keep", "from": i,
+    "to": j, "heard": "<words i..j>", "why": "..."}]}, on the word indexes of the take's transcript before any cut
+    (s['words'], as --edit-draft shows them). Sets s['edits'] (the ones that apply, for talk.plan), s['edit_tag'] (a
+    hash of them, part of the polished take's name: '' when none) and s['edit_rep'] (None without a file). An edit
+    applies when its range is in the transcript, its "heard" words are the words there (case and punctuation aside;
+    no "heard" is not checked) and it does not overlap an edit before it. A file for another take is not applied."""
+    s['edits'], s['edit_tag'], s['edit_rep'] = [], '', None
+    f = Path(edir) / f'{s["key"]}.json' if edir else None
+    if f is None or not f.exists():
+        return
+    try:
+        data = json.loads(f.read_text(encoding='utf-8'))
+    except json.JSONDecodeError as e:
+        die(f'{f}: {e}')
+    edits = data.get('edits', [])
+    rep = s['edit_rep'] = dict(file=f, take=data.get('take'), stale=data.get('take') != s['take_hash'], edits=[], applied=0)
+    if rep['stale']:
+        rep['edits'] = [(e, 'stale') for e in edits]
+        return
+    words = s.get('words') or []
+    taken = set()
+    for e in edits:
+        op, a, b = e.get('op'), e.get('from'), e.get('to')
+        if op not in ('cut', 'keep') or not isinstance(a, int) or not isinstance(b, int) or not 0 <= a <= b < len(words):
+            rep['edits'].append((e, 'not applied: op must be cut or keep, from..to word indexes of the transcript')); continue
+        want = [x for x in (talk.base(w) for w in str(e.get('heard', '')).split()) if x]
+        got = [x for x in (talk.base(w[0]) for w in words[a:b + 1]) if x]
+        if want and want != got:
+            rep['edits'].append((e, f'not applied: the words at {a}..{b} are "{" ".join(w[0] for w in words[a:b + 1])}"'))
+            continue
+        if taken & set(range(a, b + 1)):
+            rep['edits'].append((e, 'not applied: overlaps another edit')); continue
+        taken |= set(range(a, b + 1))
+        s['edits'].append({'op': op, 'from': a, 'to': b, 'why': str(e.get('why', ''))})
+        rep['edits'].append((e, 'applied'))
+    rep['applied'] = len(s['edits'])
+    if s['edits']:
+        s['edit_tag'] = h(talk.EDIT_VERSION, talk.EDIT_PAUSE, json.dumps([[e['op'], e['from'], e['to']] for e in s['edits']]))[:6]
+
+
+def edit_report(rep, key):
+    """One line for the build's report (and the previews) about a take's editorial pass."""
+    rel = rep['file'].relative_to(ROOT) if rep['file'].is_relative_to(ROOT) else rep['file']
+    if rep['stale']:
+        return (f'{rel}: written for take {rep["take"]}, not this one (the take was recorded again): not applied; '
+                f'--edit-draft {key} to edit the new take')
+    bad = [(e, st) for e, st in rep['edits'] if st != 'applied']
+    return (f'{rel}: {rep["applied"]} of {len(rep["edits"])} edit(s) applied'
+            + ''.join(f'\n          {e.get("op")} {e.get("from")}..{e.get("to")} "{e.get("heard", "")}": {st}' for e, st in bad))
+
+
+def talk_take(want, paras, rdir):
+    """A scene sid or paragraph id -> (its paragraphs, 'scene' or 'para', its current take); dies when there is none."""
+    mine = [p for p in paras if p['sid'] == want]
+    kind, take = 'scene', current(rdir / 'scene', want) if mine else None
+    if not take and any(p['id'] == want for p in paras):
+        mine = [p for p in paras if p['id'] == want]
+        kind, take = 'para', current(rdir / 'para', want)
+    if not mine:
+        die(f'{want} is no scene (sid) or paragraph (id) of this video; --list-paragraphs prints them')
+    if not take:
+        die(f'no take {rdir / kind / (want + ".wav")}')
+    return mine, kind, take
+
+
+def edit_draft(args, scenes, paras, lines, rdir, adir):
+    """--edit-draft: a talk take's whole transcript before any cut, every word with its index and time, the automatic
+    cuts marked (and the editorial pass, if there is one), by paragraph next to the script's lines, for whoever writes
+    its editorial pass (edit/<key>.json). Writes <rec-dir>/preview/<key>-edit-draft.md. No audio is changed."""
+    want = args.edit_draft
+    mine, kind, take = talk_take(want, paras, rdir)
+    s = talk_item(take, ' '.join(p['text'] for p in mine), kind, want)
+    take_words([s], adir / 'rec' / 'words', args)
+    words = s.get('words') or []
+    if not words:
+        die('no words heard (no Whisper?): nothing to edit')
+    load_edits(s, args.edit_dir)
+    with tempfile.TemporaryDirectory() as td:
+        raw = decode(take, Path(td) / 'raw.wav')
+    pl = talk_plan(s, raw)
+    keep, auto, final = pl['keep'], pl['auto'], {int(k): v for k, v in pl['why'].items()}
+    # the paragraphs over the words kept, their borders moved back to the transcript's indexes
+    if kind == 'scene':
+        _, found, _, pcuts = talk.paragraphs([para_lines(p, lines) for p in mine], pl['kept'])
+        labels = [p for p, f in zip(mine, found) if f]
+        starts = [0] + [keep[j] for _, j in sorted(pcuts.values())]
+    else:
+        labels, starts = mine, [0]
+    if not labels:
+        labels, starts = mine[:1], [0]
+    edited = {}
+    for e in s['edits']:
+        for k in range(e['from'], e['to'] + 1):
+            edited[k] = e
+    title = scenes[mine[0]['scene']]['title']
+    rel = lambda x: x.relative_to(ROOT) if x.is_relative_to(ROOT) else x
+    efile = args.edit_dir / f'{want}.json'
+    md = [f'# Edit draft: {"scene" if kind == "scene" else "punch-in, paragraph " + str(mine[0]["para"]) + " of"} "{title}"', '',
+          f'Take `{rel(take)}`, hash `{s["take_hash"]}`, {len(raw) / RATE:.1f} s: its {len(words)} words as Whisper heard '
+          'them, before any cut. `n` before a word is its index (count on from it), then its time in the take as recorded.',
+          '', f'Editorial pass: `{rel(efile)}`: ' + ('none yet.' if s['edit_rep'] is None else
+                                                     edit_report(s['edit_rep'], want).split(': ', 1)[1].replace('\n          ', '; ')),
+          '', 'Marks: ~~words~~ ⟨why⟩ the polish cuts them (filler, stutter, restart: automatic; edit: the editorial pass); '
+          '⟪words⟫ ⟨kept⟩ an automatic cut the editorial pass undoes; ‖1.4 s‖ a pause (0.5 s or more) before the next word.',
+          '', 'Write the editorial pass as below: `cut` or `keep` the words `from`..`to` (indexes here, both included), '
+          '`heard` the words there (checked), `why` one of repeat, slip, fragment, over-cut restored, splice. Keep the best '
+          'take of an idea said twice (or splice its best halves), cut slips and fragments, restore what the automatic '
+          'cuts took that was meant; keep the author\'s style (like, so) and pauses.', '', '```json',
+          json.dumps(dict(take=s['take_hash'], sid=want, edits=[{'op': 'cut', 'from': 0, 'to': 0, 'heard': words[0][0],
+                                                                    'why': 'fragment'}]), ensure_ascii=False), '```', '']
+
+    def text(a, b):  # words a..b-1 as lines: a new line after a sentence end, a pause of 0.5 s or more, or 12 words
+        out, cur, n = [], [], 0
+        k = a
+        while k < b:
+            if not cur:
+                cur.append(f'- `{k}` {clock(words[k][1])} ·'); n = 0
+            tag = final.get(k)
+            mark = lambda q: (final.get(q), q in pl['restored'], id(edited.get(q)))
+            j = k
+            if tag or k in pl['restored']:  # a run of words with the same mark, up to a pause
+                while j + 1 < b and mark(j + 1) == mark(k) and words[j + 1][1] - words[j][2] < 0.5:
+                    j += 1
+            run = ' '.join(words[q][0].replace('|', '\\|') for q in range(k, j + 1))
+            if tag:
+                cur.append(f'~~{run}~~ ⟨{tag}⟩')
+            elif k in pl['restored']:
+                cur.append(f'⟪{run}⟫ ⟨kept: was {auto.get(k, "cut")}⟩')
+            else:
+                cur.append(run)
+            n += j - k + 1
+            gap = words[j + 1][1] - words[j][2] if j + 1 < len(words) else 0
+            if gap >= 0.5:
+                cur.append(f'‖{gap:.1f} s‖')
+            if j + 1 >= b or gap >= 0.5 or n >= 12 or re.search(r'[.?!]["\')]*$', words[j][0]):
+                out.append(' '.join(cur)); cur = []
+            k = j + 1
+        if cur:
+            out.append(' '.join(cur))
+        return out
+    for p, a, b in zip(labels, starts, starts[1:] + [len(words)]):
+        md += [f'## Paragraph {p["para"]} ({clock(words[a][1])} to {clock(words[b - 1][2])})', '', 'Script:', '']
+        md += [f'> {k + 1}. {lines[g]["text"]}' for k, g in enumerate(p['lines'])]
+        md += ['', 'Heard:', ''] + text(a, b) + ['']
+    missing = [p for p in mine if p not in labels]
+    if missing:
+        md += ['Not found in the take (their words, if said, are in the paragraphs above): '
+               + ', '.join(str(p['para']) for p in missing) + '.', '']
+    dst = rdir / 'preview' / f'{want}-edit-draft.md'
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text('\n'.join(md).rstrip() + '\n', encoding='utf-8')
+    print(dst)
+    if s['edit_rep']:
+        print(edit_report(s['edit_rep'], want))
+
+
 # ---------- subtitle proofreading: corrections to what Whisper heard, per take (FORMAT.md, Recorded voice, Talk) ----------
 
 FIX_NEAR = 8   # an edit whose words are not at its "at" is looked for this many words either side (the take's words moved)
@@ -876,14 +1059,17 @@ def fix_dir(scenes_path, video):
     return near if near.is_dir() else ROOT / 'source/courses' / video / 'subs-fix'
 
 
-def subs_fix(words, key, take_hash, fdir):
+def subs_fix(words, key, take_hash, fdir, keep=None):
     """A talk take's words as kept (s['rec']['words']: [[word, t0, t1]]) -> (words corrected, report or None).
     fdir/<key>.json (key: the scene's sid, or a punch-in's paragraph id) is {"take": <take hash>, "edits": [{"at": <index
     of the first heard word>, "from": "<heard words>", "to": "<corrected words>"}]}; indexes are into the words as kept,
     before any edit. An edit applies where its "from" words are (compared without case and punctuation), at "at" or up to
     FIX_NEAR words from it; "to" "" removes them, "from" "" inserts before word "at". The new words share the time of the
     words they replace by letter count, so cues stay in sync. A file for another take (its "take" is not this one) is
-    not applied. report: dict(file, take, stale, edits: [(edit, index or None, status)], applied)."""
+    not applied. An edit may also carry "raw": the index of its first word in the take's transcript before any cut (as
+    --edit-draft shows it); with keep (the raw index of each word kept, s['rec']['keep']) it is looked for there first,
+    so it stays in place when the editorial pass changes which words are kept.
+    report: dict(file, take, stale, edits: [(edit, index or None, status)], applied)."""
     f = fdir / f'{key}.json'
     if not f.exists():
         return words, None
@@ -902,6 +1088,8 @@ def subs_fix(words, key, take_hash, fdir):
     for e in edits:
         frm = [talk.base(x) for x in str(e.get('from', '')).split()]
         n, at = len(frm), int(e.get('at', 0))
+        if keep and isinstance(e.get('raw'), int):
+            at = next((q for q, r in enumerate(keep) if r >= e['raw']), at)
         i = next((at + d for d in sorted(range(-FIX_NEAR, FIX_NEAR + 1), key=abs)
                   if 0 <= at + d and at + d + n <= len(out) and keys[at + d:at + d + n] == frm), None)
         if n == 0:
@@ -961,7 +1149,7 @@ def subs_draft(args, scenes, paras, lines, rdir, adir, fdir):
     words = s['rec'].get('words') or []
     if not words:
         die('no words heard (no Whisper?): nothing to proofread')
-    _, rep = subs_fix(words, want, s['take_hash'], fdir)
+    _, rep = subs_fix(words, want, s['take_hash'], fdir, s['rec'].get('keep'))
     # where each script line was said: its heard words run from its point's first word to the next found point's
     if kind == 'scene':
         per, _, _, _ = talk.paragraphs([para_lines(p, lines) for p in mine], words)
@@ -981,11 +1169,13 @@ def subs_draft(args, scenes, paras, lines, rdir, adir, fdir):
         if a in owner:
             spans[owner[a]] = (a, b)
 
+    keep = s['rec'].get('keep')
+
     def heard(a, b):  # the words a..b-1, an index before the first, after each clause end and every 6 words
         out, run = [], 0
         for i in range(a, b):
             if i == a or run >= 6 or re.search(r'[,;:.!?]["\')]*$|\.\.\.$', words[i - 1][0]):
-                out.append(f'`{i}`'); run = 0
+                out.append(f'`{i}/{keep[i]}`' if keep else f'`{i}`'); run = 0
             out.append(words[i][0].replace('|', '\\|')); run += 1
         return ' '.join(out)
     title = scenes[mine[0]['scene']]['title']
@@ -996,10 +1186,12 @@ def subs_draft(args, scenes, paras, lines, rdir, adir, fdir):
           '', f'Corrections file: `{rel(fdir / (want + ".json"))}`: '
           + ('none yet.' if rep is None else fix_report(rep, want).split(': ', 1)[1].replace('\n          ', '; ')), '',
           'Write it as below. `at` is the index of the first heard word (the `n` before a word marks its index; count on '
-          'from it); `from` the heard words exactly as shown (case and punctuation do not matter); `to` what the subtitle '
+          'from it); `raw` its index in the take\'s transcript before any cut (the `r` of `n/r`; count on from it, '
+          'skipping the words cut: --edit-draft shows them); `from` the heard words exactly as shown (case and punctuation do not matter); `to` what the subtitle '
           'should say (`""` removes the words). Fix what Whisper misheard (the script says what was meant), names, '
           'fragments left by a cut restart, and light grammar; keep the author\'s own wording.', '', '```json',
-          json.dumps(dict(take=s['take_hash'], sid=want, scene=title, edits=[dict(at=0, **{'from': words[0][0], 'to': words[0][0]})]),
+          json.dumps(dict(take=s['take_hash'], sid=want, scene=title, edits=[dict(at=0, raw=keep[0] if keep else 0,
+                                                                                 **{'from': words[0][0], 'to': words[0][0]})]),
                      ensure_ascii=False), '```', '']
     for p, pts in zip(mine, per):
         md += [f'## Paragraph {p["para"]}', '', '| | script | heard |', '| --- | --- | --- |']
@@ -1045,16 +1237,18 @@ def talk_chunks(paras, units, lines, args, adir, rdir):
     todo = polish_talk(items, tdir, args, den, tag)
     # the take's proofread corrections (subs-fix/<sid|id>.json), before anything reads its words: paragraphs, pictures,
     # subtitles, spoken.md and the FCPXML captions all see the corrected words, on the same times
-    args.fix_reports = []
+    args.fix_reports, args.edit_reports = [], []
     seen_fix = set()
     for s in items:
         if s['cut_take'].name + s['key'] in seen_fix:
             continue
         seen_fix.add(s['cut_take'].name + s['key'])
-        fixed, rep = subs_fix(s['rec'].get('words') or [], s['key'], s['take_hash'], args.fix_dir)
+        fixed, rep = subs_fix(s['rec'].get('words') or [], s['key'], s['take_hash'], args.fix_dir, s['rec'].get('keep'))
         if rep:
             s['rec'] = dict(s['rec'], words=fixed)
             args.fix_reports.append((s['key'], rep))
+        if s.get('edit_rep'):
+            args.edit_reports.append((s['key'], s['edit_rep']))
     # where each paragraph comes from
     src = {}
     for si, s in by_scene.items():
@@ -1284,7 +1478,8 @@ def polish_takes(ss, rdir, args, den):
             if s.get('talk'):  # the words kept, moved to the piece's time: through the cuts, the pauses shortened, the trim
                 f1, f2 = rec.time_map(p['cuts'], s['raw_len']), rec.time_map(pauses, len(dyn) / RATE)
                 at = lambda t: round(min(max(f2(f1(t)) - a / RATE, 0.0), (b - a) / RATE), 3)
-                m.update(words=[[w, at(t0), at(t1)] for w, t0, t1 in p['kept']], like=p['like'], fillers=p['fillers'])
+                m.update(words=[[w, at(t0), at(t1)] for w, t0, t1 in p['kept']], like=p['like'], fillers=p['fillers'],
+                         keep=p['keep'])
         with ThreadPoolExecutor(6) as ex:
             list(ex.map(second, range(len(ss))))
     return out
@@ -1645,6 +1840,10 @@ def main():
                     '<sid>-polished.mp3 and <sid>-polish.md (what was cut or changed, at what time in the raw take; the '
                     'transcript cleaned; points missing or out of order; "like"; loudness before and after). The polished '
                     'take goes into the build\'s cache, so the build after it does not polish it again')
+    ap.add_argument('--edit-draft', metavar='SID|ID', help='rec, talk: write <rec-dir>/preview/<sid>-edit-draft.md, the '
+                    'take\'s whole transcript before any cut (word indexes and times, the automatic cuts marked) next to '
+                    'the script, by paragraph, to write its editorial pass from: source/courses/<video>/edit/<sid>.json '
+                    '(cut or keep word ranges), applied by the polish')
     ap.add_argument('--subs-draft', metavar='SID|ID', help='rec, talk: write <rec-dir>/preview/<sid>-subs-draft.md, the '
                     'take\'s words as kept (with their indexes) next to the script, line by line, to write its subtitle '
                     'corrections from: source/courses/<video>/subs-fix/<sid>.json, applied by every build')
@@ -1736,6 +1935,11 @@ def main():
                                           ensure_ascii=False) for p in paras) + ']')
         return
     rdir = Path(args.rec_dir).resolve() if args.rec_dir else REC_DIR / args.video
+    args.edit_dir = edit_dir(scenes_path, args.video)
+    if args.edit_draft:
+        (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
+        edit_draft(args, scenes, paras, lines, rdir, Path(args.out) / args.video / 'audio')
+        return
     if args.polish_preview:
         (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
         polish_preview(args, scenes, paras, lines, rdir, Path(args.out) / args.video / 'audio')
@@ -2122,6 +2326,8 @@ def main():
                 print(f'  points  paragraph {s["para"]}: line(s) {", ".join(str(k) for k in s["placed"])} placed between their '
                       f'neighbours' + (f' (not said: {nf})' if nf else '') + (f' (said out of order: {oo})' if oo else '')
                       + f': {s["text"][:50]}')
+        for key, rep in getattr(args, 'edit_reports', []):
+            print(f'  edit    {edit_report(rep, key)}')
         for key, rep in getattr(args, 'fix_reports', []):
             print(f'  subs    {fix_report(rep, key)}')
         print(f'spoken: {scenes_path.parent / "spoken.md"} {"written" if spoken_made else "unchanged"}')

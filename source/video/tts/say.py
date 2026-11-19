@@ -22,8 +22,8 @@ the reference with the same name and a .txt extension.
 This script uses only the standard library. It runs the model's own Python
 (an isolated venv under .claude/loops/tts/<env>/, see README.md) on
 backends/<model>_backend.py and passes the job as JSON on stdin. Output is a mono wav
-at the model's own rate (24 kHz; 48 kHz for voxcpm2, 44 kHz for kokoro-seedvc, 22 kHz for kokoro-openvoice and
-kokoro-seedvc-v1);
+at the model's own rate (24 kHz; 48 kHz for voxcpm2, 32 kHz for gptsovits, 44 kHz for kokoro-seedvc, 22 kHz for
+kokoro-openvoice and kokoro-seedvc-v1);
 any other extension (.mp3, .m4a) is converted with ffmpeg.
 """
 
@@ -52,6 +52,7 @@ MODELS = {
     "chatterbox-turbo-calm": ("chatterbox", "chatterbox_backend.py", "chatterbox-turbo",
                               {"temperature": 0.5, "top_p": 0.9}),
     "f5": ("f5", "f5_backend.py", "f5", {}),
+    "gptsovits": ("gptsovits", "gptsovits_backend.py", "gptsovits", {}),
     "kokoro": ("kvc", "kokoro_vc_backend.py", "kokoro", {"voice": "am_michael"}),
     "kokoro-cbvc": ("kvc", "kokoro_vc_backend.py", "kokoro-cbvc", {"voice": "am_michael"}),
     "kokoro-openvoice": ("kvc", "kokoro_vc_backend.py", "kokoro-openvoice", {"voice": "am_michael", "tau": 0.3}),

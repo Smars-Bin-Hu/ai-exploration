@@ -5,6 +5,7 @@
  "edits": [
   {
    "at": 9,
+   "raw": 10,
    "from": "team",
    "to": "teams",
    "kind": "grammar",
@@ -12,6 +13,7 @@
   },
   {
    "at": 25,
+   "raw": 26,
    "from": "company",
    "to": "companies",
    "kind": "grammar",
@@ -19,6 +21,7 @@
   },
   {
    "at": 41,
+   "raw": 46,
    "from": "such as the Cloud Code,",
    "to": "such as Claude Code,",
    "kind": "name",
@@ -26,195 +29,215 @@
   },
   {
    "at": 54,
-   "from": "would... What",
+   "raw": 61,
+   "from": "What",
    "to": "what",
-   "kind": "fragment",
-   "why": "\"would...\" is left from a cut restart; the sentence runs on after \"here's the thing,\""
+   "kind": "grammar",
+   "why": "the editorial pass cut \"would...\" from the audio; the sentence runs on after \"here's the thing,\""
   },
   {
-   "at": 64,
+   "at": 63,
+   "raw": 70,
    "from": "still",
    "to": "are still",
    "kind": "grammar",
    "why": "missing verb"
   },
   {
-   "at": 66,
+   "at": 65,
+   "raw": 72,
    "from": "AI, for their, a",
    "to": "AI for a",
    "kind": "fragment",
    "why": "\"for their,\" is a restart remnant (\"for their, a tiny slice\")"
   },
   {
-   "at": 74,
+   "at": 73,
+   "raw": 82,
    "from": "and",
    "to": "And",
    "kind": "grammar",
    "why": "starts a new sentence after \"work.\""
   },
   {
-   "at": 84,
+   "at": 83,
+   "raw": 92,
    "from": "a, chat bot,",
    "to": "a chatbot,",
    "kind": "grammar",
    "why": "stray comma inside \"a chatbot\""
   },
   {
-   "at": 89,
+   "at": 88,
+   "raw": 97,
    "from": "let's see,",
    "to": "let's say",
    "kind": "misheard",
    "why": "script: \"say you're a software engineer\""
   },
   {
-   "at": 110,
+   "at": 109,
+   "raw": 119,
    "from": "and...",
    "to": "and",
    "kind": "fragment",
    "why": "trailing ellipsis of a pause"
   },
   {
-   "at": 115,
+   "at": 114,
+   "raw": 124,
    "from": "to come",
    "to": "that comes",
    "kind": "grammar",
    "why": "\"a request that comes from the business side\" (script: \"comes in from\")"
   },
   {
-   "at": 128,
+   "at": 127,
+   "raw": 137,
    "from": "features, like, before,",
    "to": "features like it before,",
    "kind": "misheard",
    "why": "\"like it before\" (script; also what Whisper hears on the clip alone)"
   },
   {
-   "at": 145,
+   "at": 144,
+   "raw": 156,
    "from": "file",
    "to": "files",
    "kind": "grammar",
    "why": "plural with \"need\""
   },
   {
-   "at": 171,
+   "at": 170,
+   "raw": 182,
    "from": "done...",
    "to": "done",
    "kind": "fragment",
    "why": "trailing ellipsis of a pause"
   },
   {
-   "at": 179,
+   "at": 178,
+   "raw": 190,
    "from": "you, you're",
    "to": "you're",
    "kind": "fragment",
    "why": "\"you,\" is a stutter left before \"you're\""
   },
   {
-   "at": 201,
+   "at": 200,
+   "raw": 213,
    "from": "the first, you have to, find",
    "to": "first, you have to find",
    "kind": "grammar",
    "why": "\"the first,\" -> \"first,\" (script); comma inside \"have to find\""
   },
   {
-   "at": 213,
+   "at": 212,
+   "raw": 225,
    "from": "matters,",
    "to": "matter,",
    "kind": "grammar",
    "why": "\"the code files you think matter\""
   },
   {
-   "at": 217,
+   "at": 216,
+   "raw": 229,
    "from": "and, drop them into the, inbox,",
    "to": "and drop them into the chat box,",
    "kind": "misheard",
    "why": "script: \"drop them into the chat box\"; Whisper heard \"inbox\""
   },
   {
-   "at": 230,
-   "from": "the H code",
-   "to": "the code",
-   "kind": "fragment",
-   "why": "\"H\" is a broken start before \"code\" (script: \"what the code does\")"
-  },
-  {
-   "at": 241,
+   "at": 239,
+   "raw": 257,
    "from": "how,",
    "to": "how",
    "kind": "grammar",
    "why": "stray comma in \"and how it all fits together\""
   },
   {
-   "at": 258,
+   "at": 256,
+   "raw": 277,
    "from": "read",
    "to": "write",
    "kind": "misheard",
    "why": "script: \"you write a whole screen of ...\""
   },
   {
-   "at": 268,
+   "at": 266,
+   "raw": 287,
    "from": "never,",
    "to": "never",
    "kind": "grammar",
    "why": "stray comma in \"never touch that\""
   },
   {
-   "at": 282,
+   "at": 280,
+   "raw": 303,
    "from": "read",
    "to": "written",
    "kind": "misheard",
    "why": "script: \"hasn't written a single line of code\" (the author's example: write heard as read)"
   },
   {
-   "at": 302,
+   "at": 300,
+   "raw": 323,
    "from": "and I hope it gets read,",
    "to": "and hope it gets it right,",
    "kind": "misheard",
    "why": "script: \"and hope it gets it right\"; \"I\" sits on the \"and\" (same time)"
   },
   {
-   "at": 327,
+   "at": 325,
+   "raw": 350,
    "from": "and...",
    "to": "and",
    "kind": "fragment",
    "why": "trailing ellipsis of a pause"
   },
   {
-   "at": 348,
+   "at": 346,
+   "raw": 375,
    "from": "spend, next, a few hours,",
    "to": "spend the next few hours",
    "kind": "grammar",
    "why": "\"spend the next few hours to review the code\""
   },
   {
-   "at": 368,
+   "at": 366,
+   "raw": 397,
    "from": "still mistake,",
    "to": "still makes mistakes,",
    "kind": "grammar",
    "why": "missing verb, plural"
   },
   {
-   "at": 374,
+   "at": 372,
+   "raw": 404,
    "from": "do...",
    "to": "do",
    "kind": "fragment",
    "why": "trailing ellipsis of a pause"
   },
   {
-   "at": 411,
+   "at": 409,
+   "raw": 448,
    "from": "where is this way, of using AI goes wrong? And",
    "to": "where this way of using AI goes wrong, and",
    "kind": "grammar",
    "why": "script: \"where this way of using AI goes wrong,\" (a list item, not a question)"
   },
   {
-   "at": 430,
-   "from": "put in AI? into their work.",
+   "at": 428,
+   "raw": 468,
+   "from": "put AI? into their work.",
    "to": "put AI into their work,",
-   "kind": "fragment",
-   "why": "\"put in AI?\" is a restart of \"put AI into their work\""
+   "kind": "grammar",
+   "why": "the editorial pass cut the slip \"in\"; \"AI?\" is not a question, and the list runs on"
   },
   {
-   "at": 437,
+   "at": 434,
+   "raw": 476,
    "from": "what's the missing piece, it's called.",
    "to": "what the missing piece is called.",
    "kind": "misheard",

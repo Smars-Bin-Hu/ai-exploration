@@ -11,7 +11,7 @@ Pure text work; build.py runs Whisper and the audio. What it does (FORMAT.md, Re
   - paragraphs(): a scene's paragraphs over its transcript: which were said, and where to cut between them (the
     longest pause between the last word of one and the first word of the next).
 """
-import difflib, re
+import difflib, math, re
 
 import rec
 
@@ -137,9 +137,12 @@ def content(text, bold=()):
 
 # ---------- the cuts ----------
 
-def plan(words, db, length, keep_pause=PAUSE_KEEP, script=''):
+def plan(words, db, length, keep_pause=PAUSE_KEEP, script='', edits=()):
     """A take's words (Whisper, fillers kept: [[word, start, end]] in seconds) -> dict(cuts: [(t0, t1, why)],
-    keep: indexes of the words kept, why: {index: filler|stutter|restart}). db: the take's 10 ms levels.
+    keep: indexes of the words kept, why: {index: filler|stutter|restart|edit: <why>}, auto: the automatic why alone,
+    restored: the indexes an edit kept against an automatic cut). db: the take's 10 ms levels.
+    edits: the editorial pass (build.py load_edits), [dict(op=cut|keep, from=i, to=j, why=...)] on the word indexes,
+    applied over the automatic cuts: "cut" cuts words i..j, "keep" keeps them (undoing an automatic cut).
     A restart is a false start of g words, then its first m words again (m >= 2, or the false start ends in a cut-off
     word). Not a restart: the script has those words so ("find the code, paste the code"), or the repeated words end
     in a comma or stop the first time (a list: "the code, paste the code"), unless the whole attempt is said again."""
@@ -176,8 +179,106 @@ def plan(words, db, length, keep_pause=PAUSE_KEEP, script=''):
                     break
             if not done:
                 i += 1
+    auto, restored = dict(why), set()
+    for e in edits:
+        for k in range(max(0, e['from']), min(len(hyp) - 1, e['to']) + 1):
+            if e['op'] == 'cut':
+                why[k] = 'edit: ' + (e.get('why') or 'cut').split()[0].rstrip(':;,')
+            elif k in why:
+                del why[k]
+                restored.add(k)
     keep = [k for k in range(len(hyp)) if k not in why]
-    return dict(cuts=rec.cut_ranges(hyp, why, keep, db, length, keep_pause), keep=keep, why=why)
+    cuts = rec.cut_ranges(hyp, why, keep, db, length, keep_pause)
+    if edits:
+        cuts = edit_joints(cuts, hyp, why, keep, db)
+    return dict(cuts=cuts, keep=keep, why=why, auto=auto, restored=sorted(restored))
+
+
+EDIT_VERSION = 'e4'        # bump when edit_joints changes: every edited take is polished again
+EDIT_PAUSE = (0.25, 0.4)   # an editorial joint keeps at least / aims at this much of no voice across it (seconds)
+
+
+def voice_runs(db, v):
+    """10 ms levels -> the runs of voice [(k0, k1)] (frames k0..k1-1 at or above v, dips of 30 ms or less bridged, 50 ms
+    or longer)."""
+    runs, k, n = [], 0, len(db)
+    while k < n:
+        if db[k] < v:
+            k += 1; continue
+        j = k
+        while j < n and (db[j] >= v or any(db[q] >= v for q in range(j + 1, min(n, j + 4)))):
+            j += 1
+        if j - k >= 5:
+            runs.append((k, j))
+        k = j
+    return runs
+
+
+def edit_joints(cuts, hyp, why, keep, db):
+    """The joints of the editorial cuts (why "edit: ..."), set on the voice rather than on Whisper's word edges (they
+    can be 0.3 s off), so the pause across the joint is about EDIT_PAUSE[1]. The kept voice before the joint ends at E,
+    the kept voice after it starts at S (voice_runs at the take's level of voiced speech). After E, up to the first new
+    onset, is quiet that may be kept (6 dB under voiced speech, or under it and not rising more than 3 dB in 10 ms:
+    room tone, a breath, the voice dying away); before S the same, read backwards. A joint moves only through that
+    quiet: it never keeps voice that was cut, nor cuts voice that was kept (a side where the cut does not sit in the
+    quiet next to E or S keeps its own point). The pause is split over both sides, each cut at the quietest 10 ms
+    near its aim."""
+    if not db:
+        return cuts
+    _, _, v, _ = rec.thresholds(db)
+    b = v - 6
+    runs = voice_runs(db, v)
+    n = len(db)
+    loud = lambda k: 0 <= k < n and db[k] >= b
+    # quiet that may be kept: under b, or a lone 10 ms tick, or under v and dying away (nb: the frame before it in the
+    # direction of the scan)
+    quiet_ok = lambda k, nb: (not loud(k) or not (loud(k - 1) or loud(k + 1))) and db[k] < v + 6 \
+        or (db[k] < v and db[k] <= db[nb] + 3)
+
+    def snap(lo, hi, target):  # the frame edge in lo..hi (seconds) whose 40 ms around is the quietest, nearest target
+        ks = range(max(2, int(round(lo * 100))), min(n - 2, int(round(hi * 100))) + 1)
+        if not ks:
+            return target
+        return min(ks, key=lambda k: (round(max(db[k - 2:k + 2]) / 3), abs(k / 100 - target))) / 100
+    out = []
+    for t0, t1, w in cuts:
+        if not w.startswith('edit') and '+edit' not in w:
+            out.append((t0, t1, w)); continue
+        mid = [k for k in why if t0 - 0.05 <= (hyp[k][1] + hyp[k][2]) / 2 <= t1 + 0.05]
+        prev = max((q for q in keep if mid and q < min(mid)), default=None)
+        nxt = min((q for q in keep if mid and q > max(mid)), default=None)
+        left = [r for r in runs if r[1] / 100 <= t0 + 0.03]
+        right = [r for r in runs if r[0] / 100 >= t1 - 0.03]
+        if prev is None or nxt is None or not left or not right:
+            out.append((t0, t1, w)); continue
+        E, S = left[-1][1], right[0][0]
+        k = E
+        while k < min(len(db), E + 100) and quiet_ok(k, k - 1):
+            k += 1
+        L1 = k                                   # E..L1-1: quiet after the kept voice
+        k = S - 1
+        while k > max(0, S - 100) and quiet_ok(k, k + 1):
+            k -= 1
+        R0 = k + 1                               # R0..S-1: quiet before the kept voice
+        lfree = E / 100 - 0.03 <= t0 <= L1 / 100 + 0.03   # the cut sits in that quiet: it may move through it
+        rfree = R0 / 100 - 0.03 <= t1 <= S / 100 + 0.03
+        lmax, rmax = (L1 - E) / 100, (S - R0) / 100
+        aim = EDIT_PAUSE[1]
+        # a side that keeps its point: the quiet it already has (to the last / first frame at the level of voiced speech)
+        lp = t0 - (max((q for q in range(E, int(t0 * 100)) if db[q] >= v), default=E - 1) + 1) / 100 if not lfree else None
+        rp = min((q for q in range(int(math.ceil(t1 * 100)), S) if db[q] >= v), default=S) / 100 - t1 if not rfree else None
+        if lfree and rfree:
+            lp = min(lmax, aim / 2)
+            rp = min(rmax, aim - lp)
+            lp = min(lmax, aim - rp)
+        elif lfree:
+            lp = min(lmax, max(aim - rp, 0.05))
+        elif rfree:
+            rp = min(rmax, max(aim - lp, 0.03))
+        n0 = snap(E / 100 + max(0.0, lp - 0.03), E / 100 + min(lmax, lp + 0.03), E / 100 + lp) if lfree else t0
+        n1 = snap(S / 100 - min(rmax, rp + 0.03), S / 100 - max(0.0, rp - 0.03), S / 100 - rp) if rfree else t1
+        out.append((round(n0, 3), round(n1, 3), w) if n1 > n0 else (t0, t1, w))
+    return out
 
 
 def like_flag(words, script):
