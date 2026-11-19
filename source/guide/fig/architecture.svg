@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 900">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
+.t{font-size:22px;font-weight:bold}
+.s{font-size:19px;font-weight:bold}
+.n{font-size:18px}
+.m{font-size:16px}
+.k{font-size:17px;fill:#6b6b6b}
+.c{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#6b6b6b}
+.h{font-size:17px;font-weight:bold;fill:#6b6b6b;letter-spacing:1px}
+.box{fill:#f2f1ec;stroke:#141414;stroke-width:1.5}
+.inner{fill:#ffffff;stroke:#141414;stroke-width:1.2}
+.person{fill:#ffffff;stroke:#141414;stroke-width:1.5}
+.focus{fill:#f2f1ec;stroke:#e8590c;stroke-width:2.5}
+.dat{stroke:#141414;stroke-width:1.8;fill:none}
+.ctl{stroke:#141414;stroke-width:1.8;fill:none;stroke-dasharray:8 6}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414"/></marker></defs>
+
+<text x="20" y="30" class="h">PERSON AND TEXT</text>
+<text x="350" y="30" class="h">COPILOT AND THE HOOK PATH (CODE)</text>
+<text x="980" y="30" class="h">COMMAND LINE AND BOARD (CODE)</text>
+<text x="1470" y="30" class="h">DATA AND STATE ON DISK</text>
+
+<!-- person -->
+<rect x="20" y="50" width="300" height="220" rx="6" class="person"/>
+<text x="38" y="82" class="t">Person</text>
+<text x="38" y="112" class="n">types in the VS Code chat</text>
+<text x="38" y="140" class="n">approves with a typed code,</text>
+<text x="38" y="164" class="n">in a terminal or on the</text>
+<text x="38" y="188" class="n">paired board</text>
+<text x="38" y="216" class="n">accepts, closes, commits</text>
+<text x="38" y="250" class="k">writes the override files</text>
+
+<!-- text layer -->
+<rect x="20" y="300" width="300" height="330" rx="6" class="box"/>
+<text x="38" y="332" class="t">Text layer</text>
+<text x="38" y="358" class="k">read by the model,</text>
+<text x="38" y="380" class="k">which may ignore it</text>
+<text x="38" y="412" class="c">AGENTS.md</text>
+<text x="38" y="436" class="c">.github/</text>
+<text x="38" y="460" class="c">&#160;&#160;copilot-instructions.md</text>
+<text x="38" y="484" class="c">&#160;&#160;instructions/</text>
+<text x="38" y="508" class="c">&#160;&#160;skills/ (34)</text>
+<text x="38" y="532" class="c">&#160;&#160;agents/</text>
+<text x="38" y="558" class="c">knowledge-base/ (team's)</text>
+<text x="38" y="600" class="m">the hook's lines at each prompt</text>
+
+<!-- copilot agent -->
+<rect x="350" y="50" width="600" height="150" rx="6" class="box"/>
+<text x="368" y="82" class="t">Copilot agent in VS Code</text>
+<text x="368" y="110" class="n">the default agent: the chat the person talks to</text>
+<text x="368" y="134" class="n">subagents: reviewer, mapper, worker</text>
+<text x="368" y="158" class="n">the board's super chat: may only read</text>
+<text x="368" y="186" class="c">.github/agents/*.agent.md</text>
+
+<line x1="320" y1="110" x2="346" y2="110" class="dat" marker-end="url(#a)"/>
+<line x1="320" y1="320" x2="348" y2="190" class="dat" marker-end="url(#a)"/>
+
+<line x1="440" y1="202" x2="440" y2="256" class="ctl" marker-end="url(#a)"/>
+<text x="452" y="226" class="m">every hook event (9 kinds)</text>
+<line x1="860" y1="258" x2="860" y2="204" class="dat" marker-end="url(#a)"/>
+<text x="848" y="250" class="m" text-anchor="end">answer: allow, ask or deny; text; block</text>
+
+<!-- hook entry -->
+<rect x="350" y="260" width="600" height="275" rx="6" class="focus"/>
+<text x="368" y="290" class="t">Hook entry: one process per event</text>
+<text x="368" y="314" class="c">.github/hooks/harness.json → launch.py → hook.py</text>
+<text x="368" y="344" class="n">1  guardrail files still as the person accepted?</text>
+<text x="368" y="370" class="n">2  the adapter turns the payload into a HookEvent</text>
+<text x="368" y="396" class="n">3  lock and read the session state</text>
+<text x="368" y="422" class="n">4  registry.json: the modules for this event</text>
+<text x="368" y="448" class="n">5  modules decide; merge: deny &gt; ask &gt; allow</text>
+<text x="368" y="474" class="n">6  breaker; write the state; one log record</text>
+<text x="368" y="514" class="k">cannot decide: commands and writes refused, reads pass</text>
+
+<line x1="650" y1="537" x2="650" y2="566" class="ctl" marker-end="url(#a)"/>
+
+<!-- modules -->
+<rect x="350" y="570" width="600" height="135" rx="6" class="box"/>
+<text x="368" y="598" class="t">Modules, in registry order</text>
+<rect x="364" y="610" width="137" height="86" rx="6" class="inner"/>
+<text x="375" y="634" class="s">task</text>
+<text x="440" y="634" class="k">S C H</text>
+<text x="375" y="660" class="m">prompt lines,</text>
+<text x="375" y="682" class="m">subagents, Stop</text>
+<rect x="510" y="610" width="137" height="86" rx="6" class="inner"/>
+<text x="521" y="634" class="s">gate</text>
+<text x="590" y="634" class="k">S H</text>
+<text x="521" y="660" class="m">writes and</text>
+<text x="521" y="682" class="m">commands</text>
+<rect x="656" y="610" width="137" height="86" rx="6" class="inner"/>
+<text x="667" y="634" class="s">observe</text>
+<text x="760" y="634" class="k">V</text>
+<text x="667" y="660" class="m">one log line</text>
+<text x="667" y="682" class="m">per call</text>
+<rect x="802" y="610" width="137" height="86" rx="6" class="inner"/>
+<text x="813" y="634" class="s">evalcheck</text>
+<text x="916" y="634" class="k">V</text>
+<text x="813" y="660" class="m">scenarios,</text>
+<text x="813" y="682" class="m">command only</text>
+
+<line x1="650" y1="707" x2="650" y2="731" class="ctl" marker-end="url(#a)"/>
+
+<!-- core -->
+<rect x="350" y="735" width="600" height="110" rx="6" class="box"/>
+<text x="368" y="764" class="t">Core library</text>
+<text x="368" y="788" class="c">.harness/engine/core/: 70 files; modules import only core</text>
+<text x="368" y="812" class="n">state, tasks, approval, events, config, messages,</text>
+<text x="368" y="834" class="n">callrecord, copilot_events, kb*, toolpacks, systems</text>
+
+<!-- harness command -->
+<rect x="980" y="50" width="460" height="285" rx="6" class="box"/>
+<text x="998" y="82" class="t">The harness command</text>
+<text x="998" y="106" class="c">.harness/bin/harness → engine/cli.py</text>
+<text x="998" y="138" class="n">run by the person or the agent's terminal</text>
+<text x="998" y="168" class="n">task, target: task module</text>
+<text x="998" y="194" class="n">admin, approve-command, approve-action,</text>
+<text x="998" y="218" class="n">tools, as, wait: gate module</text>
+<text x="998" y="244" class="n">stats, kb, logs: observe · eval: evalcheck</text>
+<text x="998" y="270" class="n">doctor, company, toolpack, skill, user</text>
+<text x="998" y="314" class="k">person-only commands: a terminal and a code</text>
+
+<line x1="952" y1="125" x2="976" y2="125" class="ctl" marker-end="url(#a)"/>
+
+<!-- board -->
+<rect x="980" y="365" width="460" height="285" rx="6" class="box"/>
+<text x="998" y="397" class="t">Board server</text>
+<text x="998" y="421" class="c">harness task board → boardserve.py, web/</text>
+<text x="998" y="453" class="n">a page on 127.0.0.1; buttons need the</text>
+<text x="998" y="477" class="n">paired browser; approvals run the same</text>
+<text x="998" y="501" class="n">functions as the terminal commands</text>
+<text x="998" y="533" class="n">vslink.py: one thread holds the link to</text>
+<text x="998" y="557" class="n">VS Code's agent host (core/ahp.py):</text>
+<text x="998" y="581" class="n">send, steer, stop, new chat (chatnew.py)</text>
+<text x="998" y="626" class="k">the gate refuses an agent's request to it</text>
+
+<line x1="978" y1="400" x2="952" y2="190" class="ctl" marker-end="url(#a)"/>
+
+<path d="M1210,652 L1210,760 L954,760" class="ctl" marker-end="url(#a)"/>
+<text x="1222" y="690" class="m">the same core and module</text>
+<text x="1222" y="712" class="m">code as the hook path</text>
+
+<!-- data and state -->
+<rect x="1470" y="50" width="310" height="180" rx="6" class="box"/>
+<text x="1486" y="80" class="t">Policies, templates</text>
+<text x="1486" y="106" class="c">.harness/policies/</text>
+<text x="1486" y="130" class="c">&#160;&#160;&lt;name&gt;.json</text>
+<text x="1486" y="154" class="c">&#160;&#160;+ .company + .override</text>
+<text x="1486" y="180" class="c">.harness/contracts/</text>
+<text x="1486" y="206" class="c">core/messages.en|zh.json</text>
+
+<rect x="1470" y="250" width="310" height="180" rx="6" class="box"/>
+<text x="1486" y="280" class="t">Session state, logs</text>
+<text x="1486" y="306" class="c">.harness/runtime/</text>
+<text x="1486" y="330" class="c">&#160;&#160;state/vscode/&lt;id&gt;.json</text>
+<text x="1486" y="354" class="c">&#160;&#160;logs/vscode/&lt;id&gt;.jsonl</text>
+<text x="1486" y="378" class="c">&#160;&#160;logs/hook-errors.jsonl</text>
+<text x="1486" y="402" class="c">&#160;&#160;board-serve.json</text>
+
+<rect x="1470" y="450" width="310" height="180" rx="6" class="box"/>
+<text x="1486" y="480" class="t">Task folders</text>
+<text x="1486" y="506" class="c">.workspace/sandbox/tasks/</text>
+<text x="1486" y="530" class="c">&#160;&#160;&lt;task&gt;/TASK.md REQ.md</text>
+<text x="1486" y="554" class="c">&#160;&#160;&lt;task&gt;/.task/task.json</text>
+<text x="1486" y="580" class="k">state written by code only</text>
+<text x="1486" y="608" class="c">.workspace/reports/</text>
+
+<rect x="1470" y="650" width="310" height="195" rx="6" class="box"/>
+<text x="1486" y="680" class="t">Outside this folder</text>
+<text x="1486" y="706" class="c">~/.copilot-harness/</text>
+<text x="1486" y="728" class="c">&#160;&#160;integrity/</text>
+<text x="1486" y="752" class="c">~/.copilot/session-state/</text>
+<text x="1486" y="784" class="m">target repositories: written</text>
+<text x="1486" y="806" class="m">only by task promote, after</text>
+<text x="1486" y="828" class="m">the person's approval</text>
+
+<line x1="952" y1="815" x2="1466" y2="815" class="dat" marker-end="url(#a)" marker-start="url(#a)"/>
+<text x="1240" y="806" class="m">reads and writes</text>
+
+<!-- legend -->
+<line x1="20" y1="882" x2="80" y2="882" class="dat" marker-end="url(#a)"/>
+<text x="92" y="888" class="k">data: what is read, sent or answered</text>
+<line x1="460" y1="882" x2="520" y2="882" class="ctl" marker-end="url(#a)"/>
+<text x="532" y="888" class="k">control: who calls or drives whom</text>
+<text x="980" y="888" class="k">S text · C command · H hook · V check after the fact</text>
+</svg>
