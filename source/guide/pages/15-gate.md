@@ -74,7 +74,7 @@ While a task's autorun is on (since 1.8.0), the task's own chat, which only sche
 
 ## Gate: the integrity check of the guardrail files
 
-The hook compares the guardrail files with a list the person accepted: size, time and SHA-256 of everything under `.harness/engine`, `.harness/bin`, `.github/hooks` and `.harness/toolpacks`, of `registry.json` and of the shipped policies (not the `*.override.json` and `*.company.json` layers). The list lives in `~/.copilot-harness/integrity/`, made when the person accepts: the board's first start (also after an upgrade), `harness doctor --accept`, `admin off` {src:.harness/engine/integrity.py#L1-L9}. Before each tool call, prompt and session start the hook compares; while a file differs, every command and write is refused and the agent is told which files {src:.harness/engine/hook.py#L312-L360}.
+The hook compares the guardrail files with a list the person accepted: size, time and SHA-256 of everything under `.harness/engine`, `.harness/bin`, `.github/hooks` and `.harness/toolpacks`, of `registry.json` and of the shipped policies (not the `*.override.json` and `*.company.json` layers). The list lives in `~/.copilot-harness/integrity/`, made when the person accepts: the board's first start (also after an upgrade), `harness doctor --accept`, the board's Accept button in a paired browser, `admin off` {src:.harness/engine/integrity.py#L1-L9}. Before each tool call, prompt and session start the hook compares; while a file differs, every command and write is refused and the agent is told which files {src:.harness/engine/hook.py#L312-L360}.
 
 ## Gate: what is enforced by code, what is asked by text, and who decides
 

@@ -19,7 +19,7 @@ Besides fetch into `DEV/`: `task fetch --read` (since 1.7.42) copies code only t
 
 ## Write-back: the dry run and what it checks
 
-`harness task promote --dry-run` builds the write-back plan and writes nothing to any repository. It is refused unless the plan is approved as it is now and, when the person switched independent checks on, the work has enough passes in a row or the person waived them {src:.harness/engine/modules/task/task.py#L911-L940}. It brings each base branch up to its remote again, checks every repository, and refuses the whole plan, listing every problem, when any check fails {src:.harness/engine/modules/task/promote_target.py#L119-L223}:
+`harness task promote --dry-run` builds the write-back plan and writes no file into any repository; it does run `git fetch` and may move the local base branch forward by fast-forward (it brings each base branch up to its remote, as said below). It is refused unless the task's plan (the one approved before the work) is approved as it is now; the approval of the write-back itself comes after the dry run. It is also refused when the person switched independent checks on and the work does not have enough passes in a row and the person has not waived them {src:.harness/engine/modules/task/task.py#L911-L940}. The dry run brings each base branch up to its remote again, checks every repository, and refuses the whole plan, listing every problem, when any check fails {src:.harness/engine/modules/task/promote_target.py#L119-L223}:
 
 - **Base commit:** the base branch must have one; the plan records it.
 - **Dirty repository:** the working tree must be clean. When it sits on another task's write-back branch whose files are not committed yet, the refusal names that task (the promote queue) {src:.harness/engine/modules/task/taskqueue.py#L1-L9}.
@@ -105,13 +105,13 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/promote_target.py#L1-
 - **The rules need target repositories set up;** without them git is checked only by the ask list {src:.harness/engine/modules/gate/handler.py#L815-L824}.
 - **The gate reads command text.** A terminal write by a relative path, a script, an alias or a path made at run time can write a repository unseen {src:.harness/engine/modules/gate/policy.py#L149-L156}; a git command the person approves can also write there {src:.harness/engine/modules/gate/gitcmd.py#L1-L9}.
 - **The harness runs `git fetch` and moves the base branch forward** at a first fetch and every dry run, by fast-forward only, although the design doc says "no automatic fetch or pull" {src:docs/05-design.md#L224}.
-- **No undo across repositories,** and recovery acts only in a repository still on the write-back branch {src:.harness/engine/modules/task/promote_target.py#L13-L14} {src:.harness/engine/modules/task/promote_target.py#L350-L386}.
+- **No undo across repositories,** by the design document's line that outward actions are always done by a person and that on a failure partway the harness stops, says what was done and a person recovers {src:docs/05-design.md#L224-L225}; recovery acts only in a repository still on the write-back branch {src:.harness/engine/modules/task/promote_target.py#L13-L14} {src:.harness/engine/modules/task/promote_target.py#L350-L386}.
 - **A person can approve without reading.** The digest stops a swap, not a careless yes; the dry run checks base versions, not whether the code is right.
-- **One task per repository at a time:** the next write-back waits until the person commits the previous one.
+- **Tasks are not locked against each other:** a write-back leaves its files uncommitted, so the next dry run into the same repository is refused for a dirty tree until the person commits; `task queue` only reports who holds a repository and no lock or scheduler orders the tasks {src:.harness/engine/modules/task/taskqueue.py#L1-L10}.
 
 ## Write-back: related files
 
-- Approvals and their codes: 14 Plans and approvals. The gate, `approve-command` and the ask list: 15 The gate and guardrails. The passes: 17 Independent checks. The task and its rounds: 11 Task. The knowledge base: 18 Knowledge base. Get ready: 24 Setup, doctor and upgrade.
+- Approvals and their codes: 14 Plans and approvals. The gate, `approve-command` and the ask list: 15 The gate and guardrails. The passes: 17 Independent checks. The task and its rounds: 11 Task. The knowledge base: 18 Knowledge base. Get ready: 24 Setup, doctor and upgrade. The code-level detail of fetch, the dry run, the write, recovery, the queue and the commit message: 16b Write-back internals.
 - To do it step by step (approve the write-back, commit the branch), see the harness tutorial "1 A day with the harness" in `3 Courses/Harness tutorials/`.
 
 The rule that a target repository is written only by an approved promote is in `AGENTS.md` {src:AGENTS.md#L48-L49}.

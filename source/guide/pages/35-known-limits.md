@@ -37,6 +37,7 @@ The harness is a governance layer around VS Code Copilot, not a sandbox: the age
 - **The agent can delete the session logs.** `harness logs prune` has no person check and is only on the ask list, so in a chat under Allow all the agent's call runs {src:.harness/engine/modules/observe/commands.py#L30-L31} {src:.harness/policies/gate.json#L176-L181}. Details: 22 Cost and usage.
 - **In autorun, a call the gate asks about is listed as held though it ran.** A worker's call that the gate answers with "ask" goes to `QUESTIONS.md` as held, while Allow all lets it run {src:.harness/engine/modules/gate/handler.py#L737-L760}. Details: 20 Autorun.
 - **Admin mode opens the guardrails.** In a chat the person switched to admin mode, of the guardrail paths only `.harness/runtime/**`, the policy's `admin_locked_paths` and the integrity-list folder stay closed (command-line-owned files, `.git`, target repositories and the person-only commands stay closed as everywhere); the integrity check is skipped, and ending admin mode accepts the guardrail files as they are then {src:.harness/engine/core/guardrails.py#L21-L61} {src:.harness/engine/modules/gate/handler.py#L36-L61} {src:.harness/engine/hook.py#L312-L323}. Details: 11 Task.
+- **Admin mode has no expiry.** The switch is `state["admin"]` with `on` and the time it was set; no code reads that time to end the mode, so it lasts until `admin off` and the whole default-agent session is trusted with the guardrail files meanwhile {src:.harness/engine/modules/gate/commands.py#L118-L150} {src:.harness/engine/core/state.py#L246-L248}. Details: 15b The gate and guardrails internals.
 
 ## Known limits: repositories that are not set up as targets
 
@@ -108,6 +109,8 @@ The harness is a governance layer around VS Code Copilot, not a sandbox: the age
 - **The first board start after a version change accepts every watched file as it is,** without listing what differs from the shipped version {src:.harness/engine/integrity.py#L198-L210}. Details: 24 Setup, doctor and upgrade.
 - **Before the board's first start there is no list,** so nothing is checked and `doctor` only warns {src:.harness/engine/integrity.py#L171-L183} {src:.harness/engine/doctor.py#L973-L998}. Details: 24 Setup, doctor and upgrade.
 - **The list stops slips and plain tampering, not a process that runs as the same user,** which can rewrite the list as well {src:.harness/engine/integrity.py#L1-L9}. Details: 24 Setup, doctor and upgrade.
+- **`admin off` is not person-only, and it accepts the guardrail files.** The gate's person-only rule lists `admin on` and `doctor --accept`, not `admin off`, and the command checks for no person: the agent of an admin session can end the mode, and the files as they are then become the accepted list {src:.harness/policies/gate.json#L136} {src:.harness/engine/modules/gate/commands.py#L122-L136}. Details: 15b The gate and guardrails internals.
+- **A file rewritten with the same size and modification time is not seen by the integrity check,** because only a file whose size or time differs is hashed {src:.harness/engine/integrity.py#L131-L157}. Details: 15b The gate and guardrails internals.
 
 ## Known limits: fixed recently
 
