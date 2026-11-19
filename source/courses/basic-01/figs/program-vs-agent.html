@@ -1,0 +1,83 @@
+<!doctype html>
+<!-- What you used to remind it of in the prompt, a program now does: deterministic, no tokens, no model.
+     Then the split: fixed answers go to a program, judgment goes to the agent.
+     @ fig program-vs-agent step=1 ... step=6 (steps 1-4 one picture; steps 5-6 two columns) -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .at-5 .intro { display: none; }
+  .you { left: 0; top: 280px; width: 180px; }
+  .prompt { left: 220px; top: 110px; width: 520px; height: 580px; }
+  .prompt .win-body { gap: 18px; padding: 28px 30px; }
+  .rem { display: flex; align-items: center; gap: 16px; font-size: 34px; }
+  .rem i[data-icon] { color: var(--muted); }
+  .at-2 .prompt .rem { opacity: 0.25; text-decoration: line-through; }
+  .prompt .ln { width: 90%; } .prompt .ln.s { width: 60%; }
+  .move { left: 0; top: 0; }
+  .prog { left: 920px; top: 110px; width: 600px; height: 380px; border-radius: 26px; background: var(--panel); border: 3px solid var(--muted);
+    padding: 26px 34px; display: flex; flex-direction: column; gap: 14px; }
+  .prog .hd { display: flex; align-items: center; gap: 18px; font-size: 46px; font-weight: 600; margin-bottom: 6px; }
+  .prog .hd i[data-icon] { font-size: 60px; }
+  .prog.lit { border-color: var(--teal); box-shadow: 0 0 34px rgba(45, 212, 191, 0.25); }
+  .prog.lit .hd { color: var(--teal); }
+  .prog .rem { font-size: 30px; }
+  .same { left: 920px; top: 520px; width: 600px; text-align: center; font-size: 38px; }
+  .same.lit { color: var(--teal); }
+  .tags { left: 920px; top: 610px; width: 600px; display: flex; justify-content: center; gap: 22px; }
+  .tags .chip { font-size: 34px; }
+  .cols { left: 0; top: 30px; width: 1580px; height: 740px; display: none; grid-template-columns: 1fr 1fr; gap: 0; }
+  .at-5 .cols { display: grid; }
+  .col { padding: 10px 60px; display: flex; flex-direction: column; justify-content: center; gap: 30px; }
+  .col + .col { border-left: 2px solid var(--edge); }
+  .col .top { display: flex; align-items: center; gap: 24px; margin-bottom: 30px; }
+  .col .top .face { width: 120px; height: 120px; font-size: 64px; }
+  .col .top .t1 { font-size: 30px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; }
+  .col .top .t2 { font-size: 54px; font-weight: 600; }
+  .col .chip { font-size: 40px; padding: 24px 34px; }
+  .col.lit .t2 { color: var(--teal); }
+  .col.lit .t1 { color: var(--teal); }
+  .gear { width: 120px; height: 120px; border-radius: 26px; border: 3px solid var(--muted); display: flex; align-items: center; justify-content: center;
+    font-size: 66px; background: var(--panel); }
+  .col.lit .gear, .col.lit .actor .face { border-color: var(--teal); color: var(--teal); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="intro">
+    <div class="ab actor you" data-step="1"><div class="face"><i data-icon="user"></i></div>you</div>
+    <div class="ab win prompt" data-step="1">
+      <div class="win-bar"><i data-icon="message-square"></i> your prompt</div>
+      <div class="win-body">
+        <div class="ln"></div><div class="ln s"></div>
+        <div class="rem"><i data-icon="ban"></i>Don't touch billing/.</div>
+        <div class="ln"></div>
+        <div class="rem"><i data-icon="flask-conical"></i>Run the tests.</div>
+        <div class="ln s"></div>
+        <div class="rem"><i data-icon="list-checks"></i>Follow the plan.</div>
+        <div class="ln"></div><div class="ln s"></div>
+      </div>
+    </div>
+    <svg class="wires move" data-step="2"><path class="teal" d="M 750 400 L 900 300"/><polyline class="teal" points="880,298 902,300 894,320"/></svg>
+    <div class="ab prog" data-step="2">
+      <div class="hd"><i data-icon="cog"></i>program</div>
+      <div class="rem"><i data-icon="ban"></i>blocks edits to billing/</div>
+      <div class="rem"><i data-icon="flask-conical"></i>runs the tests</div>
+      <div class="rem"><i data-icon="list-checks"></i>checks the plan is followed</div>
+    </div>
+    <div class="ab same" data-step="3">same input &rarr; same result</div>
+    <div class="ab tags" data-step="4"><span class="chip lit">0 tokens</span><span class="chip lit">no model needed</span></div>
+  </div>
+
+  <div class="ab cols">
+    <div class="col" data-step="5">
+      <div class="top"><div class="gear"><i data-icon="cog"></i></div><div><div class="t1">fixed answer</div><div class="t2">&rarr; program</div></div></div>
+      <div class="chip"><i data-icon="shield"></i>block dangerous commands</div>
+      <div class="chip"><i data-icon="files"></i>check the file list</div>
+      <div class="chip"><i data-icon="hash"></i>count the tests</div>
+    </div>
+    <div class="col" data-step="6">
+      <div class="top"><div class="actor agent"><div class="face"><i data-icon="bot"></i></div></div><div><div class="t1">judgment</div><div class="t2">&rarr; agent</div></div></div>
+      <div class="chip"><i data-icon="pencil-ruler"></i>choose a design</div>
+      <div class="chip"><i data-icon="file-code"></i>write the code</div>
+      <div class="chip"><i data-icon="search"></i>read why it failed</div>
+    </div>
+  </div>
+</div></main></body></html>

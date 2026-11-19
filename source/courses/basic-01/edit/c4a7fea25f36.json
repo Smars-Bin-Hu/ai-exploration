@@ -1,0 +1,13 @@
+{
+ "take": "9c4de17fb3374f5b",
+ "sid": "c4a7fea25f36",
+ "scene": "1 Your pain points",
+ "edits": [
+  {"op": "keep", "from": 1, "to": 6, "heard": "you have used AI like this,", "why": "over-cut restored: the automatic restart cut took the clause both times (\"If you have probably hit\"); one complete \"If you have used AI like this, you have probably hit\""},
+  {"op": "cut", "from": 93, "to": 96, "heard": "and you will, and,", "why": "fragment: \"and you will,\" goes nowhere; \"and another thing is,\" picks up after \"from scratch,\""},
+  {"op": "cut", "from": 117, "to": 143, "heard": "um... stuff you agree with earlier. And, you probably notice that, the longer your chat is in the same conversation, the worse performance AI is get. Umm,", "why": "splice: the idea said twice; the first half from the first try (\"the longer your chat is, the worse it seems to get,\", the cleaner wording), the second half from the second (\"and something you agree on earlier, the AI forgets later\", the only complete one)"},
+  {"op": "cut", "from": 202, "to": 206, "heard": "and, you know, with the...", "why": "fragment: broken off before an 11.8 s pause; the author picks up with \"and as I said\""},
+  {"op": "cut", "from": 218, "to": 227, "heard": "the longer the chat is, the - the better performance,", "why": "slip: \"better\" for \"worse\", corrected at once; the correction is kept whole"},
+  {"op": "cut", "from": 343, "to": 343, "heard": "yeah,", "why": "fragment: a hesitation after the cut \"Umm,\"; \"so, after you complete a task\" stays"}
+ ]
+}

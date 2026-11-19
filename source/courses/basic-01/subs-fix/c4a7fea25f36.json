@@ -1,0 +1,167 @@
+{
+ "take": "9c4de17fb3374f5b",
+ "sid": "c4a7fea25f36",
+ "scene": "1 Your pain points",
+ "edits": [
+  {
+   "at": 14,
+   "raw": 15,
+   "from": "pinpoint",
+   "to": "pain point",
+   "kind": "misheard",
+   "why": "the list is of pain points (the module is \"Your pain points\")"
+  },
+  {
+   "at": 55,
+   "raw": 57,
+   "from": "session,",
+   "to": "sessions,",
+   "kind": "grammar",
+   "why": "\"across the different sessions\""
+  },
+  {
+   "at": 56,
+   "raw": 59,
+   "from": "like...",
+   "to": "like,",
+   "kind": "fragment",
+   "why": "trailing ellipsis of a pause"
+  },
+  {
+   "at": 66,
+   "raw": 69,
+   "from": "told,",
+   "to": "told it",
+   "kind": "grammar",
+   "why": "\"everything you told it\" (script); the comma sat on the cut \"uh\""
+  },
+  {
+   "at": 105,
+   "raw": 147,
+   "from": "agree",
+   "to": "agreed",
+   "kind": "grammar",
+   "why": "past tense: \"something you agreed on earlier\" (script: \"agreed on\")"
+  },
+  {
+   "at": 110,
+   "raw": 152,
+   "from": "fucks us",
+   "to": "forgets it",
+   "kind": "misheard",
+   "why": "script: \"it forgets later\"; Whisper heard \"fucks us\""
+  },
+  {
+   "at": 126,
+   "raw": 168,
+   "from": "don'ts. but",
+   "to": "don'ts, but",
+   "kind": "grammar",
+   "why": "one sentence: \"..., but it doesn't always follow them\""
+  },
+  {
+   "at": 133,
+   "raw": 176,
+   "from": "most",
+   "to": "Most",
+   "kind": "grammar",
+   "why": "starts a new sentence after \"them.\""
+  },
+  {
+   "at": 149,
+   "raw": 192,
+   "from": "step, and you",
+   "to": "step that you",
+   "kind": "misheard",
+   "why": "\"the step that you care about most\" (script: \"the step you care about most\"); \"that\" heard as \"and\""
+  },
+  {
+   "at": 174,
+   "raw": 240,
+   "from": "this",
+   "to": "This",
+   "kind": "grammar",
+   "why": "starts a new sentence after \"right?\""
+  },
+  {
+   "at": 187,
+   "raw": 253,
+   "from": "and...",
+   "to": "and",
+   "kind": "fragment",
+   "why": "trailing ellipsis of a pause"
+  },
+  {
+   "at": 196,
+   "raw": 262,
+   "from": "the number",
+   "to": "number",
+   "kind": "grammar",
+   "why": "\"And number four is,\" like \"number one\", \"number two\""
+  },
+  {
+   "at": 210,
+   "raw": 278,
+   "from": "sometimes",
+   "to": "Sometimes",
+   "kind": "grammar",
+   "why": "starts a new sentence after \"work.\""
+  },
+  {
+   "at": 236,
+   "raw": 306,
+   "from": "still...",
+   "to": "still",
+   "kind": "fragment",
+   "why": "trailing ellipsis of a pause"
+  },
+  {
+   "at": 251,
+   "raw": 321,
+   "from": "reveal",
+   "to": "review",
+   "kind": "misheard",
+   "why": "\"spend a lot of time to review that and change that\"; Whisper heard \"reveal\""
+  },
+  {
+   "at": 271,
+   "raw": 341,
+   "from": "scene.",
+   "to": "scenes.",
+   "kind": "grammar",
+   "why": "the phrase is \"behind the scenes\""
+  },
+  {
+   "at": 272,
+   "raw": 344,
+   "from": "so,",
+   "to": "So,",
+   "kind": "grammar",
+   "why": "starts a new sentence after \"scenes.\""
+  },
+  {
+   "at": 279,
+   "raw": 351,
+   "from": "where's",
+   "to": "where'd",
+   "kind": "grammar",
+   "why": "\"where'd the time and money go?\" (\"where's ... go\" does not read)"
+  },
+  {
+   "at": 297,
+   "raw": 369,
+   "from": "and...",
+   "to": "and",
+   "kind": "fragment",
+   "why": "trailing ellipsis of a pause"
+  },
+  {
+   "at": 299,
+   "raw": 371,
+   "from": "it's made",
+   "to": "it made",
+   "kind": "grammar",
+   "why": "script: \"why it made those changes\""
+  }
+ ]
+}

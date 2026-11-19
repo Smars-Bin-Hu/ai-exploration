@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- Chatting = talking straight to the LLM, which answers in text. An agent = the LLM plus tool calling (hands),
+     in a loop until the job is done; it finishes a piece of work instead of just answering.
+     @ fig llm-vs-agent step=1 ... step=8 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .shift { position: absolute; left: 0; top: 0; width: 1580px; height: 800px; transform: translateY(50px); }
+  .you { left: 0; top: 200px; width: 180px; }
+  .llm { left: 270px; top: 180px; width: 280px; height: 200px; border-radius: 28px; background: var(--panel); border: 3px solid var(--muted);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 64px; font-weight: 600; }
+  .llm.lit { border-color: var(--teal); color: var(--teal); box-shadow: 0 0 0 8px rgba(45, 212, 191, 0.12), 0 0 34px var(--teal-glow); }
+  .think { font-size: 40px; letter-spacing: 0.2em; color: var(--muted); line-height: 0.5; height: 20px; }
+  .think.lit { color: var(--teal); }
+  .answer { left: 250px; top: 470px; width: 320px; height: 160px; flex-direction: column; align-items: flex-start; gap: 12px; padding: 22px 26px; white-space: normal; }
+  .answer .ln { background: var(--muted); height: 12px; }
+  .answer.lit .ln { background: var(--teal); }
+  .at-7 .answer { opacity: 0.35; }
+  .just { left: 250px; top: 645px; width: 320px; text-align: center; color: var(--orange); }
+  .port { left: 620px; top: 245px; }
+  .hands { left: 880px; top: 196px; width: 150px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 30px; }
+  .hands .h { display: flex; gap: 6px; font-size: 64px; }
+  .hands.lit { color: var(--teal); }
+  .hands.done { color: var(--fg); }
+  .tools { left: 1050px; top: 40px; width: 300px; display: flex; flex-direction: column; gap: 18px; }
+  .tools .chip { width: 300px; font-size: 28px; }
+  .rec { left: 1400px; top: 30px; width: 170px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .rec .c { font-size: 26px; padding: 8px 14px; border-radius: 30px; border: 2px solid var(--edge); background: var(--panel); white-space: nowrap; color: var(--fg); }
+  .rec .dn { display: flex; align-items: center; gap: 10px; font-size: 30px; color: var(--teal); font-weight: 600; margin-top: 4px; }
+  .rec .dn .mk { width: 46px; height: 46px; font-size: 28px; }
+  .rec.lit .c { border-color: rgba(45, 212, 191, 0.6); }
+  .rec .v { color: var(--muted); font-size: 22px; line-height: 0.8; }
+  .job { left: 630px; top: 450px; width: 540px; height: 180px; border-radius: 20px; background: var(--panel); border: 2px solid var(--edge);
+    padding: 26px 30px; display: flex; flex-direction: column; gap: 12px; }
+  .job .t { font-size: 30px; display: flex; gap: 12px; align-items: center; }
+  .job .t i[data-icon] { color: var(--muted); }
+  .job .ln { width: 70%; } .job .ln + .ln { width: 50%; }
+  .stamp { position: absolute; right: 30px; bottom: 26px; transform: rotate(-10deg); border: 4px solid var(--teal); color: var(--teal);
+    border-radius: 12px; padding: 4px 18px; font-size: 44px; font-weight: 700; letter-spacing: 0.12em; }
+  .finish { left: 630px; top: 645px; width: 540px; text-align: center; color: var(--teal); }
+</style></head>
+<body><main class="stage"><div class="cv"><div class="shift">
+  <div class="ab actor you" data-step="1"><div class="face"><i data-icon="user"></i></div>you</div>
+  <svg class="wires">
+    <g data-step="1"><path d="M 160 270 L 262 270"/><polyline points="248,260 264,270 248,280"/>
+      <path d="M 262 310 L 160 310"/><polyline points="174,300 158,310 174,320"/></g>
+    <g data-step="2"><path class="teal" d="M 410 384 L 410 462"/><polyline class="teal" points="398,448 410,464 422,448"/></g>
+    <g data-step="3"><path class="teal" d="M 552 280 L 618 280"/></g>
+    <g data-step="5"><path class="teal" d="M 1010 280 C 1030 280, 1030 72, 1048 72"/><path class="teal" d="M 1010 280 C 1030 280, 1030 175, 1048 175"/>
+      <path class="teal" d="M 1010 280 C 1030 280, 1030 278, 1048 278"/><path class="teal" d="M 1010 280 C 1030 280, 1030 381, 1048 381"/></g>
+  </svg>
+  <div class="ab llm" data-step="1">LLM<div class="think" data-step="2">&middot;&middot;&middot;</div></div>
+  <div class="ab chip answer" data-step="2"><span class="tag muted">answer</span><div class="ln" style="width:100%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:60%"></div></div>
+  <div class="ab tag just" data-step="7">just answers</div>
+
+  <div class="ab chip port" data-step="3"><i data-icon="plug"></i>+ tool calling</div>
+  <div class="ab hands" data-step="4"><div class="h"><i data-icon="hand"></i><i data-icon="hand" style="transform:scaleX(-1)"></i></div>hands</div>
+  <div class="ab tools" data-step="5">
+    <div class="chip"><i data-icon="file-code"></i>edit your code</div>
+    <div class="chip"><i data-icon="square-terminal"></i>run commands</div>
+    <div class="chip"><i data-icon="globe"></i>search the web</div>
+    <div class="chip"><i data-icon="app-window"></i>open a browser</div>
+  </div>
+
+  <div class="ab rec" data-step="6">
+    <div class="c">call &rarr; look</div><div class="v">&darr;</div>
+    <div class="c">call &rarr; look</div><div class="v">&darr;</div>
+    <div class="c">call &rarr; look</div><div class="v">&darr;</div>
+    <div class="c">call &rarr; look</div><div class="v">&darr;</div>
+    <div class="dn"><span class="mk ok"><i data-icon="check"></i></span>done</div>
+  </div>
+
+  <div class="ab job" data-step="8"><div class="t"><i data-icon="ticket"></i>Task: show the delivery date</div>
+    <div class="ln"></div><div class="ln"></div><div class="stamp">DONE</div></div>
+  <div class="ab tag finish" data-step="8">finishes the work</div>
+</div></div></main></body></html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<!-- When a session dies, how does a new one carry on? Every task is a folder that holds its whole life.
+     @ fig task-folder step=1 ... step=5 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .sess { left: 470px; top: 200px; width: 400px; transform: scale(1.6); transform-origin: top left; display: flex; flex-direction: column; gap: 26px; }
+  .s { position: relative; display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-radius: 16px; background: var(--panel);
+    border: 2px solid var(--edge); font-size: 36px; }
+  .s i[data-icon] { color: var(--muted); }
+  .s .mk { position: absolute; right: 16px; width: 46px; height: 46px; font-size: 28px; }
+  .at-2 .sess { left: 0; top: 120px; transform: none; }
+  .s.a .nm { opacity: 0.55; text-decoration: line-through; }
+  .s .mk i[data-icon] { color: #fff; }
+  .s .q { position: absolute; right: 24px; font-size: 52px; font-weight: 600; color: var(--orange); }
+  .sess.lit .s.b { border-color: var(--teal); color: var(--teal); }
+  .folder { left: 520px; top: 40px; width: 1000px; height: 480px; }
+  .folder svg { position: absolute; inset: 0; width: 1000px; height: 480px; overflow: visible; }
+  .folder svg path { fill: var(--panel); stroke: var(--muted); stroke-width: 3; }
+  .folder.lit svg path { stroke: var(--teal); filter: drop-shadow(0 0 16px rgba(45, 212, 191, 0.3)); }
+  .folder .name { position: absolute; left: 40px; top: 16px; font-family: var(--mono); font-size: 34px; color: var(--fg); }
+  .folder.lit .name { color: var(--teal); }
+  .files { position: absolute; left: 50px; top: 110px; right: 50px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px 26px; }
+  .files .chip { font-family: var(--mono); font-size: 34px; padding: 22px 24px; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .files .chip span.d { font-family: var(--serif); font-size: 28px; color: var(--muted); }
+  .files .chip.lit span.d { color: var(--teal); }
+  .life { left: 160px; top: 610px; width: 1300px; display: flex; align-items: center; justify-content: space-between; }
+  .life .st { display: flex; flex-direction: column; align-items: center; gap: 14px; font-size: 32px; }
+  .life .dot { width: 26px; height: 26px; border-radius: 50%; background: var(--muted); }
+  .life.lit .dot { background: var(--teal); box-shadow: 0 0 16px var(--teal-glow); }
+  .life.lit .st { color: var(--teal); }
+  .life .line { position: absolute; left: 60px; right: 60px; top: 12px; height: 3px; background: var(--muted); z-index: -1; }
+  .life.lit .line { background: var(--teal); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab sess" data-step="1">
+    <div class="s a"><i data-icon="message-square"></i><span class="nm">session A</span><span class="mk no"><i data-icon="x"></i></span></div>
+    <div class="s b"><i data-icon="message-square"></i>session B<span class="q">?</span></div>
+  </div>
+  <div class="ab folder" data-step="2">
+    <svg viewBox="0 0 1000 480"><path d="M 20 10 L 470 10 L 510 60 L 980 60 Q 990 60 990 70 L 990 465 Q 990 475 980 475 L 20 475 Q 10 475 10 465 L 10 20 Q 10 10 20 10 Z"/></svg>
+    <div class="name">show-delivery-date/</div>
+    <div class="files">
+      <div class="chip" data-step="4">PLAN.md<span class="d">the plan</span></div>
+      <div class="chip" data-step="4">LOG.md<span class="d">the history</span></div>
+      <div class="chip" data-step="4">TASK.md<span class="d">the status</span></div>
+      <div class="chip" data-step="5">REQ.md<span class="d">the requirement</span></div>
+      <div class="chip" data-step="5">TEST/<span class="d">the test scripts</span></div>
+      <div class="chip" data-step="5">DEV/<span class="d">the changed code</span></div>
+    </div>
+  </div>
+  <div class="ab life" data-step="3"><div class="line"></div>
+    <div class="st"><span class="dot"></span>requirement</div><div class="st"><span class="dot"></span>plan</div>
+    <div class="st"><span class="dot"></span>work</div><div class="st"><span class="dot"></span>review</div><div class="st"><span class="dot"></span>closed</div>
+  </div>
+</div></main></body></html>

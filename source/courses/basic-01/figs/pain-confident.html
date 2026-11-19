@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- Pain 4: the agent is always sure: "Done, and all the tests pass." You look, and there are still mistakes.
+     @ fig pain-confident step=1 ... step=3 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .prog { left: 0; top: 0; display: flex; align-items: center; gap: 26px; }
+  .agent { left: 180px; top: 130px; width: 260px; }
+  .agent .face { width: 190px; height: 190px; font-size: 110px; }
+  .sure { left: 370px; top: 100px; }
+  .sure .mk { width: 96px; height: 96px; font-size: 60px; box-shadow: 0 0 30px var(--teal-glow); }
+  .sure.done .mk { background: var(--muted); box-shadow: none; }
+  .say { left: 20px; top: 450px; white-space: nowrap; padding: 28px 36px; border-radius: 26px; border-top-left-radius: 6px;
+    background: rgba(45, 212, 191, 0.10); border: 2px solid var(--teal); color: var(--teal); font-size: 44px; line-height: 1.25; }
+  .say.done { background: var(--panel); border-color: var(--edge); color: var(--fg); }
+  .code { left: 820px; top: 80px; width: 740px; height: 680px; }
+  .code pre { margin: 0; font-family: var(--mono); font-size: 26px; line-height: 2; color: var(--fg); position: relative; }
+  .code .x { position: absolute; left: 610px; }
+  .code .x .mk { width: 46px; height: 46px; font-size: 28px; }
+  .glass { left: 1380px; top: 420px; font-size: 150px; color: var(--teal); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab prog"><div class="dots"><b></b><b></b><b></b><b class="on"></b><b></b></div><span class="tag orange">Pain 4 &middot; it's always sure of its own work</span></div>
+  <div class="ab actor agent" data-step="1"><div class="face"><i data-icon="bot"></i></div>the agent</div>
+  <div class="ab sure" data-step="1"><span class="mk ok"><i data-icon="check"></i></span></div>
+  <div class="ab say" data-step="2">&ldquo;Done, and all the tests pass.&rdquo;</div>
+
+  <div class="ab win code" data-step="1">
+    <div class="win-bar"><i data-icon="file-code"></i> orders/api.py</div>
+    <div class="win-body"><pre>def delivery_date(order):
+    days = settings.DELIVERY_DAYS
+    d = order.created + timedelta(days)
+    if d.weekday() &gt; 5:
+        d += timedelta(1)
+    return d.isoformat()
+
+def test_delivery_date():
+    assert delivery_date(o)<span class="x" style="top:52px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span><span class="x" style="top:156px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span><span class="x" style="top:208px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span><span class="x" style="top:416px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span></pre></div>
+  </div>
+  <div class="ab glass" data-step="3"><i data-icon="search"></i></div>
+</div></main></body></html>

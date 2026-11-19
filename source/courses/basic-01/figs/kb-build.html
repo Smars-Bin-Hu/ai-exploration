@@ -1,0 +1,81 @@
+<!doctype html>
+<!-- A set of tools reads the codebase, finds hidden dependencies, writes cards, then a summary and an index.
+     The agent loads those instead of rereading the code. @ fig kb-build step=1 ... step=7 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .code { left: 0; top: 90px; width: 470px; height: 470px; border-radius: 24px; border: 2px solid var(--edge); background: rgba(255,255,255,0.02); }
+  .code .lab { position: absolute; left: 24px; top: 16px; }
+  .f { position: absolute; width: 74px; height: 92px; border-radius: 10px; background: var(--panel); border: 2px solid var(--muted);
+    display: flex; align-items: center; justify-content: center; font-size: 38px; color: var(--muted); }
+  .deps { left: 0; top: 0; }
+  .deps path { stroke-width: 4; }
+  .deps-lab { left: 60px; top: 580px; width: 360px; text-align: center; color: var(--teal); }
+  .deps-lab.done { color: var(--muted); }
+  .scan { left: 300px; top: 130px; font-size: 130px; color: var(--teal); }
+  .scan.done { color: var(--muted); opacity: 0.5; }
+  .tools-lab { left: 520px; top: 255px; width: 460px; text-align: center; font-size: 30px; color: var(--muted); }
+  .shelf { left: 1060px; top: 160px; width: 500px; height: 400px; border-radius: 24px; border: 3px solid var(--muted); background: var(--panel); }
+  .shelf.lit { border-color: var(--teal); box-shadow: 0 0 30px rgba(45, 212, 191, 0.2); }
+  .shelf .lab { position: absolute; left: 0; right: 0; bottom: -50px; text-align: center; font-size: 32px; color: var(--fg); }
+  .shelf .board { position: absolute; left: 20px; right: 20px; height: 6px; border-radius: 3px; background: var(--dim); }
+  .cards { position: absolute; left: 30px; display: flex; gap: 14px; align-items: flex-end; }
+  .card { width: 64px; height: 120px; border-radius: 8px; background: #2b3a3f; border: 2px solid var(--teal); display: flex; align-items: flex-start;
+    justify-content: center; padding-top: 12px; color: var(--teal); font-size: 30px; }
+  .cards.done .card { border-color: var(--muted); color: var(--muted); background: #262a30; }
+  .doc { position: absolute; top: 20px; height: 110px; border-radius: 12px; border: 2px solid var(--teal); background: var(--panel); display: flex;
+    align-items: center; justify-content: center; gap: 12px; font-size: 30px; font-weight: 600; letter-spacing: 0.06em; color: var(--teal); }
+  .docs.done .doc { border-color: var(--muted); color: var(--fg); }
+  .agent { left: 640px; top: 520px; width: 200px; }
+  .noread { left: 560px; top: 420px; font-size: 30px; color: var(--orange); }
+  .take .card, .take .doc { box-shadow: 0 0 24px var(--teal-glow); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab code" data-step="1"><div class="lab">codebase</div>
+    <div class="f" style="left:40px;top:80px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:190px;top:70px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:340px;top:90px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:80px;top:220px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:250px;top:210px"><i data-icon="database"></i></div>
+    <div class="f" style="left:370px;top:240px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:40px;top:350px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:180px;top:345px"><i data-icon="file-code"></i></div>
+    <div class="f" style="left:320px;top:355px"><i data-icon="file-code"></i></div>
+  </div>
+  <svg class="wires deps" data-step="3">
+    <path class="dash teal" d="M 114 216 C 160 260, 220 280, 250 345"/>
+    <path class="dash teal" d="M 264 206 C 300 240, 300 280, 287 300"/>
+    <path class="dash teal" d="M 414 226 C 420 260, 400 300, 380 330"/>
+    <path class="dash teal" d="M 154 356 C 200 360, 220 370, 250 390"/>
+    <path class="dash teal" d="M 324 390 C 350 420, 370 430, 370 440"/>
+    <path class="dash teal" d="M 117 486 C 160 520, 230 520, 255 485"/>
+    <path class="dash teal" d="M 334 390 C 360 340, 380 330, 407 330"/>
+  </svg>
+  <div class="ab tag deps-lab" data-step="3">hidden dependencies</div>
+  <div class="ab scan" data-step="2"><i data-icon="scan-search"></i></div>
+
+  <svg class="wires">
+    <g data-step="1"><path d="M 490 330 L 1040 330"/><polyline points="1024,318 1042,330 1024,342"/></g>
+    <g data-step="6"><path class="dash orange" d="M 680 560 C 600 520, 520 480, 480 470"/></g>
+    <g data-step="7"><path class="teal" d="M 1150 140 C 1100 300, 900 420, 820 540"/><polyline class="teal" points="822,520 818,544 840,534"/>
+      <path class="teal" d="M 1300 300 C 1200 420, 950 520, 840 570"/><polyline class="teal" points="848,556 836,572 858,576"/></g>
+  </svg>
+  <div class="ab tools-lab" data-step="2">a set of tools reads it</div>
+
+  <div class="ab shelf" data-step="1"><div class="lab">knowledge base</div>
+    <div class="board" style="top:200px"></div><div class="board" style="top:370px"></div>
+    <div class="cards" data-step="4" style="top:72px"><div class="card"><i data-icon="file-text"></i></div><div class="card"><i data-icon="file-text"></i></div>
+      <div class="card"><i data-icon="file-text"></i></div><div class="card"><i data-icon="file-text"></i></div><div class="card"><i data-icon="file-text"></i></div></div>
+    <div class="cards" data-step="4" style="top:242px"><div class="card"><i data-icon="file-text"></i></div><div class="card"><i data-icon="file-text"></i></div>
+      <div class="card"><i data-icon="file-text"></i></div><div class="card"><i data-icon="file-text"></i></div></div>
+  </div>
+  <div class="docs" data-step="5">
+    <div class="ab doc" style="left:1060px;width:240px;top:0"><i data-icon="scroll-text"></i>SUMMARY</div>
+    <div class="ab doc" style="left:1320px;width:240px;top:0"><i data-icon="list-tree"></i>INDEX</div>
+  </div>
+
+  <div class="ab actor agent sm" data-step="6"><div class="face"><i data-icon="bot"></i></div>the agent</div>
+  <div class="ab mk no" data-step="6" style="left:556px;top:488px"><i data-icon="x"></i></div>
+  <div class="ab tag noread" data-step="6">no rereading</div>
+  <div class="ab tag" data-step="7" style="left:880px;top:690px;color:var(--teal)">loads the summary + a few cards</div>
+</div></main></body></html>

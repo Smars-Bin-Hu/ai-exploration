@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- The process an agent is asked to follow, one step lit per sentence; at step 5 "plan" turns out skipped.
+     @ fig process step=1 ... step=5 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../figs.css">
+<style>
+  .flow { display: flex; align-items: center; gap: 26px; margin-top: 70px; }
+  .step { flex-direction: column; gap: 22px; width: 236px; height: 220px; padding: 0; font-size: 40px; }
+  .step i[data-icon] { font-size: 64px; }
+  .slot { position: relative; }
+  .skip { position: absolute; left: 0; right: 0; top: 246px; text-align: center; visibility: hidden; }
+  .at-5 .plan { border: 2px dashed var(--orange); color: var(--orange); background: transparent; box-shadow: none; }
+  .at-5 .plan i[data-icon] { color: var(--orange); }
+  .at-5 .plan span, .at-5 .plan i[data-icon] { opacity: 0.8; }
+  .at-5 .around-plan { opacity: 0.3; }
+  .at-5 .skip { visibility: visible; }
+  .note { margin-top: 120px; font-size: 44px; color: var(--muted); text-align: center; }
+  .note b { color: var(--fg); font-weight: 600; }
+</style></head>
+<body><main class="stage">
+  <div class="kicker">The process, as the prompt asks for it</div>
+  <div class="flow">
+    <div class="slot"><div class="pill step" data-step="1"><i data-icon="messages-square"></i><span>discuss</span></div></div>
+    <div class="arrow around-plan" data-step="2">&rarr;</div>
+    <div class="slot"><div class="pill step plan" data-step="2"><i data-icon="clipboard-list"></i><span>plan</span></div>
+      <div class="skip tag orange">skipped</div></div>
+    <div class="arrow around-plan" data-step="3">&rarr;</div>
+    <div class="slot"><div class="pill step" data-step="3"><i data-icon="hammer"></i><span>build</span></div></div>
+    <div class="arrow" data-step="4">&rarr;</div>
+    <div class="slot"><div class="pill step" data-step="4"><i data-icon="flask-conical"></i><span>test</span></div></div>
+    <div class="arrow" data-step="5">&rarr;</div>
+    <div class="slot"><div class="pill step" data-step="5"><i data-icon="circle-check"></i><span>accept</span></div></div>
+  </div>
+  <div class="note" data-step="5">the order is only <b>written in the prompt</b> &middot; nothing checks it</div>
+</main></body></html>

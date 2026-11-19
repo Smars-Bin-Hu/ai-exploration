@@ -1,0 +1,10 @@
+{
+ "take": "f238fa706aa13146",
+ "sid": "4a4aac372946",
+ "scene": "0 Hook",
+ "edits": [
+  {"op": "cut", "from": 60, "to": 60, "heard": "would...", "why": "fragment: \"but here's the thing, would...\" breaks off before a 1.2 s pause; \"What we keep seeing is\" picks up"},
+  {"op": "cut", "from": 246, "to": 246, "heard": "H", "why": "fragment: a broken start between \"the\" and \"code\" (\"what the H code is for\"), with a pause before it"},
+  {"op": "cut", "from": 469, "to": 469, "heard": "in", "why": "slip: \"really put in AI, into their work\"; \"put AI into their work\" is what was meant, and \"in\" stands alone between pauses"}
+ ]
+}

@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- An independent reviewer as a subagent: its own context, separate from the main agent's.
+     It gets the requirement, the plan, the changes and the test results, and owes a verdict.
+     @ fig reviewer step=1 ... step=2 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .ctx { position: absolute; top: 60px; width: 620px; height: 680px; border-radius: 28px; border: 2px solid var(--edge);
+    background: rgba(255,255,255,0.02); padding: 34px 40px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .ctx .cap { align-self: flex-start; }
+  .ctx.lit { border-color: rgba(45, 212, 191, 0.6); }
+  .main { left: 0; }
+  .rev { left: 960px; }
+  .ctx .actor .face { width: 150px; height: 150px; font-size: 84px; }
+  .sep { left: 780px; top: 40px; width: 2px; height: 720px; border-left: 3px dashed var(--muted); }
+  .sep-lab { left: 590px; top: 0; width: 380px; text-align: center; white-space: nowrap; }
+  .work { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .work .ln { width: 100%; } .work .ln.s { width: 70%; }
+  .docs { left: 1000px; top: 390px; width: 540px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .docs .chip { font-size: 30px; }
+  .verdict { left: 1080px; top: 590px; width: 380px; height: 120px; border-radius: 18px; border: 3px dashed var(--muted); display: flex;
+    align-items: center; justify-content: center; gap: 14px; font-size: 36px; color: var(--muted); }
+  .verdict.lit { border-color: var(--teal); color: var(--teal); }
+  .flow path { stroke-width: 4; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ctx main" data-step="1"><div class="cap tag muted">its context</div>
+    <div class="actor agent"><div class="face"><i data-icon="bot"></i></div>the agent</div>
+    <div class="work"><div class="ln"></div><div class="ln s"></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div><div class="ln s"></div></div></div>
+  <div class="ab sep" data-step="1"></div>
+  <div class="ab tag sep-lab" data-step="1">separate context</div>
+  <div class="ctx rev" data-step="1"><div class="cap tag muted">its own context</div>
+    <div class="actor agent"><div class="face"><i data-icon="bot"></i></div>the reviewer</div></div>
+
+  <svg class="wires flow" data-step="2"><path class="teal" d="M 560 460 C 700 460, 860 440, 990 430"/><polyline class="teal" points="972,420 992,430 974,444"/></svg>
+  <div class="ab docs" data-step="2">
+    <div class="chip lit"><i data-icon="ticket"></i>requirement</div><div class="chip lit"><i data-icon="clipboard-list"></i>plan</div>
+    <div class="chip lit"><i data-icon="file-diff"></i>changes</div><div class="chip lit"><i data-icon="flask-conical"></i>test results</div>
+  </div>
+  <div class="ab verdict" data-step="2"><i data-icon="gavel"></i>verdict: ?</div>
+</div></main></body></html>

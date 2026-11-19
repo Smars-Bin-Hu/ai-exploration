@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- The harness: everything outside the model, as a ring around it. Step 2: my harness around GitHub Copilot.
+     Step 3: our AI with a dashed ring and a question mark: what's missing?
+     @ fig harness-around step=1 ... step=3 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .ring { left: 0; top: 0; }
+  .ring circle.r { fill: none; stroke: var(--teal); stroke-width: 7; filter: drop-shadow(0 0 14px rgba(45, 212, 191, 0.45)); }
+  .at-3 .ring circle.r { stroke: var(--orange); stroke-dasharray: 22 18; filter: none; }
+  .core { left: 640px; top: 250px; width: 300px; height: 300px; border-radius: 50%; background: var(--panel); border: 3px solid var(--muted);
+    display: flex; align-items: center; justify-content: center; font-size: 60px; font-weight: 600; }
+  .core img { width: 230px; display: none; }
+  .at-2 .core img { display: block; }
+  .at-2 .core .m { display: none; }
+  .at-3 .core img { display: none; }
+  .at-3 .core .m { display: inline; }
+  .rname { left: 160px; top: 110px; width: 380px; text-align: right; font-size: 44px; font-weight: 600; color: var(--teal); }
+  .rname .b { display: none; }
+  .at-2 .rname .a { display: none; } .at-2 .rname .b { display: inline; }
+  .at-3 .rname { display: none; }
+  .blk { position: absolute; transform: translate(-50%, -50%); font-size: 34px; padding: 16px 28px; }
+  .blk .b { display: none; }
+  .at-2 .blk .a { display: none; } .at-2 .blk .b { display: inline; }
+  .at-2 .blk { border-color: var(--teal); color: var(--teal); }
+  .at-2 .blk i[data-icon] { color: var(--teal); }
+  .at-3 .blk { display: none; }
+  .q { left: 955px; top: 50px; display: none; align-items: center; gap: 24px; color: var(--orange); }
+  .q b { background: var(--bg); border-radius: 50%; padding: 0 20px; }
+  .q b { font-size: 200px; line-height: 0.9; font-weight: 600; }
+  .q span { font-size: 48px; font-weight: 600; white-space: nowrap; }
+  .at-3 .q { display: flex; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <svg class="wires ring"><circle class="r" cx="790" cy="400" r="320"/></svg>
+  <div class="ab core"><span class="m">Model</span><img data-logo="github-copilot"></div>
+  <div class="ab rname"><span class="a">Harness</span><span class="b">my harness</span></div>
+  <div class="chip blk" style="left:790px;top:80px"><i data-icon="book-open"></i><span class="a">knowledge</span><span class="b">knowledge base</span></div>
+  <div class="chip blk" style="left:1094px;top:301px"><i data-icon="folder"></i><span class="a">memory</span><span class="b">task folder</span></div>
+  <div class="chip blk" style="left:978px;top:659px"><i data-icon="shield"></i><span class="a">limits</span><span class="b">tool pack</span></div>
+  <div class="chip blk" style="left:602px;top:659px"><i data-icon="badge-check"></i><span class="a">checks</span><span class="b">reviewer</span></div>
+  <div class="chip blk" style="left:486px;top:301px"><i data-icon="receipt"></i><span class="a">records</span><span class="b">task report</span></div>
+  <div class="ab q"><b>?</b><span>what's missing?</span></div>
+</div></main></body></html>

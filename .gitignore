@@ -19,6 +19,8 @@ source/deep-dive/topics/*/_draft.pdf
 AI Exploration/1 Showcase/Real Tasks/*
 !AI Exploration/1 Showcase/Real Tasks/README.md
 !AI Exploration/1 Showcase/Real Tasks/_template/
+AI Exploration/3 Courses/**/*.mp4
+AI Exploration/3 Courses/**/*.mov
 AI Exploration/4 Install the harness/*.zip
 AI Exploration/4 Install the harness/programs/*
 !AI Exploration/4 Install the harness/programs/README.md

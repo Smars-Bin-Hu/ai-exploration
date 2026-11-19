@@ -1,0 +1,59 @@
+<!doctype html>
+<!-- The nine gaps a company has to close before agents really work for it, one cell per sentence.
+     step 1: nine empty slots; steps 2-8: gaps 1-7; step 9: gap 8 (not shown alone); step 10: gap 9;
+     step 11: all nine orange; step 12: the six this video answers in teal, the rest dimmed.
+     @ fig nine-gaps step=1 ... step=12 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .grid { left: 50px; top: 20px; width: 1480px; height: 760px; display: grid; grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr); gap: 26px; }
+  .slot { position: relative; border-radius: 20px; border: 2px dashed var(--dim); }
+  .slot.lit { border-color: var(--teal); }
+  .num { position: absolute; left: 22px; top: 14px; font-size: 30px; color: var(--muted); font-weight: 600; font-variant-numeric: lining-nums; }
+  .slot.lit > .num { color: var(--teal); }
+  .cell { position: absolute; inset: -2px; border-radius: 20px; background: var(--panel); border: 2px solid var(--edge);
+    display: flex; flex-direction: column; justify-content: center; padding: 20px 30px 18px 74px; gap: 12px; }
+  .cell .num { left: 24px; top: 20px; }
+  .cell .h { display: flex; align-items: center; gap: 18px; font-size: 38px; line-height: 1.12; }
+  .cell .h i[data-icon] { font-size: 50px; color: var(--muted); flex: none; }
+  .cell .sub { font-size: 26px; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+  .cell .sub.mono { font-family: var(--mono); font-size: 24px; color: var(--orange); }
+  .mini { font-size: 22px; padding: 4px 12px; border-radius: 8px; border: 2px dashed var(--muted); color: var(--muted); }
+  .cell.lit { border-color: var(--teal); box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.3), 0 0 30px rgba(45, 212, 191, 0.2); }
+  .cell.lit .h, .cell.lit .num, .cell.lit .h i[data-icon] { color: var(--teal); }
+  /* step 11: all of them are trouble */
+  .at-11 .cell { border-color: var(--orange); box-shadow: none; }
+  .at-11 .cell .h, .at-11 .cell .h i[data-icon], .at-11 .cell .num { color: var(--orange); }
+  /* step 12: what this video answers */
+  .at-12 .cell.ans { border-color: var(--teal); }
+  .at-12 .cell.ans .h, .at-12 .cell.ans .h i[data-icon], .at-12 .cell.ans .num { color: var(--teal); }
+  .at-12 .cell.more { border-color: var(--edge); opacity: 0.3; }
+  .at-12 .cell.more .h, .at-12 .cell.more .h i[data-icon], .at-12 .cell.more .num { color: var(--muted); }
+  .andmore { position: absolute; right: 18px; bottom: 12px; display: none; color: var(--muted); }
+  .at-12 .andmore { display: block; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab grid">
+    <div class="slot" data-step="1"><span class="num">1</span>
+      <div class="cell ans" data-step="2"><span class="num">1</span><div class="h"><i data-icon="folder-search"></i>doesn't know your systems</div><div class="sub">explained again every time</div></div></div>
+    <div class="slot" data-step="1"><span class="num">2</span>
+      <div class="cell ans" data-step="3"><span class="num">2</span><div class="h"><i data-icon="unplug"></i>memory across sessions</div>
+        <div class="sub"><span class="mini">session 1 &times;</span>&rarr;<span class="mini">session 2 ?</span></div></div></div>
+    <div class="slot" data-step="1"><span class="num">3</span>
+      <div class="cell ans" data-step="4"><span class="num">3</span><div class="h"><i data-icon="workflow"></i>only changes code</div><div class="sub">tests &middot; CI/CD &middot; tickets: still people</div></div></div>
+    <div class="slot" data-step="1"><span class="num">4</span>
+      <div class="cell more" data-step="5"><span class="num">4</span><div class="h"><i data-icon="list-x"></i>doesn't follow the rules</div><span class="andmore tag">and more</span></div></div>
+    <div class="slot" data-step="1"><span class="num">5</span>
+      <div class="cell ans" data-step="6"><span class="num">5</span><div class="h"><i data-icon="database-zap"></i>no server access</div><div class="sub mono">DROP TABLE orders;</div></div></div>
+    <div class="slot" data-step="1"><span class="num">6</span>
+      <div class="cell ans" data-step="7"><span class="num">6</span><div class="h"><i data-icon="badge-check"></i>sure it's right</div><div class="sub">&ldquo;done, all tests pass&rdquo;</div></div></div>
+    <div class="slot" data-step="1"><span class="num">7</span>
+      <div class="cell ans" data-step="8"><span class="num">7</span><div class="h"><i data-icon="receipt"></i>time &amp; money?</div>
+        <div class="sub"><span class="mini">plan</span><span class="mini">log</span><span class="mini">steps</span> not recorded</div></div></div>
+    <div class="slot" data-step="1"><span class="num">8</span>
+      <div class="cell more" data-step="9"><span class="num">8</span><div class="h"><i data-icon="messages-square"></i>5 sessions at most</div><div class="sub">your attention is the limit</div><span class="andmore tag">and more</span></div></div>
+    <div class="slot" data-step="1"><span class="num">9</span>
+      <div class="cell more" data-step="10"><span class="num">9</span><div class="h"><i data-icon="circle-pause"></i>stops partway</div><div class="sub">on long, complex tasks</div><span class="andmore tag">and more</span></div></div>
+  </div>
+</div></main></body></html>

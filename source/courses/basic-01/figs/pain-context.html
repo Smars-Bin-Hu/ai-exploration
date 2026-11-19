@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Pain 1: the AI can't see your project; every time you find, paste and explain the code over the wall.
+     @ fig pain-context step=1 ... step=2 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .prog { left: 0; top: 0; display: flex; align-items: center; gap: 26px; }
+  .base { left: 20px; top: 110px; width: 540px; height: 600px; }
+  .base .win-body { gap: 14px; font-family: var(--mono); font-size: 25px; color: var(--fg); }
+  .base .win-body div { display: flex; align-items: center; gap: 14px; }
+  .base .win-body i[data-icon] { color: var(--muted); }
+  .wall { left: 760px; top: 90px; width: 56px; height: 640px; border-radius: 8px; border: 2px solid #4a515c;
+    background: repeating-linear-gradient(0deg, #2a2e34 0 38px, #4a515c 38px 41px); }
+  .wall.lit { border-color: var(--muted); }
+  .ai { left: 1150px; top: 200px; width: 260px; }
+  .ai .face { width: 170px; height: 170px; font-size: 90px; }
+  .huh { left: 1360px; top: 120px; font-size: 120px; font-weight: 600; color: var(--orange); line-height: 1; }
+  .carry .chip { position: absolute; left: 640px; }
+  .count { left: 1020px; top: 560px; width: 540px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .count .n { font-size: 64px; font-weight: 600; letter-spacing: 0.04em; color: var(--orange); font-variant-numeric: lining-nums; }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab prog"><div class="dots"><b class="on"></b><b></b><b></b><b></b><b></b></div><span class="tag orange">Pain 1 &middot; it doesn't know your project</span></div>
+
+  <div class="ab win base" data-step="1">
+    <div class="win-bar"><i data-icon="folder"></i> your codebase</div>
+    <div class="win-body">
+      <div><i data-icon="file-code"></i>orders/api.py</div>
+      <div><i data-icon="file-code"></i>orders/models.py</div>
+      <div><i data-icon="file-code"></i>orders/settings.py</div>
+      <div><i data-icon="file-code"></i>billing/rules.py</div>
+      <div><i data-icon="file-code"></i>shared/dates.py</div>
+      <div><i data-icon="file-code"></i>shared/db.py</div>
+      <div><i data-icon="file-code"></i>tests/test_api.py</div>
+      <div><i data-icon="folder"></i>&hellip; 2,400 more files</div>
+    </div>
+  </div>
+  <div class="ab wall" data-step="1"></div>
+  <div class="ab actor ai" data-step="1"><div class="face"><i data-icon="message-square"></i></div>the AI</div>
+  <div class="ab huh" data-step="1">?</div>
+
+  <svg class="wires">
+    <g data-step="2">
+      <path class="teal" d="M 560 250 L 1110 250"/><polyline class="teal" points="1094,238 1112,250 1094,262"/>
+      <path class="teal" d="M 560 390 L 1110 390"/><polyline class="teal" points="1094,378 1112,390 1094,402"/>
+      <path class="teal" d="M 560 530 L 1110 530"/><polyline class="teal" points="1094,518 1112,530 1094,542"/>
+    </g>
+  </svg>
+  <div class="carry" data-step="2">
+    <div class="chip lit" style="top:218px"><i data-icon="search"></i>find</div>
+    <div class="chip lit" style="top:358px"><i data-icon="clipboard-paste"></i>paste</div>
+    <div class="chip lit" style="top:498px"><i data-icon="message-square-text"></i>explain</div>
+  </div>
+  <div class="ab count" data-step="2"><div class="n">&times;1 &times;2 &times;3 &hellip;</div><div class="lab">every single time</div></div>
+</div></main></body></html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<!-- The answer you get: 80-90% right; you paste, test and check it yourself, find mistakes, spend longer, and give up.
+     The AI can't see the traps in the legacy system that you can.
+     @ fig hook-answer step=1 ... step=6 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../../video/figs.css">
+<style>
+  .ans { left: 0; top: 30px; width: 540px; height: 470px; }
+  .code { font-family: var(--mono); font-size: 26px; line-height: 1.75; color: var(--fg); white-space: pre; position: relative; }
+  .code .x { position: absolute; left: 432px; }
+  .code .x .mk { width: 40px; height: 40px; font-size: 24px; }
+  .glass { position: absolute; left: 400px; top: 330px; font-size: 110px; color: var(--teal); }
+  .glass.done { color: var(--muted); }
+  .happy { left: 0; top: 550px; width: 540px; }
+  .meter { position: relative; height: 26px; border-radius: 13px; background: var(--panel); border: 2px solid var(--edge); margin: 16px 0 10px; }
+  .meter b { position: absolute; left: 0; top: -2px; bottom: -2px; width: 85%; border-radius: 13px; background: var(--muted); }
+  .happy.lit .meter b { background: var(--teal); box-shadow: 0 0 20px var(--teal-glow); }
+  .happy .val { font-size: 40px; font-weight: 600; }
+  .happy.lit .val { color: var(--teal); }
+  .you { left: 690px; top: 110px; width: 220px; }
+  .you .sad { display: none; }
+  .at-5 .you .ok { display: none; }
+  .at-5 .you .sad { display: inline-flex; }
+  .at-5 .you .face { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 8px rgba(232, 89, 12, 0.14); }
+  .acts { left: 625px; top: 360px; width: 350px; display: flex; flex-direction: column; gap: 16px; }
+  .acts .chip { justify-content: flex-start; }
+  .acts .chip small { margin-left: auto; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); }
+  .timer { left: 580px; top: 10px; width: 440px; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 44px;
+    font-weight: 600; font-variant-numeric: lining-nums; }
+  .timer i[data-icon] { color: var(--muted); }
+  .timer s { color: var(--muted); font-weight: 400; }
+  .timer.lit .now { color: var(--orange); }
+  .myself { left: 530px; top: 640px; width: 540px; text-align: center; font-size: 42px; font-style: italic; color: var(--orange); }
+  .legacy { left: 1060px; top: 30px; width: 500px; height: 470px; border: 2px solid var(--edge); border-radius: 22px;
+    background: rgba(255,255,255,0.02); padding: 56px 18px 14px; }
+  .legacy .name { position: absolute; left: 24px; top: 14px; }
+  .legacy-svg { width: 100%; height: 100%; }
+  .legacy-svg path { fill: none; stroke: #4a515c; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+  .legacy-svg rect { fill: var(--panel); stroke: var(--muted); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .traps .tri { position: absolute; font-size: 54px; color: var(--orange); filter: drop-shadow(0 0 10px rgba(232,89,12,.5)); }
+  .see { left: 1060px; top: 540px; width: 500px; display: flex; flex-direction: column; gap: 18px; }
+  .see .chip { font-size: 32px; }
+  .see .you-see { border-color: var(--teal); color: var(--teal); }
+  .see .you-see i[data-icon] { color: var(--teal); }
+</style></head>
+<body><main class="stage"><div class="cv">
+  <div class="ab win ans" data-step="1">
+    <div class="win-bar"><i data-icon="message-square"></i> the AI's answer</div>
+    <div class="win-body"><div class="code">def delivery_date(order):
+    days = DELIVERY_DAYS
+    d = order.created + days
+    if d.weekday() &gt; 5:
+        d += 1
+    return d<span class="x" style="top:43px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span><span class="x" style="top:134px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span><span class="x" style="top:180px" data-step="3"><span class="mk no"><i data-icon="x"></i></span></span></div>
+      <div class="glass" data-step="4"><i data-icon="search"></i></div></div>
+  </div>
+  <div class="ab happy" data-step="1"><div class="lab">how happy you are with it</div>
+    <div class="meter"><b></b></div><div class="val">80&ndash;90%</div></div>
+
+  <div class="ab timer" data-step="4"><i data-icon="timer"></i><s>30</s>&rarr;<span class="now">60+ min</span></div>
+  <div class="ab actor you" data-step="1"><div class="face"><i class="ok" data-icon="user"></i><i class="sad" data-icon="frown"></i></div>you</div>
+  <div class="ab acts" data-step="2">
+    <div class="chip"><i data-icon="clipboard-paste"></i>paste back<small>you</small></div>
+    <div class="chip"><i data-icon="flask-conical"></i>run tests<small>you</small></div>
+    <div class="chip"><i data-icon="list-checks"></i>check results<small>you</small></div>
+  </div>
+  <div class="ab myself" data-step="5">&ldquo;Faster to write it myself.&rdquo;</div>
+
+  <div class="ab legacy" data-step="1"><div class="name lab">legacy system</div><svg class="legacy-svg" viewBox="0 0 500 410" preserveAspectRatio="none"><path d="M60,58 Q105.0,47.0 190,38"/><path d="M60,58 Q264.0,108.5 440,43"/><path d="M60,58 Q213.0,104.0 370,178"/><path d="M60,58 Q98.0,136.5 180,273"/><path d="M190,38 Q301.0,16.0 330,68"/><path d="M190,38 Q344.0,79.5 440,43"/><path d="M190,38 Q186.0,43.0 240,148"/><path d="M190,38 Q135.5,141.0 55,288"/><path d="M190,38 Q192.0,158.5 180,273"/><path d="M330,68 Q337.0,91.0 240,148"/><path d="M330,68 Q225.5,175.0 55,288"/><path d="M440,43 Q426.0,142.5 460,208"/><path d="M440,43 Q196.5,120.5 55,288"/><path d="M440,43 Q375.0,168.5 300,308"/><path d="M100,168 Q196.0,209.0 370,178"/><path d="M100,168 Q60.5,187.0 55,288"/><path d="M370,178 Q394.0,245.0 300,308"/><path d="M370,178 Q240.5,215.5 125,363"/><path d="M370,178 Q385.0,224.5 350,373"/><path d="M55,288 Q214.5,309.0 300,308"/><path d="M55,288 Q250.5,344.0 420,318"/><path d="M55,288 Q254.5,374.5 350,373"/><path d="M180,273 Q245.0,306.0 350,373"/><path d="M300,308 Q353.0,324.5 350,373"/><rect x="30" y="40" width="60" height="36" rx="6"/><rect x="160" y="20" width="60" height="36" rx="6"/><rect x="300" y="50" width="60" height="36" rx="6"/><rect x="410" y="25" width="60" height="36" rx="6"/><rect x="70" y="150" width="60" height="36" rx="6"/><rect x="210" y="130" width="60" height="36" rx="6"/><rect x="340" y="160" width="60" height="36" rx="6"/><rect x="430" y="190" width="60" height="36" rx="6"/><rect x="25" y="270" width="60" height="36" rx="6"/><rect x="150" y="255" width="60" height="36" rx="6"/><rect x="270" y="290" width="60" height="36" rx="6"/><rect x="390" y="300" width="60" height="36" rx="6"/><rect x="95" y="345" width="60" height="36" rx="6"/><rect x="320" y="355" width="60" height="36" rx="6"/></svg>
+    <div class="traps" data-step="6">
+      <i class="tri" data-icon="triangle-alert" style="left:120px;top:150px"></i>
+      <i class="tri" data-icon="triangle-alert" style="left:330px;top:250px"></i>
+      <i class="tri" data-icon="triangle-alert" style="left:220px;top:330px"></i>
+    </div></div>
+  <div class="ab see" data-step="6">
+    <div class="chip you-see"><i data-icon="eye"></i>you see the traps</div>
+    <div class="chip"><i data-icon="eye-off"></i>the AI doesn't</div>
+  </div>
+</div></main></body></html>
