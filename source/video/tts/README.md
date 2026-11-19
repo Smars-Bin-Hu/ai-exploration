@@ -334,4 +334,4 @@ Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: th
 
 ## Removed (2026-11-18)
 
-Rejected after listening, deleted to free disk (~19 GB): F5-TTS, Chatterbox and Chatterbox Turbo, VoxCPM2, Qwen3-TTS 0.6B, Kokoro + OpenVoice / Chatterbox converter (the `kvc` env). Their backends stay in `say.py` for the record but need a reinstall (install steps above) before use. Kept: Qwen3-TTS 1.7B, VibeVoice, Kokoro + Seed-VC (the `seedvc` env has Kokoro), Demucs, DeepFilterNet, mlx-whisper, WavLM, GPT-SoVITS.
+Rejected after listening, deleted to free disk (~19 GB): F5-TTS, Chatterbox and Chatterbox Turbo, VoxCPM2, Qwen3-TTS 0.6B, Kokoro + OpenVoice / Chatterbox converter (the `kvc` env). Their backends stay in `say.py` for the record but need a reinstall (install steps above) before use. Later the same day Kokoro + Seed-VC was rejected too (too distorted) and removed (the `seedvc` env, Seed-VC, BigVGAN 44 kHz, Kokoro-82M). Kept: Qwen3-TTS 1.7B, VibeVoice, Demucs, DeepFilterNet, mlx-whisper, WavLM, GPT-SoVITS.
