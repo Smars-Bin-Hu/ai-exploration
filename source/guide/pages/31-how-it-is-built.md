@@ -34,7 +34,7 @@ Every hook event of a Copilot chat runs one command, and one Python process answ
 8. **The breaker and the state.** The same refusal a third time in one prompt has its reason replaced by an instruction to stop; the state is written back {src:.harness/engine/core/breaker.py#L1-L5}.
 9. **The answer and the record.** The adapter writes the JSON Copilot reads (`permissionDecision`, `additionalContext`); Copilot runs the call, asks the person, or refuses it. The observe module writes one line to `.harness/runtime/logs/vscode/<session>.jsonl`; a failure of the log never changes the answer {src:.harness/engine/hook.py#L118-L164}.
 
-A call record keeps the event, the tool, the decision, who decided and why; tool arguments only for a refused or held call {src:.harness/engine/core/callrecord.py#L1-L10}. An ask shows Copilot's confirmation box; under Allow all, which every chat the board makes uses, an ask passes (file 15 The gate and guardrails) {src:.harness/engine/modules/task/chatnew.py#L1-L26}.
+A call record keeps the event, the tool, the decision, who decided and why. The paths and command are kept only for a call refused or sent to the person; a call that went through keeps a short hash of its terminal command, the paths a finished call touched, the knowledge base files it read (names only), and for an outside system its system, environment, verb and target {src:.harness/engine/core/callrecord.py#L1-L10}. An ask shows Copilot's confirmation box; under Allow all, which every chat the board makes uses, an ask passes (file 15 The gate and guardrails) {src:.harness/engine/modules/task/chatnew.py#L1-L26}.
 
 ## Architecture: fail closed, and the locks of the system
 
@@ -49,7 +49,7 @@ A module is one ability, called with `handle(event, ctx)`, answering a decision 
 | Module | Hook events | Letters | What it does |
 |---|---|---|---|
 | `task` | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, SubagentStart, SubagentStop, Stop | S C H | the lines added to every prompt, which subagent may run, Stop reminders and blocks; as commands: tasks, write-back, checks, autorun, the board, the super agent |
-| `gate` | PreToolUse, UserPromptSubmit, SessionStart, PostToolUse, PostToolUseFailure | S H | guards writes and commands, never a read; admin mode; git and outside-call approvals |
+| `gate` | PreToolUse, UserPromptSubmit, SessionStart, PostToolUse, PostToolUseFailure | S H | guards writes and commands; of reads it refuses only `.harness/.env`, secrets in the environment and requests to the board {src:.harness/engine/modules/gate/handler.py#L633-L650}; admin mode; git and outside-call approvals |
 | `observe` | PostToolUseFailure | V | the call log (the hook hands it every record), statistics, the `kb` commands |
 | `evalcheck` | none | V | judges fixed scenarios after a run; command line only |
 
@@ -89,8 +89,8 @@ State is kept in files, never only in a chat {src:docs/05-design.md#L101-L119}:
 
 - **The session:** `.harness/runtime/state/vscode/<session>.json` (its task, admin mode, subagents, each module's part), the hook log `.harness/runtime/logs/vscode/<session>.jsonl`, and `hook-errors.jsonl` {src:.harness/engine/core/logs.py#L1-L5}.
 - **The rest of `.harness/runtime/`:** the board's port, the super agent's day, git approvals, the knowledge base map cache. It is ignored by git and stays closed to the agent's edit tools even in admin mode, because a session that could write it could make itself admin or forge an approval {src:.harness/engine/core/guardrails.py#L9-L23}.
-- **The task:** `.workspace/sandbox/tasks/<task>/` with `.task/task.json`, written only by harness code; reports in `.workspace/reports/`; none of it in git (file 11 Task) {src:.harness/policies/gate.json#L4-L34}.
-- **Outside the folder:** the integrity list in `~/.copilot-harness/integrity/`, lock files in the temp folder, Copilot's own record in `~/.copilot/session-state/`, and the target repositories, written only by `task promote` after the person approves {src:.harness/engine/modules/task/promote_target.py#L1-L14}.
+- **The task:** `.workspace/sandbox/tasks/<task>/` with `.task/task.json`, written by harness code; the agent's edit tools and a terminal command that names it are refused, but a script the agent runs is not checked for it; reports in `.workspace/reports/`; none of it in git (file 11 Task) {src:.harness/policies/gate.json#L4-L34}.
+- **Outside the folder:** the integrity list in `~/.copilot-harness/integrity/`, lock files in the temp folder, Copilot's own record in `~/.copilot/session-state/`, and the target repositories: their files are written by the harness through `task promote` after the person approves; besides, `task fetch` and every dry run first `git fetch` and fast-forward the local base branch (a `git merge --ff-only` when it is checked out and clean) {src:.harness/engine/modules/task/promote_target.py#L1-L14} {src:.harness/engine/modules/task/basesync.py#L1-L15}.
 
 ## Architecture: integrity checks and doctor
 
@@ -106,7 +106,7 @@ Dependencies: Python 3.9 or later and its standard library only; no third-party 
 
 ## Architecture: what is enforced by code, and what is only an instruction
 
-By code: every decision on the hook path (the gate's refusals and asks, the task module's subagent rules and Stop blocks, the integrity check, failing closed), the preconditions the `harness` command checks before it acts (an approved plan, a code typed at a terminal, enough passes), and who writes the state files {src:.harness/engine/hook.py#L2-L16}. Only text: when to open a task, the order of work, how to call the reviewer, how to read the knowledge base, in `AGENTS.md`, instructions and skills, which the model may ignore {src:AGENTS.md#L42-L59}. The lines the task hook adds to each prompt are written by code but are text to the model {src:.harness/engine/modules/task/handler.py#L93-L126}. The tool lists of the custom agents are applied by Copilot; the harness adds limits on subagents only as the files 15, 17, 20 and 21 describe. The text files, `.github/agents/` included, are not guardrail paths {src:.harness/policies/gate.json#L4-L34}. The file 00 Harness at a glance gives this split area by area.
+By code: every decision on the hook path (the gate's refusals and asks, the task module's subagent rules and Stop blocks, the integrity check, failing closed), the preconditions the `harness` command checks before it acts (an approved plan, a code typed at a terminal, enough passes), and that the agent's edit tools and terminal commands that name them cannot write the state files {src:.harness/engine/hook.py#L2-L16}. Only text: when to open a task, the order of work, how to call the reviewer, how to read the knowledge base, in `AGENTS.md`, instructions and skills, which the model may ignore {src:AGENTS.md#L42-L59}. The lines the task hook adds to each prompt are written by code but are text to the model {src:.harness/engine/modules/task/handler.py#L93-L126}. The tool lists of the custom agents are applied by Copilot; the harness adds limits on subagents only as the files 15, 17, 20 and 21 describe. The text files, `.github/agents/` included, are not guardrail paths {src:.harness/policies/gate.json#L4-L34}. The file 00 Harness at a glance gives this split area by area.
 
 ## Architecture: who decides what
 

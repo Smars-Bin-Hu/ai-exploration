@@ -171,8 +171,8 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#141414}
 <text x="1486" y="706" class="c">~/.copilot-harness/</text>
 <text x="1486" y="728" class="c">&#160;&#160;integrity/</text>
 <text x="1486" y="752" class="c">~/.copilot/session-state/</text>
-<text x="1486" y="784" class="m">target repositories: written</text>
-<text x="1486" y="806" class="m">only by task promote, after</text>
+<text x="1486" y="784" class="m">target repositories: files</text>
+<text x="1486" y="806" class="m">written by task promote, after</text>
 <text x="1486" y="828" class="m">the person's approval</text>
 
 <line x1="952" y1="815" x2="1466" y2="815" class="dat" marker-end="url(#a)" marker-start="url(#a)"/>
