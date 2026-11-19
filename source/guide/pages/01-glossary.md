@@ -77,7 +77,7 @@ The words the Harness Guide files use, for harness version 1.8.3, by area, then 
 - **Pit stop** — during autorun, the board ends the turn and compacts the chat at the compact percent (70 by default). See: 20 Autorun.
 - **Proposal card** — the super agent's proposals as the board's own buttons; nothing happens until the person presses. See: 21 Super agent.
 - **`[review]=n`** — the mark the person types to require n passes (0 off, at most 5); text a skill brings in does not count. See: 17 Independent checks.
-- **Reviewer** — the subagent of the independent check, with no edit tool, called only in a task whose checks are on. See: 17 Independent checks.
+- **Reviewer** — the subagent of the independent check, whose tools are read, search and execute and who is told in text not to change anything, called only in a task whose checks are on. See: 17 Independent checks.
 - **Scheduler** — the task's own agent in autorun: it calls the worker per step, and its edit tools write only `TODO.md`, `TASK.md`, `LOG.md`, `QUESTIONS.md`. See: 20 Autorun.
 - **Skill** — a Copilot folder `.github/skills/<name>/SKILL.md`, read when a request matches or the person types `/<name>`; it is text, not enforcement. See: 23 Skills.
 - **Stop reason** — the fact that ends an autorun run, such as `done`, `plan`, `budget`, `time`, `stalled`, `person`. See: 20 Autorun.
