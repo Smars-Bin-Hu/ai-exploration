@@ -409,3 +409,5 @@ python3 source/video/tts/say.py --model gptsovits --ref .claude/loops/tts/gptsov
 ## Removed (2026-11-18)
 
 Rejected after listening, deleted to free disk (~19 GB): F5-TTS, Chatterbox and Chatterbox Turbo, VoxCPM2, Qwen3-TTS 0.6B, Kokoro + OpenVoice / Chatterbox converter (the `kvc` env). Their backends stay in `say.py` for the record but need a reinstall (install steps above) before use. Later the same day Kokoro + Seed-VC was rejected too (too distorted) and removed (the `seedvc` env, Seed-VC, BigVGAN 44 kHz, Kokoro-82M). Kept: Qwen3-TTS 1.7B, VibeVoice, Demucs, DeepFilterNet, mlx-whisper, WavLM, GPT-SoVITS.
+
+Also removed later on 2026-11-18, after the author listened: **GPT-SoVITS** (fine-tuned; mechanical and flat, many word errors) and **VibeVoice** (odd sounds — sudden pitch changes, words breaking off), with Demucs (only VibeVoice needed it). **Chosen: Qwen3-TTS 1.7B** with a 10–15 s reference cut from the author's own talk (`talk-a`), and a script written in the author's speaking style (pause marks, so / right? / like). Their backends stay in `say.py` for the record.
