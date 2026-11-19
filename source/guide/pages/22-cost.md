@@ -15,7 +15,7 @@ Cost and usage is how the harness shows what a task cost: the agent's working ti
 
 ## Cost and usage: what the harness itself spends
 
-The harness's own work calls no model: hooks, the gate, task commands, document conversion, knowledge base checks and autorun's stop rules are local code and spend no Credits {src:docs/06-cost-optimization.md#L5-L13} {src:.harness/engine/modules/task/intakeconvert.py#L1-L4}. Credits are spent by model calls in Copilot chats: the agent's own work, plus what a person turns on: independent checks (one reviewer subagent per check, at most n + 2), autorun (one worker subagent per step, under a spend limit), the super agent chat (50 Credits a day by default), the mapper of `/generic-mapreduce` (at most 4 subagents in 60 minutes), **Ask why** on a report page (a chat that explains the numbers) and **Agent Performance Review** {src:.harness/policies/task.json#L9-L31}. Looking at the report page, the board or `harness task performance --all` costs nothing {src:.harness/engine/modules/task/perfroll.py#L1-L8}.
+The harness's own work calls no model: hooks, the gate, task commands, document conversion, knowledge base checks and autorun's stop rules are local code and spend no Credits {src:docs/06-cost-optimization.md#L5-L13} {src:.harness/engine/modules/task/intakeconvert.py#L1-L4}. Credits are spent by model calls in Copilot chats: the agent's own work, plus what a person turns on: independent checks (one reviewer subagent per check, n + 2 unless the person gives more with `task review extend`), autorun (one worker subagent per step, under a spend limit), the super agent chat (50 Credits a day by default), the mapper of `/generic-mapreduce` (at most 4 subagents in 60 minutes), **Ask why** on a report page (a chat that explains the numbers) and **Agent Performance Review** {src:.harness/policies/task.json#L9-L31}. Looking at the report page or the board costs nothing.
 
 ## Cost and usage: where the numbers come from
 
@@ -54,7 +54,7 @@ Agent Performance Review (1.7.41) has three layers, dearer as they go down {src:
 2. **Lookups: code.** `harness task performance <task> --task <review task>` writes `EVIDENCE.json` into the review task and prints the overview; `--prompt`, `--span`, `--find`, `--call` and `--check` look things up. Every cost the review states is counted by code.
 3. **Reasoning and blame: a model, started by a person.** The button **Agent Performance Review** opens an `rca` task named `apr-<task>`, with high thinking and the model the person picks; the dialog says about how many tokens it will read {src:.harness/engine/core/messages.en.json#L4316-L4319}.
 
-**Only a person starts it.** The skill `harness-agent-performance-review` is marked `disable-model-invocation: true`, so Copilot does not let the agent load it. Since 1.8.2 the button's first message only opens the task; when that turn ends, the board sends `/harness-agent-performance-review <words>` to the same chat, once, with the chosen model {src:.github/skills/harness-agent-performance-review/SKILL.md#L1-L26} {src:docs/07-release-notes.md#L40-L46}.
+**Only a person starts it.** The skill `harness-agent-performance-review` is marked `disable-model-invocation: true`, so Copilot does not load it for the agent; that does not stop the agent from reading the `SKILL.md` file and following it, which only the skill's text forbids. Since 1.8.2 the button's first message only opens the task; when that turn ends, the board sends `/harness-agent-performance-review <words>` to the same chat, once, with the chosen model {src:.github/skills/harness-agent-performance-review/SKILL.md#L1-L26} {src:docs/07-release-notes.md#L40-L46}.
 
 **What the model judges.** It reads only the prompts code marked worth reading, judges each segment `needed`, `waste` or `cold` (only a cold cache's extra is waste), traces each waste back from the person's words to the result, and names its owner: `person`, `harness`, `model`, `environment`, `platform` (Copilot itself) or `knowledge`, with a confidence `certain`, `likely` or `unsure`. It critiques the person's prompts that caused waste (original, problem, better wording) and writes suggestions for each owner {src:.github/skills/harness-agent-performance-review/SKILL.md#L36-L59} {src:.github/skills/harness-agent-performance-review/references/attribution.md#L5-L22}.
 
@@ -64,7 +64,7 @@ Agent Performance Review (1.7.41) has three layers, dearer as they go down {src:
 
 ## Cost and usage: Save as HTML, to share
 
-**Save page** on the task analysis page and **Save as HTML** in the task page's menu each download one HTML file for someone with no access to the board. It is a copy of that moment, with no buttons, and asks the network for nothing {src:.harness/engine/modules/task/boardserve.py#L597-L637}. The task copy holds the task's documents, diff and history as they are, so the person reads it before sending.
+**Save page** on the task analysis page and **Save as HTML** in the task page's menu each download one HTML file for someone with no access to the board. It is a copy of that moment, with no buttons, and asks the network for nothing {src:.harness/engine/modules/task/boardserve.py#L597-L637}. The task copy holds the task's documents, diff and history: read it before sending.
 
 ## Cost and usage: choosing a model per task
 
@@ -81,13 +81,13 @@ Two limits stop spending, each set by a person:
 - **Autorun's spend limit**, per run: the Credits a run may add after Start (none, or the recommended 500, 1,000 or 2,000 by step count, or twice or four times that); the run stops with `budget` (see the file 20 Autorun) {src:.harness/engine/modules/task/autorun.py#L86-L89} {src:.harness/engine/modules/task/autorun_spend.py#L1-L5}.
 - **The super agent's daily limit**, `super.daily_credits` (50; `0` switches the chat off; see the file 21 Super agent) {src:.harness/policies/task.json#L21-L31}.
 
-Independent checks (n + 2) and mapper subagents (4 in 60 minutes) are capped by count, not Credits. **There is no total budget per task.** Nothing stops a task's own chat when its Credits pass a sum; the ⚠ tag only warns {src:.harness/engine/modules/task/health.py#L141-L157}.
+Independent checks (n + 2, plus what the person gives with `task review extend`) and mapper subagents (4 in 60 minutes) are capped by count, not Credits {src:.harness/engine/modules/task/taskreview.py#L161-L163}. **There is no total budget per task.** Nothing stops a task's own chat when its Credits pass a sum; the ⚠ tag only warns {src:.harness/engine/modules/task/health.py#L141-L157}.
 
 ## Cost and usage: what is enforced by code, and what is only an instruction
 
 **Code**: reading the record and splitting Credits and time by prompt, stage and round; the ⚠ rule; the review's facts, every cost it states, and the rules on `FINDINGS.json`; leaving review tasks out of the median; refusing a model the host does not list; autorun's spend limit and the super agent's daily limit {src:.harness/engine/core/copilot_events.py#L153-L189} {src:.harness/engine/modules/task/perfreview.py#L349-L465}.
 
-**Copilot**: `disable-model-invocation: true` keeps the review skill from the agent; the gate's person-only list does not name `harness task performance` {src:.harness/policies/gate.json#L131-L137}.
+**Copilot**: `disable-model-invocation: true` keeps Copilot from loading the review skill for the agent (its file stays readable); the gate's person-only list does not name `harness task performance` {src:.harness/policies/gate.json#L131-L137}.
 
 **Only an instruction** (the skill's text): never start a review on its own; read only the prompts worth reading; stop early when the task was quiet; never estimate a cost; never judge a short correction as a bad prompt; suggest, never change; never paste thinking, commands or results into a ticket or message {src:.github/skills/harness-agent-performance-review/SKILL.md#L36-L59}.
 
@@ -101,7 +101,7 @@ Independent checks (n + 2) and mapper subagents (4 in 60 minutes) are capped by 
 
 ## Cost and usage: the call logs and what they keep
 
-The harness's own log is one JSONL line per hook call, in `.harness/runtime/logs/<surface>/<session id>.jsonl` {src:.harness/engine/core/logs.py#L1-L4}. A line keeps the event, the tool and the decision, and for a refusal or confirmation the deciding module and reason. It keeps no tool arguments, except the paths and command of a call refused or sent to a person, the paths a finished call touched, a short hash of a terminal command, skill and knowledge base file names, and an outside call's system, environment, verb and target, never its result {src:.harness/engine/core/callrecord.py#L1-L10}. The log holds no tokens and no Credits; usage is only in Copilot's record. Logs are deleted only by a person's `harness logs prune --days N` {src:.harness/engine/modules/observe/prune.py#L1}.
+The harness's own log is one JSONL line per hook call, in `.harness/runtime/logs/<surface>/<session id>.jsonl` {src:.harness/engine/core/logs.py#L1-L4}. A line keeps the event, the tool and the decision, and for a refusal or confirmation the deciding module and reason. It keeps no tool arguments, except the paths and command of a call refused or sent to a person, the paths a finished call touched, a short hash of a terminal command, skill and knowledge base file names, and an outside call's system, environment, verb and target, never its result {src:.harness/engine/core/callrecord.py#L1-L10}. The log holds no tokens and no Credits; usage is only in Copilot's record. Nothing deletes logs by itself; `harness logs prune --days N` deletes old ones. It is meant for a person but not person-only: the gate only asks Copilot's confirmation, which does not show under Allow all, so an agent can run it {src:.harness/engine/modules/observe/prune.py#L1} {src:.harness/policies/gate.json#L176-L181}.
 
 ## Cost and usage: where in the source
 
@@ -117,9 +117,7 @@ Under `.harness/engine/` {src:.harness/engine/core/copilot_events.py#L1-L11}: `c
 
 **Q: Can I cap what a task spends?** Only an autorun run and the super agent chat have limits; a task's own chat has none, and the ⚠ tag only warns {src:.harness/engine/modules/task/health.py#L141-L157}.
 
-**Q: Can the agent start a review, or blame me without proof?** The agent cannot load the review skill. `--check` demands evidence for `model` and `harness` findings; for `person` only the skill's text asks for the prompt {src:.harness/engine/modules/task/perfreview.py#L349-L465}.
-
-**Q: Does the harness switch my model to a cheaper one?** No: it refuses a model the host does not list and keeps the task's chosen model {src:.harness/engine/modules/task/chatnew.py#L171-L195}.
+**Q: Can the agent start a review, or blame me without proof?** Copilot does not load the review skill for the agent, though the agent could still read its file; only text forbids it. `--check` demands evidence for `model` and `harness` findings; for `person` only the skill's text asks for the prompt {src:.harness/engine/modules/task/perfreview.py#L349-L465}.
 
 ## Cost and usage: limits
 
