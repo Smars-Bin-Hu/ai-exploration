@@ -1,18 +1,28 @@
-Courses in this folder. The planned topics may change.
+Courses in this folder. One topic per video. The planned topics are a direction, not a promise: they may change.
 
-Published
-  Basic 01     13 min   Basic/01 - Stop Using AI like 2024 way, what's the Harness Engineering.mp4
+Basic/  (Harness engineering from the start)
+  01  video, 13 min   01 - Stop Using AI like 2024 way, what's the Harness Engineering.mp4
+  02  planned         Stop writing long prompts
+  03  planned         Plan before you build
+  04  planned         Protect your context
+  05  planned         Models, capability and cost
+  06  planned         A prompt cannot stop a dangerous action
+  ...                 and more to come
 
-Planned
-  Basic 02     Stop writing long prompts
-  Basic 03     Plan before you build
-  Basic 04     Protect your context
-  Basic 05     Models, capability and cost
-  Basic 06     A prompt cannot stop a dangerous action
-  Advanced 01  Subagents: what they are and when they help
-  Advanced 02  Enforce with code, not with prompts
-  Advanced 03  Onboarding an agent: a standard way to build a knowledge base
-  Advanced 04  Progressive disclosure and context loading
-  ...          and more to come
+Advanced/  (The same, in depth)
+  01  planned         Subagents: what they are and when they help
+  02  planned         Enforce with code, not with prompts
+  03  planned         Onboarding an agent: a standard way to build a knowledge base
+  04  planned         Progressive disclosure and context loading
+  05  planned         How I make sure the code is what I wanted
+  ...                 and more to come
 
-Harness tutorials/: picture-book PDFs for now, each replaced when its video is ready.
+Harness tutorials/  (How to use the harness, day to day)
+  0   PDF for now     0 MUST READ.pdf
+  1   PDF for now     1 A day with the harness.pdf
+  2   PDF for now     2 A tour of the harness.pdf
+  3   PDF for now     3 When the agent is stopped.pdf
+  4   PDF for now     4 Independent checks.pdf
+  5   PDF for now     5 Outside systems and connections.pdf
+  6   PDF for now     6 Knowledge base.pdf
+  ...                 and more to come

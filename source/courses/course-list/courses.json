@@ -1,17 +1,30 @@
 {
-  "published": [
-    {"series": "Basic", "n": "01", "title": "Stop Using AI like 2024 way, what's the Harness Engineering?",
-     "file": "Basic/01 - Stop Using AI like 2024 way, what's the Harness Engineering.mp4", "length": "13 min"}
-  ],
-  "planned": [
-    {"series": "Basic", "n": "02", "title": "Stop writing long prompts"},
-    {"series": "Basic", "n": "03", "title": "Plan before you build"},
-    {"series": "Basic", "n": "04", "title": "Protect your context"},
-    {"series": "Basic", "n": "05", "title": "Models, capability and cost"},
-    {"series": "Basic", "n": "06", "title": "A prompt cannot stop a dangerous action"},
-    {"series": "Advanced", "n": "01", "title": "Subagents: what they are and when they help"},
-    {"series": "Advanced", "n": "02", "title": "Enforce with code, not with prompts"},
-    {"series": "Advanced", "n": "03", "title": "Onboarding an agent: a standard way to build a knowledge base"},
-    {"series": "Advanced", "n": "04", "title": "Progressive disclosure and context loading"}
+  "note": "One topic per video. The planned topics are a direction, not a promise: they may change.",
+  "series": [
+    {"name": "Basic", "about": "Harness engineering from the start", "folder": "Basic", "courses": [
+      {"n": "01", "title": "Stop Using AI like 2024 way, what's the Harness Engineering?", "state": "video", "length": "13 min",
+       "file": "01 - Stop Using AI like 2024 way, what's the Harness Engineering.mp4"},
+      {"n": "02", "title": "Stop writing long prompts"},
+      {"n": "03", "title": "Plan before you build"},
+      {"n": "04", "title": "Protect your context"},
+      {"n": "05", "title": "Models, capability and cost"},
+      {"n": "06", "title": "A prompt cannot stop a dangerous action"}
+    ]},
+    {"name": "Advanced", "about": "The same, in depth", "folder": "Advanced", "courses": [
+      {"n": "01", "title": "Subagents: what they are and when they help"},
+      {"n": "02", "title": "Enforce with code, not with prompts"},
+      {"n": "03", "title": "Onboarding an agent: a standard way to build a knowledge base"},
+      {"n": "04", "title": "Progressive disclosure and context loading"},
+      {"n": "05", "title": "How I make sure the code is what I wanted"}
+    ]},
+    {"name": "Harness tutorials", "about": "How to use the harness, day to day", "folder": "Harness tutorials", "courses": [
+      {"n": "0", "title": "MUST READ", "state": "pdf", "file": "0 MUST READ.pdf"},
+      {"n": "1", "title": "A day with the harness", "state": "pdf", "file": "1 A day with the harness.pdf"},
+      {"n": "2", "title": "A tour of the harness", "state": "pdf", "file": "2 A tour of the harness.pdf"},
+      {"n": "3", "title": "When the agent is stopped", "state": "pdf", "file": "3 When the agent is stopped.pdf"},
+      {"n": "4", "title": "Independent checks", "state": "pdf", "file": "4 Independent checks.pdf"},
+      {"n": "5", "title": "Outside systems and connections", "state": "pdf", "file": "5 Outside systems and connections.pdf"},
+      {"n": "6", "title": "Knowledge base", "state": "pdf", "file": "6 Knowledge base.pdf"}
+    ]}
   ]
 }
