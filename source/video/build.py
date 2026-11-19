@@ -11,6 +11,7 @@
     .venv/bin/python source/video/build.py basic-01 --check-scene <sid>       # a talked scene take checked, JSON
     .venv/bin/python source/video/build.py basic-01 --check-para <id>         # a paragraph punch-in checked, JSON
     .venv/bin/python source/video/build.py basic-01 --polish-preview <sid>    # a scene take (or punch-in) polished, to listen to
+    .venv/bin/python source/video/build.py basic-01 --subs-draft <sid>        # heard vs script, to write subs-fix/<sid>.json
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
 Writes .claude/loops/video-out/<video>/: audio/ (one wav per paragraph, and its sentences cut out of it), frames/ (one png
@@ -864,6 +865,159 @@ def polish_preview(args, scenes, paras, lines, rdir, adir):
     print(md[md.index('## Verdict') + 2])
 
 
+# ---------- subtitle proofreading: corrections to what Whisper heard, per take (FORMAT.md, Recorded voice, Talk) ----------
+
+FIX_NEAR = 8   # an edit whose words are not at its "at" is looked for this many words either side (the take's words moved)
+
+
+def fix_dir(scenes_path, video):
+    """subs-fix/ next to the scenes file if it is there, else source/courses/<video>/subs-fix/."""
+    near = scenes_path.parent / 'subs-fix'
+    return near if near.is_dir() else ROOT / 'source/courses' / video / 'subs-fix'
+
+
+def subs_fix(words, key, take_hash, fdir):
+    """A talk take's words as kept (s['rec']['words']: [[word, t0, t1]]) -> (words corrected, report or None).
+    fdir/<key>.json (key: the scene's sid, or a punch-in's paragraph id) is {"take": <take hash>, "edits": [{"at": <index
+    of the first heard word>, "from": "<heard words>", "to": "<corrected words>"}]}; indexes are into the words as kept,
+    before any edit. An edit applies where its "from" words are (compared without case and punctuation), at "at" or up to
+    FIX_NEAR words from it; "to" "" removes them, "from" "" inserts before word "at". The new words share the time of the
+    words they replace by letter count, so cues stay in sync. A file for another take (its "take" is not this one) is
+    not applied. report: dict(file, take, stale, edits: [(edit, index or None, status)], applied)."""
+    f = fdir / f'{key}.json'
+    if not f.exists():
+        return words, None
+    try:
+        data = json.loads(f.read_text(encoding='utf-8'))
+    except json.JSONDecodeError as e:
+        die(f'{f}: {e}')
+    edits = data.get('edits', [])
+    rep = dict(file=f, take=data.get('take'), stale=data.get('take') != take_hash, edits=[], applied=0)
+    if rep['stale']:
+        rep['edits'] = [(e, None, 'stale') for e in edits]
+        return words, rep
+    out = [list(w) for w in words]
+    keys = [talk.base(w[0]) for w in out]
+    taken, todo = set(), []
+    for e in edits:
+        frm = [talk.base(x) for x in str(e.get('from', '')).split()]
+        n, at = len(frm), int(e.get('at', 0))
+        i = next((at + d for d in sorted(range(-FIX_NEAR, FIX_NEAR + 1), key=abs)
+                  if 0 <= at + d and at + d + n <= len(out) and keys[at + d:at + d + n] == frm), None)
+        if n == 0:
+            i = at if 0 <= at <= len(out) else None
+        if i is None:
+            rep['edits'].append((e, None, 'not found')); continue
+        span = set(range(i, i + n)) if n else {i - 0.5}
+        if span & taken:
+            rep['edits'].append((e, i, 'overlaps another edit')); continue
+        taken |= span
+        todo.append((i, n, e))
+        rep['edits'].append((e, i, 'applied'))
+    for i, n, e in sorted(todo, key=lambda x: -x[0]):
+        new = str(e.get('to', '')).split()
+        if n:
+            t0, t1 = out[i][1], out[i + n - 1][2]
+        else:
+            t0 = t1 = out[i][1] if i < len(out) else (out[-1][2] if out else 0.0)
+        tot, acc, rows = sum(len(x) + 1 for x in new), 0, []
+        for x in new:
+            a = t0 + (t1 - t0) * acc / max(tot, 1)
+            acc += len(x) + 1
+            rows.append([x, round(a, 3), round(t0 + (t1 - t0) * acc / max(tot, 1), 3)])
+        out[i:i + n] = rows
+    rep['applied'] = len(todo)
+    return out, rep
+
+
+def fix_report(rep, key):
+    """One line for the build's report about a take's corrections file."""
+    rel = rep['file'].relative_to(ROOT) if rep['file'].is_relative_to(ROOT) else rep['file']
+    if rep['stale']:
+        return (f'{rel}: written for take {rep["take"]}, not this one (the take was recorded again): not applied; '
+                f'--subs-draft {key} to proofread the new take')
+    bad = [(e, st) for e, _, st in rep['edits'] if st != 'applied']
+    return (f'{rel}: {rep["applied"]} of {len(rep["edits"])} correction(s) applied'
+            + ''.join(f'\n          {st}: at {e.get("at")} "{e.get("from", "")}" -> "{e.get("to", "")}"' for e, st in bad))
+
+
+def subs_draft(args, scenes, paras, lines, rdir, adir, fdir):
+    """--subs-draft: one scene take (sid) or punch-in (id) as heard and kept (the words the subtitles are made of, with
+    their indexes) next to the script, line by line, for whoever writes its corrections file (FORMAT.md, Recorded
+    voice, Talk). Polishes the take if the build's cache does not have it yet. Writes <rec-dir>/preview/<key>-subs-draft.md."""
+    want = args.subs_draft
+    mine = [p for p in paras if p['sid'] == want]
+    kind, take = 'scene', current(rdir / 'scene', want) if mine else None
+    if not take and any(p['id'] == want for p in paras):
+        mine = [p for p in paras if p['id'] == want]
+        kind, take = 'para', current(rdir / 'para', want)
+    if not mine:
+        die(f'{want} is no scene (sid) or paragraph (id) of this video; --list-paragraphs prints them')
+    if not take:
+        die(f'no take {rdir / kind / (want + ".wav")}')
+    s = talk_item(take, ' '.join(p['text'] for p in mine), kind, want)
+    den, tag = talk_settings(args)
+    polish_talk([s], adir / 'rec', args, den, tag)
+    words = s['rec'].get('words') or []
+    if not words:
+        die('no words heard (no Whisper?): nothing to proofread')
+    _, rep = subs_fix(words, want, s['take_hash'], fdir)
+    # where each script line was said: its heard words run from its point's first word to the next found point's
+    if kind == 'scene':
+        per, _, _, _ = talk.paragraphs([para_lines(p, lines) for p in mine], words)
+    else:
+        per = [talk.points(para_lines(mine[0], lines), words)]
+    flat = [(p, q) for p, pts in zip(mine, per) for q in pts]
+    starts = sorted({q['w0'] for _, q in flat if q['said'] and q['order']} | {0})
+    owner = {}  # first word index -> (paragraph, point) it opens
+    for p, q in flat:
+        if q['said'] and q['order']:
+            owner.setdefault(q['w0'], (p['para'], q['k']))
+    first_said = next(((p['para'], q['k']) for p, q in flat if q['said'] and q['order']), None)
+    if first_said:
+        owner[0] = first_said
+    spans = {}
+    for a, b in zip(starts, starts[1:] + [len(words)]):
+        if a in owner:
+            spans[owner[a]] = (a, b)
+
+    def heard(a, b):  # the words a..b-1, an index before the first, after each clause end and every 6 words
+        out, run = [], 0
+        for i in range(a, b):
+            if i == a or run >= 6 or re.search(r'[,;:.!?]["\')]*$|\.\.\.$', words[i - 1][0]):
+                out.append(f'`{i}`'); run = 0
+            out.append(words[i][0].replace('|', '\\|')); run += 1
+        return ' '.join(out)
+    title = scenes[mine[0]['scene']]['title']
+    rel = lambda x: x.relative_to(ROOT) if x.is_relative_to(ROOT) else x
+    md = [f'# Subtitle draft: {"scene" if kind == "scene" else "punch-in, paragraph " + str(mine[0]["para"]) + " of"} "{title}"', '',
+          f'Take `{rel(take)}`, hash `{s["take_hash"]}`: {len(words)} words as kept after the polish (fillers, stutters, '
+          'restarts cut). These words, with these indexes, are what the subtitles, spoken.md and the FCPXML captions are made of.',
+          '', f'Corrections file: `{rel(fdir / (want + ".json"))}`: '
+          + ('none yet.' if rep is None else fix_report(rep, want).split(': ', 1)[1].replace('\n          ', '; ')), '',
+          'Write it as below. `at` is the index of the first heard word (the `n` before a word marks its index; count on '
+          'from it); `from` the heard words exactly as shown (case and punctuation do not matter); `to` what the subtitle '
+          'should say (`""` removes the words). Fix what Whisper misheard (the script says what was meant), names, '
+          'fragments left by a cut restart, and light grammar; keep the author\'s own wording.', '', '```json',
+          json.dumps(dict(take=s['take_hash'], sid=want, scene=title, edits=[dict(at=0, **{'from': words[0][0], 'to': words[0][0]})]),
+                     ensure_ascii=False), '```', '']
+    for p, pts in zip(mine, per):
+        md += [f'## Paragraph {p["para"]}', '', '| | script | heard |', '| --- | --- | --- |']
+        for q in pts:
+            txt = lines[p['lines'][q['k']]]['text'].replace('|', '\\|')
+            sp = spans.get((p['para'], q['k']))
+            cell = heard(*sp) if sp else ('*(not found in order; its words, if said, are in the row before)*' if not q['said']
+                                          else '*(found only out of order; in the row before)*')
+            md.append(f'| {q["k"] + 1} | {txt} | {cell} |')
+        md.append('')
+    dst = rdir / 'preview' / f'{want}-subs-draft.md'
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text('\n'.join(md).rstrip() + '\n', encoding='utf-8')
+    print(dst)
+    if rep:
+        print(fix_report(rep, want))
+
+
 def talk_chunks(paras, units, lines, args, adir, rdir):
     """--voice rec with talk takes: the clips, one or more per scene. A scene take is polished as a whole, its points
     aligned over what was said, and it is cut into its paragraphs at the pause between them; a run of paragraphs from
@@ -889,6 +1043,18 @@ def talk_chunks(paras, units, lines, args, adir, rdir):
             stale.append(p)
     notes = [f'punch-in older than the scene take, unused: paragraph {p["para"]} ({p["id"]}): {p["text"][:50]}' for p in stale]
     todo = polish_talk(items, tdir, args, den, tag)
+    # the take's proofread corrections (subs-fix/<sid|id>.json), before anything reads its words: paragraphs, pictures,
+    # subtitles, spoken.md and the FCPXML captions all see the corrected words, on the same times
+    args.fix_reports = []
+    seen_fix = set()
+    for s in items:
+        if s['cut_take'].name + s['key'] in seen_fix:
+            continue
+        seen_fix.add(s['cut_take'].name + s['key'])
+        fixed, rep = subs_fix(s['rec'].get('words') or [], s['key'], s['take_hash'], args.fix_dir)
+        if rep:
+            s['rec'] = dict(s['rec'], words=fixed)
+            args.fix_reports.append((s['key'], rep))
     # where each paragraph comes from
     src = {}
     for si, s in by_scene.items():
@@ -1479,6 +1645,9 @@ def main():
                     '<sid>-polished.mp3 and <sid>-polish.md (what was cut or changed, at what time in the raw take; the '
                     'transcript cleaned; points missing or out of order; "like"; loudness before and after). The polished '
                     'take goes into the build\'s cache, so the build after it does not polish it again')
+    ap.add_argument('--subs-draft', metavar='SID|ID', help='rec, talk: write <rec-dir>/preview/<sid>-subs-draft.md, the '
+                    'take\'s words as kept (with their indexes) next to the script, line by line, to write its subtitle '
+                    'corrections from: source/courses/<video>/subs-fix/<sid>.json, applied by every build')
     ap.add_argument('--rec-status', action='store_true', help='print per scene how many sentences have a take, and the '
                     'ones that do not, and stop')
     ap.add_argument('--rec-dir', help='rec: the folder of takes, <id>.wav each (default .claude/loops/voice/rec/<video>/; '
@@ -1570,6 +1739,11 @@ def main():
     if args.polish_preview:
         (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
         polish_preview(args, scenes, paras, lines, rdir, Path(args.out) / args.video / 'audio')
+        return
+    args.fix_dir = fix_dir(scenes_path, args.video)
+    if args.subs_draft:
+        (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
+        subs_draft(args, scenes, paras, lines, rdir, Path(args.out) / args.video / 'audio', args.fix_dir)
         return
     if args.check_para or args.check_scene:
         (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
@@ -1769,7 +1943,7 @@ def main():
     n_aligned = align_all([c for c in chunks if not c.get('talk')], adir, args)
     for c in chunks:
         cut_chunk(c, sents, lines, fps, adir)
-    spoken_made = is_talk and write_spoken(scenes_path.parent / 'spoken.md', title, scenes, paras, sents, chunks)
+    spoken_made = is_talk and write_spoken(scenes_path.parent / ('spoken.md' if scenes_path.name == 'scenes.md' else f'spoken-{scenes_path.stem.removeprefix("scenes-")}.md'), title, scenes, paras, sents, chunks)
     hows = {'aligned': 0, 'interpolated': 0, 'proportional': 0, 'talk': 0}
     inner = dict(word=0, interpolated=0, proportional=0)  # line starts inside sentences
     for s in sents:
@@ -1948,6 +2122,8 @@ def main():
                 print(f'  points  paragraph {s["para"]}: line(s) {", ".join(str(k) for k in s["placed"])} placed between their '
                       f'neighbours' + (f' (not said: {nf})' if nf else '') + (f' (said out of order: {oo})' if oo else '')
                       + f': {s["text"][:50]}')
+        for key, rep in getattr(args, 'fix_reports', []):
+            print(f'  subs    {fix_report(rep, key)}')
         print(f'spoken: {scenes_path.parent / "spoken.md"} {"written" if spoken_made else "unchanged"}')
     elif is_rec:
         print(f'voice:  recorded, {len(sents) - len(filled)} of {len(sents)} sentences from takes in {rdir}'
