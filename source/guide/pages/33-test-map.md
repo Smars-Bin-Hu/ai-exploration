@@ -4,11 +4,24 @@ subject: Test map
 layer: reference
 file: 33 Test map
 harness_tag: 1.8.3
+course: The book · 4.4 Build the enforcement layer like software | https://smarshu.com/book/read/4-4-enforcement-design.html
+course: The book · 6.3 Fixed tasks, scored by a script | https://smarshu.com/book/read/6-3-eval-tasks.html
 ---
 
 ## Test map: what this file holds
 
 The test map lists every test file of the harness at version 1.8.3: what each one checks, in the words of its own module docstring, the number of tests in it, and the names of its test classes turned into plain phrases. It answers "is X tested" and "where is the test for Y". There are 142 test files with 3910 test methods under `.harness/tests/`, and fixed scenarios with recorded hook input under `.harness/eval/`. A docstring often starts with the version (like 1.7.38) or the internal item (like B71 or M15-4) that added the tests.
+
+## Test map: the tests that guard the whole
+
+Most test files check one part of the harness. A few check the harness as a whole: every document, every shipped Python file, every engine import, every spelling of a dangerous call, every command only a person may run. A change anywhere can break them, so they are what stops a change in one place from quietly breaking a promise made in another. They are listed here, each with what it guarantees, and again under their area below.
+
+- `test_docs.py`: the README and `docs/` agree with the code. Every relative link has a target, every command a document shows runs, every policy field the reference names exists and every top-level policy field is documented, every hook event and task template is listed, and the launcher scripts work {src:.harness/tests/test_docs.py#L1-L6} {src:.harness/tests/test_docs.py#L182-L191}.
+- `test_old_python.py`: every Python file the repository ships, tool pack scripts included, loads on Python 3.9. It refuses the f-string forms only Python 3.12 reads, after one such form in 1.7.38 kept the harness from starting on a work computer {src:.harness/tests/test_old_python.py#L1-L3} {src:.harness/tests/test_old_python.py#L59-L70}.
+- `test_doctor.py`, three tests on the engine as a whole: the engine imports only the Python standard library and its own packages, so nothing has to be installed {src:.harness/tests/test_doctor.py#L750-L767}; a module imports only `core/` and itself, never another module or the adapters {src:.harness/tests/test_doctor.py#L769-L780}; every file under `.github/` and `.harness/` that git tracks is on a list of `registry.json`, so no file escapes `harness doctor` {src:.harness/tests/test_doctor.py#L742-L748}.
+- `test_gate_redteam.py`: the red team of the gate. 96 ways of writing a call to the SQL Server sample type (case, comments, brackets, included script files, batch separators and more), each with the answer the gate must give: pass, ask or refuse. Every row must get its answer, the test requires at least 80 rows with all three answers, and a sample of the rows goes through the real hook with the same result {src:.harness/tests/test_gate_redteam.py#L1-L3} {src:.harness/tests/test_gate_redteam.py#L149-L187}.
+- `test_task.py`, `test_only_a_person_at_a_terminal_approves`: approving the plan and confirming the requirement are refused when the command is not typed by a person in a terminal, and `confirm-req`, `approve-plan`, `approve-promote` and `recover` in a terminal call of the agent are denied by the hook {src:.harness/tests/test_task.py#L172-L179}.
+- `test_c13_f2.py`, the commands only a person may run: every spelling of `harness task close` (quotes, a variable, `bash -c`, `python3 -m cli`, a here-document) is denied and names `harness task deliver` instead; a harness call the gate cannot read (`xargs`, `$(...)`, a one-line interpreter) is denied; `approve-plan`, `confirm-req`, `approve-promote`, `approve-action`, `admin on`, `allow` and `review set` are read the same way; and the harness commands an agent runs stay free {src:.harness/tests/test_c13_f2.py#L1541-L1575}.
 
 ## Test map: how the tests are run
 

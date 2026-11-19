@@ -10,7 +10,7 @@ import argparse, ast, json, os, re, subprocess, sys
 HARNESS = os.path.expanduser('~/Developer/DE-agentic-harness')
 GUIDE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES = os.path.join(GUIDE, 'pages')
-BUDGET = {'32-code-map': 25, '33-test-map': 20, '34-version-history': 20}
+BUDGET = {'32-code-map': 25, '33-test-map': 20, '34-version-history': 20}  # 20, not 22: at 20 the versions before 1.8.0 keep their level-6 text
 
 # ---------- reading the harness at a tag ----------
 
@@ -205,8 +205,15 @@ def cite(path, a=None, b=None):
     if a is None: return '{src:' + path + '}'
     return '{src:' + path + f'#L{a}' + (f'-L{b}' if b and b != a else '') + '}'
 
-def front(title, subject, file, tag):
-    return f'---\ntitle: {title}\nsubject: {subject}\nlayer: reference\nfile: {file}\nharness_tag: {tag}\n---\n'
+def front(title, subject, file, tag, courses=()):
+    return f'---\ntitle: {title}\nsubject: {subject}\nlayer: reference\nfile: {file}\nharness_tag: {tag}\n' + ''.join(f'course: {c}\n' for c in courses) + '---\n'
+
+def node_lines(tag, path, name):
+    """(first line, last line) of the class or function `name` in a Python file (the first one found)."""
+    for node in ast.walk(ast.parse(show(tag, path))):
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
+            return node.lineno, node.end_lineno
+    raise SystemExit(f'{name} not found in {path} at {tag}')
 
 # ---------- 32 Code map ----------
 
@@ -410,6 +417,41 @@ def test_classes(src):
             count += 1; names.append(node.name)
     return names, count
 
+TEST_COURSES = ('The book · 4.4 Build the enforcement layer like software | https://smarshu.com/book/read/4-4-enforcement-design.html',
+                'The book · 6.3 Fixed tasks, scored by a script | https://smarshu.com/book/read/6-3-eval-tasks.html')
+
+def guards(tag):
+    """The hand-written section on the tests that guard the harness as a whole; every location is found at the tag."""
+    T = '.harness/tests/'
+    def c(f, name=None):
+        if name is None:
+            d = docstring(tag, T + f); return cite(T + f, d[1], d[2])
+        return cite(T + f, *node_lines(tag, T + f, name))
+    rows = len(re.findall(r'^    \(f?["\']', show(tag, T + 'test_gate_redteam.py'), re.M))
+    out = ['## Test map: the tests that guard the whole\n',
+           'Most test files check one part of the harness. A few check the harness as a whole: every document, every shipped Python file, every engine import, '
+           'every spelling of a dangerous call, every command only a person may run. A change anywhere can break them, so they are what stops a change in one place '
+           'from quietly breaking a promise made in another. They are listed here, each with what it guarantees, and again under their area below.\n',
+           f'- `test_docs.py`: the README and `docs/` agree with the code. Every relative link has a target, every command a document shows runs, every policy field the reference names exists '
+           f'and every top-level policy field is documented, every hook event and task template is listed, and the launcher scripts work {c("test_docs.py")} '
+           f'{c("test_docs.py", "test_every_command_a_document_shows_runs")}.',
+           f'- `test_old_python.py`: every Python file the repository ships, tool pack scripts included, loads on Python 3.9. It refuses the f-string forms only Python 3.12 reads, '
+           f'after one such form in 1.7.38 kept the harness from starting on a work computer {c("test_old_python.py")} {c("test_old_python.py", "test_every_shipped_python_file_loads_on_python_3_9")}.',
+           f'- `test_doctor.py`, three tests on the engine as a whole: the engine imports only the Python standard library and its own packages, so nothing has to be installed '
+           f'{c("test_doctor.py", "test_engine_code_uses_only_the_standard_library")}; a module imports only `core/` and itself, never another module or the adapters '
+           f'{c("test_doctor.py", "test_modules_import_only_core")}; every file under `.github/` and `.harness/` that git tracks is on a list of `registry.json`, so no file escapes `harness doctor` '
+           f'{c("test_doctor.py", "test_every_shipped_file_belongs_to_a_registry_list")}.',
+           f'- `test_gate_redteam.py`: the red team of the gate. {rows} ways of writing a call to the SQL Server sample type (case, comments, brackets, included script files, batch separators and more), '
+           f'each with the answer the gate must give: pass, ask or refuse. Every row must get its answer, the test requires at least 80 rows with all three answers, '
+           f'and a sample of the rows goes through the real hook with the same result {c("test_gate_redteam.py")} {c("test_gate_redteam.py", "RedTeamTests")}.',
+           f'- `test_task.py`, `test_only_a_person_at_a_terminal_approves`: approving the plan and confirming the requirement are refused when the command is not typed by a person in a terminal, '
+           f'and `confirm-req`, `approve-plan`, `approve-promote` and `recover` in a terminal call of the agent are denied by the hook {c("test_task.py", "test_only_a_person_at_a_terminal_approves")}.',
+           f'- `test_c13_f2.py`, the commands only a person may run: every spelling of `harness task close` (quotes, a variable, `bash -c`, `python3 -m cli`, a here-document) is denied and names `harness task deliver` instead; '
+           f'a harness call the gate cannot read (`xargs`, `$(...)`, a one-line interpreter) is denied; `approve-plan`, `confirm-req`, `approve-promote`, `approve-action`, `admin on`, `allow` and `review set` are read the same way; '
+           f'and the harness commands an agent runs stay free {c("test_c13_f2.py", "HarnessCloseTests")}.',
+           '']
+    return out
+
 def test_map(tag, lv):
     S, C, K = lv['sentences'], lv['chars'], lv['classes']
     files = [f for f in ls(tag, '.harness/tests') if f.endswith('.py')]
@@ -433,13 +475,14 @@ def test_map(tag, lv):
             missing.append(f)
             line = f'- `{name}`' + (f' ({n} tests)' if n else '') + ': checks ' + '; '.join(clean(p) for p in ph[:max(K, 6)]) + f'. {cite(f)}'
         groups[area].append(line)
-    out = [front('Test map', 'Test map', '33 Test map', tag)]
+    out = [front('Test map', 'Test map', '33 Test map', tag, TEST_COURSES)]
     out.append('## Test map: what this file holds\n')
     out.append(f'The test map lists every test file of the harness at version {tag}: what each one checks, in the words of its own module docstring, '
                f'the number of tests in it, and the names of its test classes turned into plain phrases. '
                f'It answers "is X tested" and "where is the test for Y". There are {len([f for f in files if f.rsplit("/", 1)[1].startswith("test_")])} test files with {total_tests} test methods under `.harness/tests/`, '
                f'and fixed scenarios with recorded hook input under `.harness/eval/`. '
                f'A docstring often starts with the version (like 1.7.38) or the internal item (like B71 or M15-4) that added the tests.\n')
+    out.extend(guards(tag))
     # how the tests are run
     out.append('## Test map: how the tests are run\n')
     idx = '.harness/INDEX.md'
@@ -503,13 +546,15 @@ def releases(tag):
         out.append({'version': ver, 'date': date, 'start': n, 'end': end, 'summary': summary, 'parts': parts})
     return path, out
 
+FULL = '1.8.'  # versions whose every bold lead-in is listed, whatever the level
+
 def version_history(tag, lv):
     path, rels = releases(tag)
     out = [front('Version history', 'Version history', '34 Version history', tag)]
     out.append('## Version history: what this file holds\n')
     out.append(f'The version history lists every version of the harness from {rels[-1]["version"]} ({rels[-1]["date"]}) to {rels[0]["version"]} ({rels[0]["date"]}), newest first, '
                f'{len(rels)} versions in all, from the release notes `{path}`. Each version has its date, the one-line summary of the release notes, and the bold lead-in of each item '
-               f'grouped by Added, Changed, Fixed and Retired; the full text of an item is in the release notes at the code location given. '
+               f'grouped by Added, Changed, Fixed and Retired: ' + (f'for {FULL}x every lead-in, for older versions the first {lv["bullets"]} and the number of the others ("and 3 more"); ' if lv['bullets'] else '') + f'the full text of an item is in the release notes at the code location given. '
                f'It answers "when did X come in" and "what changed in version Y". The dates are the release notes\' own {cite(path, 1, 11)}.\n')
     by_minor = {}
     for r in rels: by_minor.setdefault('.'.join(r['version'].split('.')[:2]), []).append(r)
@@ -528,8 +573,10 @@ def version_history(tag, lv):
             for part, bold, plain in r['parts']:
                 heads = bold or [shorten(clean(b), 1, 10**6) for b in plain]  # an item with no bold lead-in: its first sentence
                 if not heads: continue
-                keep = heads if lv['bullets'] is None else heads[:lv['bullets']]
-                items = [shorten(h if not bold else clean(h), 1, lv['head_chars']).rstrip('.:; ') for h in keep]
+                full = r['version'].startswith(FULL)  # the newest versions: every lead-in, never "and N more"
+                keep = heads if lv['bullets'] is None or full else heads[:lv['bullets']]
+                hc = max(lv['head_chars'], 80) if full else lv['head_chars']
+                items = [shorten(h if not bold else clean(h), 1, hc).rstrip('.:; ') for h in keep]
                 more = len(heads) - len(keep)
                 txt += (f' {part}: ' if part else ' ') + '; '.join(items) + (f'; and {more} more' if more > 0 else '') + '.'
             para.append(txt + ' ' + cite(path, r['start'], r['end']))
