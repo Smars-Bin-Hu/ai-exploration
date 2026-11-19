@@ -15,12 +15,11 @@ source/deep-dive/topics/*/_pages/
 source/deep-dive/topics/*/_twin.*
 source/deep-dive/topics/*/_draft.pdf
 
-# company only: added on the company computer, never committed
-AI Exploration/1 Showcase/Real Tasks/*
-!AI Exploration/1 Showcase/Real Tasks/README.md
-!AI Exploration/1 Showcase/Real Tasks/_template/
+# company only: made and edited on the company computer, never committed; tools/publish.ps1 copies them to SharePoint.
+# Builds on this machine may still write them here (the Why deck, Install and MUST READ PDFs): they stay local.
+AI Exploration/0 MUST READ.pdf
+AI Exploration/1 Showcase/
+AI Exploration/4 Install the harness/
+AI Exploration/_Archive/
 AI Exploration/3 Courses/**/*.mp4
 AI Exploration/3 Courses/**/*.mov
-AI Exploration/4 Install the harness/*.zip
-AI Exploration/4 Install the harness/programs/*
-!AI Exploration/4 Install the harness/programs/README.md

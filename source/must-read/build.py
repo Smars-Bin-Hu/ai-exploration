@@ -33,6 +33,7 @@ def pic(name, x, y, w, h): return dict(k='pic', name=name, x=x, y=y, w=w, h=h)
 def rect(x, y, w, h, fill): return dict(k='rect', x=x, y=y, w=w, h=h, fill=fill)
 
 PATHS = ['3 Courses/Course list.pdf']  # every folder and file the page names, checked to exist under AI Exploration/
+OPTIONAL = ['1 Showcase', '4 Install the harness']  # made on the company computer: not in the repository, so only a warning here
 
 def item(x, y, w, folder, desc, flag, h=0.95):
     PATHS.append(folder.rstrip('/'))
@@ -62,14 +63,13 @@ def build_page():
             pic('ask-guide', 5.47, y + 0.65, 2.0, 1.13)]
 
     y = 8.42  # DO NOT OPEN
-    els += [rect(L, y, 0.08, 1.85, GREY), text(1.1, y, 4, 0.3, [['Do not open']], size=11, color=GREY, bold=True, caps=True, spacing=2),
+    els += [rect(L, y, 0.08, 1.2, GREY), text(1.1, y, 4, 0.3, [['Do not open']], size=11, color=GREY, bold=True, caps=True, spacing=2),
             item(1.1, y + 0.42, 6.3, '2 Ask the Harness Guide/Knowledge/',
                  'The files the Harness Guide agent reads. Written for the agent, not for people: ask the agent instead.', 'g'),
-            item(1.1, y + 1.1, 6.3, '_Archive/',
-                 'Earlier material kept for reference, such as the Deep Dive on how a Task works. Replaced by the Harness Guide and the Courses, and may be out of date.', 'g')]
+            ]
 
-    els += [rect(L, 10.62, R - L, 0.012, RULE),
-            text(L, 10.7, R - L, 0.42, [['After installing, in VS Code Copilot chat: ', ('/harness-rookie-quick-start', 'k'), ' walks you through a first task; ',
+    els += [rect(L, 9.9, R - L, 0.012, RULE),
+            text(L, 9.98, R - L, 0.42, [['After installing, in VS Code Copilot chat: ', ('/harness-rookie-quick-start', 'k'), ' walks you through a first task; ',
                                          ('/harness-rookie-wondering', 'k'), ' teaches it all from the code (spends Copilot credits).']], size=9.5, color=MUTED),
             text(L, 11.28, 4, 0.2, [['AI Exploration · 0 MUST READ']], size=8, color=GREY),
             text(R - 3, 11.28, 3, 0.2, [['The one map of this folder']], size=8, color=GREY, align='r')]
@@ -165,7 +165,9 @@ await b.close();''')
     r = subprocess.run(['node', js], capture_output=True, text=True)
     if r.returncode: raise SystemExit('node failed:\n' + r.stderr)
     rep = json.loads(r.stdout.split('REPORT ', 1)[1].splitlines()[0])
-    bad = [f'no "{p}"' for p in PATHS if not os.path.exists(os.path.join(TOP, p))]
+    bad = [f'no "{p}"' for p in PATHS if p not in OPTIONAL and not os.path.exists(os.path.join(TOP, p))]
+    for p in OPTIONAL:
+        if p in PATHS and not os.path.exists(os.path.join(TOP, p)): print(f'note: no "{p}" here (company computer only)')
     if rep['pages'] != 1: bad.append(f'{rep["pages"]} pages, must be 1')
     bad += [f'text does not fit its box: "{t}"' for t in rep['over']]
     subprocess.run(['qlmanage', '-t', '-s', '1600', '-o', BUILD, PDF], capture_output=True)

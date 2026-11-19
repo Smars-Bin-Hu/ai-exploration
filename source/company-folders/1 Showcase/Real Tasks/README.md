@@ -12,6 +12,6 @@ The deck shows a lead what the agent really did and what the harness gave us: it
 4. The dark pages have no heading: the screenshot is the page. Write two or three sentences beside or under it: what it shows, and why it matters.
 5. Save the task page as HTML into the same folder.
 
-Good screenshots are listed in the notes of every page. See `_template/Sample (fake data).pdf` for a filled one. Only `_template/` and this file go to GitHub; real tasks never do.
+Good screenshots are listed in the notes of every page. See `_template/Sample (fake data).pdf` for a filled one. Nothing in this folder goes to GitHub. The template and the sample are in the repository, in `source/showcase/template/`.
 
 Build the template again: `.venv/bin/python source/showcase/build.py` (words in `source/showcase/text.py`), from the repository root.

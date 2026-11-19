@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(ROOT, 'source', 'tools'))
 from deck import Deck, T, P, R, C, SERIF, SANS
 import text as X
 
-OUT = os.path.join(ROOT, 'AI Exploration', '1 Showcase', 'Real Tasks', '_template')
+OUT = os.path.join(H, 'template')  # source/showcase/template/: the template and its sample, tracked; copy the .pptx to the company computer
 NOTE = ('One deck for one task. Replace every grey hint. For each screenshot, copy the page with the right shape (tall or wide), '
         'paste the picture over the dashed box and delete the box. The text explains the picture: what it shows and why it matters. ') + X.SHOTS
 
