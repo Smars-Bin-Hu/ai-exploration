@@ -11,6 +11,9 @@ A batch line may name the sentences around it: "out<TAB>text<TAB>before<TAB>afte
 checked model (vibevoice) a line under 7 words is then spoken between its two neighbours (or with the one there is)
 and cut out again.
 
+qwen3: every take is heard by Whisper and measured (length against its words, word errors, stretches without words);
+a take that fails is retaken with another seed, up to --retakes times (LIGHT_CHECKED below).
+
 Checked models (vibevoice): every take goes through Demucs (vocals kept: removes the background music VibeVoice
 sometimes adds), Whisper and the voice gate (likeness.py: WavLM likeness to the reference and median pitch); a take
 with music left in it, too fast or slow for its words, whose words do not match the text, or in another voice (a
@@ -87,6 +90,16 @@ LIKENESS_PY = Path(os.environ.get("LIKENESS_PY") or next(
     (p for p in (TTS_HOME / e / ".venv" / "bin" / "python" for e in ("wavlm", "chatterbox", "seedvc")) if p.exists()),
     TTS_HOME / "wavlm" / ".venv" / "bin" / "python"))
 WHISPER_PY = TTS_HOME / "whisper" / "venv" / "bin" / "python"
+
+# Models whose takes get the light check: no cleaning, just "did it say the text, and stop?" Qwen3-TTS sometimes does
+# not stop: it runs on to its token limit (8192 tokens, 11 minutes) in near-silence and murmured junk. Each take is
+# heard by Whisper and measured; a take that fails is retaken with another seed (--retakes), the best one kept.
+LIGHT_CHECKED = {"qwen3"}
+WPS = 3.2                 # expected words per second of voice (the presenter's clips: 3.0 to 3.6)
+VOICE_RATIO = (0.6, 1.6)  # seconds from the first heard word to the last, against words / WPS
+LEN_CAP = (2.0, 2.0)      # the whole take at most a * expected + b seconds
+MAX_WER = 0.15            # word errors (Whisper against the text) as a share of the text's words
+MAX_GAP = 2.0             # seconds without a heard word, inside the take or at either end
 HEARD = {"sql": "sequel", "claude": "clawed"}  # how Whisper writes words that pronounce.tsv respells for the model
 NUM = dict(zip("0 1 2 3 4 5 6 7 8 9 10".split(), "zero one two three four five six seven eight nine ten".split()))
 
@@ -174,6 +187,103 @@ def _jobs(python, script, job):
         sys.stderr.write(r.stderr[-2000:])
         sys.exit(f"{Path(script).name} failed (exit {r.returncode})")
     return [json.loads(x) for x in r.stdout.splitlines() if x.startswith("{")]
+
+
+def expected_s(text):
+    return len(text.split()) / WPS
+
+
+def wav_seconds(path):
+    import wave
+    with wave.open(str(path), "rb") as w:
+        return w.getnframes() / float(w.getframerate())
+
+
+def hear(wavs):
+    """-> {wav: check.py result}: Whisper transcript with word times."""
+    if not WHISPER_PY.exists():
+        sys.exit(f"the take check needs {WHISPER_PY.parent.parent} (mlx-whisper, see README.md); or give --no-check")
+    return {x["wav"]: x for x in _jobs(WHISPER_PY, HERE / "check.py", {"items": [{"wav": str(w)} for w in wavs]})}
+
+
+def _light_tokens(text):
+    """Words for the light check: symbols read out (Agent = Model + Harness), hyphens split (read-only)."""
+    return _tokens(re.sub(r"[-\u2010-\u2014/]", " ", text.replace("=", " equals ").replace("+", " plus ")))
+
+
+def _join_compounds(a, b):
+    """Two words of a that are one word of b (tool pack / Toolpack) -> one word, so a compound is no error."""
+    bs, out, j = set(b), [], 0
+    while j < len(a):
+        if j + 1 < len(a) and a[j] not in bs and a[j] + a[j + 1] in bs:
+            out.append(a[j] + a[j + 1]); j += 2
+        else:
+            out.append(a[j]); j += 1
+    return out
+
+
+def take_flags(text, dur, words):
+    """A light-checked take -> (flags, measures). text: what the model was given; dur: seconds of the take; words:
+    Whisper's [[word, start, end], ...]."""
+    exp = expected_s(text)
+    ws = [w for w in words if _norm(w[0])]
+    voice = ws[-1][2] - ws[0][1] if ws else 0.0
+    ref = _light_tokens(text)
+    hyp = [t for w in ws for t in _light_tokens(w[0])]
+    hyp = _join_compounds(hyp, ref)
+    ref = _join_compounds(ref, hyp)
+    ed = _edits(ref, hyp)
+    wer = ed / max(len(ref), 1)
+    edges = [0.0] + [t for w in ws for t in (w[1], w[2])] + [dur]
+    gap = max((edges[k + 1] - edges[k] for k in range(0, len(edges) - 1, 2)), default=dur)
+    flags = []
+    if dur > LEN_CAP[0] * exp + LEN_CAP[1]:
+        flags.append(f"{dur:.1f} s long, over {LEN_CAP[0] * exp + LEN_CAP[1]:.1f}")
+    if not VOICE_RATIO[0] <= voice / exp <= VOICE_RATIO[1]:
+        flags.append(f"{voice:.1f} s of voice for {exp:.1f} expected ({voice / exp:.2f}x)")
+    if wer > MAX_WER:
+        flags.append(f"word errors {wer:.0%}")
+    if gap > MAX_GAP:
+        flags.append(f"{gap:.1f} s without words")
+    m = dict(dur=round(dur, 2), expected=round(exp, 2), voice_s=round(voice, 2), ratio=round(voice / exp, 2),
+             wer=round(wer, 3), gap=round(gap, 2), heard=" ".join(w[0] for w in ws))
+    return flags, m
+
+
+def light_checked(a, items, job, python, backend, env_vars, tmp):
+    """Speak, hear (Whisper) and measure each take; retake a failing one with another seed, keep the best."""
+    takes = [[] for _ in items]
+    pending = list(range(len(items)))
+    for k in range(a.retakes + 1):
+        seed = a.seed + 101 * k
+        outs = {i: str(tmp / f"{i:04d}-t{k}.wav") for i in pending}
+        sub = dict(job, seed=seed, items=[{"out": outs[i], "text": items[i]["text"]} for i in pending])
+        r = subprocess.run([str(python), str(HERE / "backends" / backend)], input=json.dumps(sub), text=True,
+                           env=env_vars)
+        if r.returncode:
+            sys.exit(r.returncode)
+        heard = hear(outs.values())
+        still = []
+        for i in pending:
+            flags, m = take_flags(items[i]["text"], wav_seconds(outs[i]), heard[outs[i]]["words"])
+            takes[i].append(dict(m, take=k, seed=seed, flags=flags, wav=outs[i]))
+            if flags:
+                still.append(i)
+                print(f'[check] {Path(items[i]["out"]).name} take {k} seed {seed}: {", ".join(flags)}',
+                      file=sys.stderr)
+        pending = still
+        if not pending:
+            break
+    report = []
+    for it, tk in zip(items, takes):
+        best = min(tk, key=lambda t: (bool(t["flags"]), t["wer"], len(t["flags"]), abs(math.log(max(t["ratio"], 0.01)))))
+        shutil.copyfile(best["wav"], it["out"])
+        if len(tk) > 1 or best["flags"]:
+            print(f'[check] {Path(it["out"]).name}: take {best["take"]} of {len(tk)} kept, '
+                  + ("ok" if not best["flags"] else f'never passed: {", ".join(best["flags"])}'), file=sys.stderr)
+        report.append(dict(out=it["out"], text=it["text"], chosen=best["take"], flags=best["flags"], takes=tk))
+    if a.report:
+        Path(a.report).write_text(json.dumps(report, indent=1), encoding="utf-8")
 
 
 def checked(a, items, job, python, backend, env_vars, tmp):
@@ -307,13 +417,13 @@ def main():
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
                    help="model option, e.g. --set cfg_weight=0.3 (see the backend's docstring)")
-    p.add_argument("--no-check", action="store_true", help="checked models: no Demucs, no Whisper, no retakes")
+    p.add_argument("--no-check", action="store_true", help="checked models: no Demucs, no Whisper, no retakes (qwen3: no take check)")
     p.add_argument("--no-merge", action="store_true", help="checked models: speak short lines on their own")
     p.add_argument("--short-words", type=int, default=SHORT_WORDS,
                    help=f"checked models: a line under this many words is spoken with its neighbours (default {SHORT_WORDS})")
-    p.add_argument("--retakes", type=int, default=3, help="checked models: retakes of a flagged clip (default 3)")
+    p.add_argument("--retakes", type=int, default=3, help="checked models (and qwen3): retakes of a flagged clip (default 3)")
     p.add_argument("--keep-takes", metavar="DIR", help="checked models: keep every raw and cleaned take here")
-    p.add_argument("--report", metavar="FILE", help="checked models: write every take's measures here (JSON)")
+    p.add_argument("--report", metavar="FILE", help="checked models (and qwen3): write every take's measures here (JSON)")
     a = p.parse_args()
 
     ref = Path(a.ref).resolve()
@@ -363,6 +473,8 @@ def main():
     env_vars = dict(os.environ, PYTORCH_ENABLE_MPS_FALLBACK="1", TOKENIZERS_PARALLELISM="false")
     if base in CHECKED and not a.no_check:
         checked(a, items, job, python, backend, env_vars, tmp)
+    elif base in LIGHT_CHECKED and not a.no_check:
+        light_checked(a, items, job, python, backend, env_vars, tmp)
     else:
         job["items"] = [{"out": it["out"], "text": it["text"]} for it in items]
         r = subprocess.run([str(python), str(HERE / "backends" / backend)], input=json.dumps(job),

@@ -254,6 +254,7 @@ class Voice:
             # the sentence before it (or after it, for the first) and cuts it out; that neighbour is part of the key
             base = tts_say.MODELS.get(self.model, (None, None, self.model))[2]
             self.checked = base in tts_say.CHECKED
+            self.light = base in tts_say.LIGHT_CHECKED  # qwen3: each take heard and measured, see check_made()
             self.short_words = tts_say.SHORT_WORDS
             self.say = tts_say
             if self.checked:
@@ -331,6 +332,47 @@ class Voice:
                 kept.append(sents[k])
         return kept, failed
 
+    def check_made(self, chunks, adir, report=None):
+        """qwen3 (say.py LIGHT_CHECKED): every paragraph clip is checked once (Whisper words against the text, length,
+        stretches without words), so a clip made before the check, or one the model never stopped, is made again;
+        say.py retakes it until it passes. Measures are kept in audio/take-check.json by key and the clip's hash, so a
+        good clip keeps its key and is never made again. report: say.py's report of clips made just now (their best
+        take's measures, so a clip that never passed is listed, not made again on every build).
+        -> (to remake, never passed): [(chunk, flags)] each; to remake: failed and not retaken yet."""
+        if self.kind != 'tts' or not getattr(self, 'light', False):
+            return [], []
+        path = adir / 'take-check.json'
+        book = json.loads(path.read_text()) if path.exists() else {}
+        sha = lambda f: hashlib.sha1(f.read_bytes()).hexdigest()[:16]
+        if report:
+            by_out = {str(c['raw']): c for c in chunks}
+            for r in json.loads(Path(report).read_text()):
+                c = by_out.get(self.report_outs.get(r['out'], r['out']))
+                if c:
+                    book[c['key']] = dict(sha=sha(c['raw']), flags=r['flags'], retaken=True,
+                                          takes=[{k: t[k] for k in ('take', 'seed', 'flags', 'dur', 'ratio', 'wer', 'gap')}
+                                                 for t in r['takes']])
+        need = {}
+        for c in chunks:
+            if c['raw'].exists() and (c['key'] not in book or book[c['key']]['sha'] != sha(c['raw'])):
+                need[c['key']] = c
+        if need:
+            print(f'take check: hearing {len(need)} clip(s) ...', flush=True)
+            heard = self.say.hear([c['raw'] for c in need.values()])
+            for k, c in need.items():
+                flags, m = self.say.take_flags(self.spoken(c['text']), self.say.wav_seconds(c['raw']),
+                                               heard[str(c['raw'])]['words'])
+                book[k] = dict(m, sha=sha(c['raw']), flags=flags)
+        path.write_text(json.dumps(book, indent=0, sort_keys=True))
+        remake, never, seen = [], [], set()
+        for c in chunks:
+            b = book.get(c['key'])
+            if not b or not b['flags'] or c['key'] in seen:
+                continue
+            seen.add(c['key'])
+            (never if b.get('retaken') else remake).append((c, b['flags']))
+        return remake, never
+
     def make_all(self, items):
         """items: [(text, out_wav[, (before, after)])] -> each out_wav a 48 kHz mono 16-bit wav."""
         with tempfile.TemporaryDirectory() as td:
@@ -349,8 +391,10 @@ class Voice:
                 batch = Path(td) / 'lines.tsv'
                 batch.write_text(''.join(f'{raws[i]}\t{self.spoken(it[0])}' + (f'\t{self.spoken(it[2][0])}\t{self.spoken(it[2][1])}' if len(it) > 2 and any(it[2]) else '')
                                          + '\n' for i, it in enumerate(items)), encoding='utf-8')
-                report = ([] if not self.checked else
-                          ['--report', str(Path(items[0][1]).parent / f'say-report-{time.strftime("%Y%m%d-%H%M%S")}.json')])
+                self.report = (None if not (self.checked or getattr(self, 'light', False)) else
+                               Path(items[0][1]).parent / f'say-report-{time.strftime("%Y%m%d-%H%M%S")}.json')
+                report = ['--report', str(self.report)] if self.report else []
+                self.report_outs = {str(raws[i]): str(it[1]) for i, it in enumerate(items)}  # say.py's out -> clip
                 r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
                                     '--seed', str(self.seed), '--batch', str(batch)] + report)
                 if r.returncode:
@@ -2411,13 +2455,23 @@ def main():
             c['wav'] = adir / f'{c["key"]}-{fps}p.wav'
         voice.fps = fps
         kept_old, failed_old = voice.reuse_old(chunks, adir)
-        todo, seen = [], set()
+        bad, never = voice.check_made(chunks, adir)
+        for c, flags in bad:
+            print(f'  take check: line {c["line"]} failed ({", ".join(flags)}), made again', flush=True)
+        bad = [c for c, _ in bad]
+        todo, seen = list(bad), {c['key'] for c in bad}
         for c in chunks:
             if not c['raw'].exists() and c['key'] not in seen:
                 todo.append(c); seen.add(c['key'])
         if todo:
-            print(f'making {len(todo)} paragraph clip(s) with {voice.spec} ...', flush=True)
+            print(f'making {len(todo)} paragraph clip(s) with {voice.spec}'
+                  + (f' ({len(bad)} failed the take check)' if bad else '') + ' ...', flush=True)
             voice.make_all([(c['text'], c['raw'], c['around']) for c in todo])
+            if voice.light:
+                _, never = voice.check_made(chunks, adir, voice.report)
+        for c, flags in never:
+            print(f'  take check: line {c["line"]} never passed ({", ".join(flags)}): "{c["text"][:60]}"', flush=True)
+        remade = {c['raw'] for c in todo}  # a clip made again: its copy with pauses is made again too
         # pause marks ([.3]): the voice speaks the paragraph without them (the clip above, shared with the same text
         # unmarked), then silence goes in at the marked word boundaries; the clip with its pauses has its own key
         todo_p, seen_p = [], set()
@@ -2428,7 +2482,7 @@ def main():
                 c['key'] = h(c['key'], 'pauses', json.dumps(c['pauses']), PAUSE_VERSION)
                 c['raw'] = adir / f'{c["key"]}.wav'
                 c['wav'] = adir / f'{c["key"]}-{fps}p.wav'
-                if not c['raw'].exists() and c['key'] not in seen_p:
+                if (not c['raw'].exists() or c['src'] in remade) and c['key'] not in seen_p:
                     todo_p.append(c); seen_p.add(c['key'])
         if todo_p:
             pr = put_pauses(todo_p, adir, args)
