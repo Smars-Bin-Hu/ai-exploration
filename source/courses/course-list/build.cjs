@@ -1,4 +1,4 @@
-// The course list (Basic, Advanced, Harness tutorials side by side): one 16:9 PDF page and manifest.txt in "AI Exploration/3 Courses/", from courses.json.
+// The course list (Basic, Advanced, Harness tutorials side by side): one 16:9 PDF page in "AI Exploration/3 Courses/", from courses.json.
 //   node source/courses/course-list/build.cjs
 // Fonts: Source Serif 4 from FONTS (a folder of .ttf files), else <main checkout>/.claude/loops/assets/fonts, else the installed font.
 // Playwright: playwright, playwright-core, or ../smarshu.com/node_modules/playwright-core next to this repository.
@@ -75,19 +75,6 @@ h2{font-size:30px;font-weight:600;color:#e8590c}
 </body></html>`;
 }
 
-function manifest() {
-  const lines = ['Courses in this folder. ' + data.note, ''];
-  for (const s of data.series) {
-    lines.push(`${s.folder}/  (${s.about})`);
-    for (const c of s.courses) {
-      const st = c.state === 'video' ? `video, ${c.length}` : c.state === 'pdf' ? 'PDF for now' : 'planned';
-      lines.push(`  ${c.n.padEnd(4)}${st.padEnd(16)}${c.file || c.title}`);
-    }
-    lines.push('  ...                 and more to come', '');
-  }
-  return lines.join('\n');
-}
-
 (async () => {
   const { chromium } = loadPlaywright();
   let browser;
@@ -101,6 +88,5 @@ function manifest() {
   await page.screenshot({ path: path.join(here, '_preview.png') });
   await browser.close();
   fs.unlinkSync(tmp);
-  fs.writeFileSync(path.join(out, 'manifest.txt'), manifest());
-  console.log('wrote Course list.pdf and manifest.txt');
+  console.log('wrote Course list.pdf');
 })();

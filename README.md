@@ -49,7 +49,7 @@ Nothing else at the destination is touched. The path of the synced folder is not
 - `-Mirror` also deletes, in the three made-here items, files that are no longer in the clone.
 - A file open in PowerPoint or Acrobat cannot be copied: the script says so at the end. Close it and run again.
 - Do not run `git clean -x` in the clone: it deletes the ignored files.
-- To start a new item from nothing, copy the folder READMEs and the template from `source/company-folders/` and `source/showcase/template/`.
+- The Real Task template and a sample are in `source/showcase/template/`.
 
 ### Once, when moving to this way of working
 
