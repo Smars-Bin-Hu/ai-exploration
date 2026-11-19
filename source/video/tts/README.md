@@ -6,6 +6,15 @@ Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural E
 
 Tested November 2026 on an M1 Pro with 32 GB, macOS, Python 3.12 (GPT-SoVITS: 3.10).
 
+## The chosen setup
+
+On 18 November 2026 the author chose, and `build.py` now uses by default (`--voice tts:qwen3`, `--ref .claude/loops/voice/ref/talk-a.wav`):
+
+- **Qwen3-TTS 1.7B** (`qwen3`: `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16`, MLX, in-context cloning with the reference's words), one call per paragraph.
+- **A 10 to 15 s reference cut from the author's own natural talk**, not from reading: `talk-a.wav` is 11.8 s of the polished Hook take ("But here's the thing. … still using it as a chatbot, right?"), cut at word gaps, its words in `talk-a.txt`. The model copies the reference's delivery as well as its timbre, so a talked reference makes talked narration; `talk-b` to `talk-e` are other cuts of the same takes. Kokoro + Seed-VC, VibeVoice and GPT-SoVITS were rejected by ear the same day (Removed, at the end).
+- **A script in the author's style.** The voice only sounds like the author when the words are theirs too: write the script by `source/courses/basic-01/style/author-style.md` (clauses chained with "And" and "So", numbered points, "right" and "like" as tags, the author's sentence lengths), with pause marks (`[.3]`, `../FORMAT.md`) where the author pauses. `source/courses/basic-01/style/root-cause-author.md` is the approved example.
+- **Room tone in every gap.** The build fills each pause it inserts and each gap between clips with the voice's own room tone and fades every clip edge over 20 ms, so the narration never drops to digital silence (`../FORMAT.md`, Room tone).
+
 ## Round 7: a model fine-tuned on the presenter's recordings (GPT-SoVITS)
 
 Every model so far clones from a 10 to 15 s clip. GPT-SoVITS (RVC-Boss, `github.com/RVC-Boss/GPT-SoVITS`, MIT code and weights) is built to be fine-tuned on a few minutes of one speaker, so this round asked whether 4 minutes of the presenter's polished module recordings make a voice that is closer than the cloners, and at what cost. It has two models, both fine-tuned: a GPT that turns phonemes into semantic tokens, continuing the tokens of a short reference clip (this decides words, rhythm and melody), and SoVITS, a VITS decoder that turns the tokens into sound in the trained voice. Version v2ProPlus was used, the one its authors recommend for average-quality data at v2's cost; v3 and v4 lean more on the reference clip and need cleaner data; the new v5 was not tried.

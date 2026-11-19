@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build a tutorial video's audio, frames, Final Cut Pro timeline and rough mp4 from its scenes file.
 
-    .venv/bin/python source/video/build.py basic-01
-    .venv/bin/python source/video/build.py basic-01 --voice tts:qwen3 --ref .claude/loops/voice/ref/ref-13s.wav
+    .venv/bin/python source/video/build.py basic-01                           # Qwen3-TTS cloning the author's talk-a.wav
+    .venv/bin/python source/video/build.py basic-01 --ref .claude/loops/voice/ref/talk-b.wav   # another reference
     .venv/bin/python source/video/build.py basic-01 --voice rec               # the author's own takes, see below
     .venv/bin/python source/video/build.py basic-01 --rec-status              # which sentences are recorded
     .venv/bin/python source/video/build.py basic-01 --list-sentences          # the sentences as JSON, for the recorder
@@ -48,8 +48,19 @@ import render, fcpxml, subs, align, timing, rec, talk, avatar as speaker  # noqa
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
 DEFAULT_VOICE = 'tts:qwen3'   # Kokoro + Seed-VC rejected by the author (2026-11-18: too distorted) and removed
+# the chosen voice (2026-11-18): Qwen3-TTS 1.7B cloning 12 s cut from the author's own natural talk (not read aloud),
+# with the script written in the author's style (source/courses/basic-01/style/author-style.md); see tts/README.md
+DEFAULT_REF = ROOT / '.claude/loops/voice/ref/talk-a.wav'
 WHISPER_PY = ROOT / '.claude/loops/tts/whisper/venv/bin/python'
-TRIM_VERSION = 't1'   # bump when trim_and_pad changes, so every clip is cut again
+TRIM_VERSION = 't3'   # bump when trim_and_pad changes, so every clip is cut again
+# room tone: no inserted pause, padding or gap is digital silence (the room under the voice would vanish and come back,
+# an audible stop); each is the clip's own room tone, crossfaded in and out over EDGE, and every clip edge is faded
+SILENT_DB = -90.0     # a 10 ms frame quieter than this is digital silence, not room tone
+EDGE = RATE // 50     # 20 ms: the fade at every clip edge, and the crossfade into and out of room tone
+ROOM_TONE = ROOT / '.claude/loops/voice/ref/room-tone.wav'  # the author's room tone (2 s of a polished take), set to a
+# clip's floor, for a clip with too little room tone of its own
+BED_EASE = RATE // 8  # 125 ms: the room tone between clips eases from a clip edge's level to its own over this
+TONE_VERSION = 'rt3'  # bump when the room tone or the edge fades change, so every clip edge and the timeline's bed are made again
 SEG_VERSION = 's1'    # bump when the rough mp4's segments change
 LOUDNESS, PEAK = -18.0, -1.5   # every paragraph clip is set to this integrated loudness (LUFS), true peak at most PEAK dBTP
 LOUD_VERSION = 'n1'   # bump when normalise changes, so every clip is normalised again (no voice made again)
@@ -116,7 +127,7 @@ def parse(path):
 
 
 PAUSE_RX = re.compile(r'\[(\d*\.\d+|\d+(?:\.\d+)?)\]')  # a pause mark in a spoken line: [.3], [0.3], [1], seconds
-PAUSE_VERSION = 'p1'  # bump when put_pauses changes, so every clip with a pause mark is made again (from the same voice)
+PAUSE_VERSION = 'p3'  # bump when put_pauses changes, so every clip with a pause mark is made again (from the same voice)
 
 
 def split_pauses(line):
@@ -361,14 +372,196 @@ def probe_seconds(path):
     return float(r.stdout.strip())
 
 
+# ---------- room tone (see SILENT_DB, EDGE) ----------
+
+def _sat(x):
+    return -32768 if x < -32768 else 32767 if x > 32767 else int(round(x))
+
+
+def _rms_db(pcm):
+    return 10 * math.log10(max(sum(x * x for x in pcm) / max(len(pcm), 1), 1)) - 90.309
+
+
+def clip_tone(pcm, most=1.0):
+    """A clip's own room tone: its quietest stretches (50 ms or more within 6 dB of the 5th percentile of its 10 ms
+    frames, digital silence left out), spliced, up to `most` seconds (a made voice is dense: 0.2 to 0.5 s, looped, at
+    -66 to -77 dBFS). With under 0.2 s of its own: ROOM_TONE set to the level of what it has (or to its floor).
+    -> array('h'), empty only if there is neither."""
+    db = rec.db10(pcm)
+    live = sorted(d for d in db if d > SILENT_DB)
+    floor = live[len(live) // 20] if live else None
+    if floor is not None:
+        ok = lambda d: SILENT_DB < d <= floor + 6  # noqa: E731
+        segs, k, got = [], 0, 0
+        while k < len(db) and got < most * RATE:
+            if not ok(db[k]):
+                k += 1; continue
+            j = k
+            while j < len(db) and ok(db[j]):
+                j += 1
+            if j - k >= 5:
+                segs.append(pcm[(k + 1) * rec.HOP:(j - 1) * rec.HOP]); got += len(segs[-1])
+            k = j
+        if got >= RATE // 5:
+            return rec.splice(segs)
+        if segs:
+            floor = _rms_db(rec.splice(segs))
+    if not ROOM_TONE.exists():
+        return array.array('h')
+    ref = read_pcm(ROOM_TONE)
+    g = 10 ** (((floor if floor is not None else -70.0) - _rms_db(ref)) / 20)
+    return array.array('h', (_sat(x * g) for x in ref))
+
+
+def tone_loop(tone, n):
+    """n samples of room tone, looped with a crossfade at each seam (digital silence if there is no tone)."""
+    n = max(n, 0)
+    if not len(tone):
+        return array.array('h', bytes(2 * n))
+    out = array.array('h')
+    while len(out) < n:
+        if out:
+            xfade_append(out, tone, min(rec.XFADE, len(tone) // 4))
+        else:
+            out.extend(tone)
+    return out[:n]
+
+
+def tone_between(tone, n, before=(), after=()):
+    """n samples of room tone to go between `before` and `after` (the sound either side): where that sound is louder
+    than the tone, the tone starts (ends) at its level and eases to its own over BED_EASE (at most 12 dB up), so a
+    word's tail or a made voice's own noise does not step down into the room."""
+    fill = tone_loop(tone, n)
+    t = _rms_db(tone) if len(tone) else -120.0
+    w = RATE // 20
+    lift = lambda seg: min(max(_rms_db(seg) - t, 0.0), 12.0) if len(seg) else 0.0  # noqa: E731
+    up0, up1 = lift(before[-w:]), lift(after[:w])
+    if up0 or up1:
+        for q in range(len(fill)):
+            up = max(up0 * max(0.0, 1 - q / BED_EASE), up1 * max(0.0, 1 - (len(fill) - 1 - q) / BED_EASE))
+            if up:
+                fill[q] = _sat(fill[q] * 10 ** (up / 20))
+    return fill
+
+
+def xfade_append(out, seg, n=EDGE):
+    """Append seg to out (in place), its first n samples over out's last n: an equal-power crossfade (sin/cos), as for
+    two unrelated noises (room tone, the quiet of a pause), so the level holds through it."""
+    n = min(n, len(out), len(seg))
+    o = len(out) - n
+    for i in range(n):
+        r = (i + 0.5) / n * math.pi / 2
+        out[o + i] = _sat(out[o + i] * math.cos(r) + seg[i] * math.sin(r))
+    out.extend(seg[n:])
+
+
+def fill_silence(pcm, tone):
+    """Every stretch of digital silence (two 10 ms frames or more under SILENT_DB) -> room tone, crossfaded over EDGE
+    at both ends; the length is unchanged. -> (array('h'), seconds filled)."""
+    db, hop, hh = rec.db10(pcm), rec.HOP, EDGE // 2
+    runs, k = [], 0
+    while k < len(db):
+        if db[k] >= SILENT_DB:
+            k += 1; continue
+        j = k
+        while j < len(db) and db[j] < SILENT_DB:
+            j += 1
+        if j - k >= 2:
+            runs.append((k * hop, min(j * hop, len(pcm))))
+        k = j
+    if not runs or not len(tone):
+        return pcm, 0.0
+    out, last = array.array('h'), 0
+    for a, b in runs:  # the run's room tone reaches hh into the sound either side, under its crossfades
+        if a:
+            xfade_append(out, pcm[last:a + hh])
+        xfade_append(out, tone_between(tone, b - a + (hh if a else 0) + (hh if b < len(pcm) else 0),
+                                       pcm[max(0, a - hh - RATE // 20):max(0, a - hh)], pcm[b + hh:b + hh + RATE // 20]))
+        last = max(b - hh, 0) if b < len(pcm) else len(pcm)
+    xfade_append(out, pcm[last:])
+    return out[:len(pcm)], sum(b - a for a, b in runs) / RATE
+
+
+def edge_faded(path):
+    """A copy of a timeline clip with an EDGE fade (sin) at each end, which the room tone under it in the timeline
+    (cos, room_bed) crossfades with, so no clip starts or stops with a hard edge; and the clip's room tone.
+    -> (path of the copy, tone)."""
+    dst = path.with_name(f'{path.stem}-{TONE_VERSION}.wav')
+    tf = dst.with_name(dst.stem + '-tone.wav')
+    if not (dst.exists() and tf.exists()):
+        pcm = read_pcm(path)
+        write_pcm(tf, clip_tone(pcm))
+        n = min(EDGE, len(pcm) // 2)
+        for i in range(n):
+            g = math.sin((i + 0.5) / n * math.pi / 2)
+            pcm[i] = _sat(pcm[i] * g); pcm[-1 - i] = _sat(pcm[-1 - i] * g)
+        write_pcm(dst, pcm)
+    return dst, read_pcm(tf)
+
+
+def room_bed(clips, total, fps):
+    """The room tone under the whole timeline: wherever no clip plays, the room tone of the clip before it (of the first
+    clip, before that), faded in (cos) under each clip's fade-out and out under the next one's fade-in, so the sum holds
+    the level and never drops to digital silence between clips, paragraphs or scenes. Where a clip's edge (the 50 ms
+    inside its fade) is louder than its room tone, the tone starts at that level and eases down to its own over BED_EASE
+    (at most 12 dB up): no step from a word's tail to the room. clips: [dict(path, start, dur, tone)], in frames, the
+    clips' files faded by edge_faded. -> array('h'), total frames long."""
+    spf = RATE // fps
+    L = total * spf
+    bed = array.array('h', bytes(2 * L))
+    spans = []
+    for c in sorted(clips, key=lambda c: c['start']):
+        pcm, w = read_pcm(c['path']), RATE // 20
+        t = _rms_db(c['tone']) if len(c['tone']) else -120.0
+        lift = lambda seg: min(max(_rms_db(seg) - t, 0.0), 12.0) if len(seg) else 0.0  # noqa: E731
+        spans.append((c['start'] * spf, (c['start'] + c['dur']) * spf, c['tone'],
+                      lift(pcm[EDGE:EDGE + w]), lift(pcm[max(0, len(pcm) - EDGE - w):len(pcm) - EDGE])))
+    if not spans:
+        return bed
+    n_of = lambda s: min(EDGE, (s[1] - s[0]) // 2)  # noqa: E731
+    gaps = [(0, spans[0][0], spans[0][2], 0, n_of(spans[0]), 0.0, spans[0][3])]
+    for s0, s1 in zip(spans, spans[1:]):
+        gaps.append((s0[1], s1[0], s0[2], n_of(s0), n_of(s1), s0[4], s1[3]))
+    gaps.append((spans[-1][1], L, spans[-1][2], n_of(spans[-1]), 0, spans[-1][4], 0.0))
+    for e, a, tone, n_out, n_in, up_out, up_in in gaps:  # from a clip's end e to the next one's start a
+        lo, hi = e - n_out, a + n_in
+        if hi - lo <= 0 or a < e:  # clips that overlap: no bed between them
+            continue
+        fill = tone_loop(tone, hi - lo)
+        F = len(fill)
+        near_out, near_in = n_out + BED_EASE, n_in + BED_EASE
+        idx = range(F) if F <= near_out + near_in else [*range(near_out), *range(F - near_in, F)]
+        for q in idx:  # under a clip's fade (the clip sin, the bed cos), and easing from its edge's level
+            i = F - 1 - q
+            up = max(up_out * max(0.0, 1 - max(q - n_out, 0) / BED_EASE), up_in * max(0.0, 1 - max(i - n_in, 0) / BED_EASE))
+            g = 10 ** (up / 20)
+            if q < n_out:
+                g *= math.sin((q + 0.5) / n_out * math.pi / 2)
+            if i < n_in:
+                g *= math.sin((i + 0.5) / n_in * math.pi / 2)
+            fill[q] = _sat(fill[q] * g)
+        if lo == 0 or hi == L:  # the very start and end of the video: a short fade, not a step
+            fl = fill
+            for i in range(min(EDGE, len(fl))):
+                g = (i + 0.5) / EDGE
+                if lo == 0:
+                    fl[i] = _sat(fl[i] * g)
+                if hi == L:
+                    fl[-1 - i] = _sat(fl[-1 - i] * g)
+        bed[lo:hi] = fill
+    return bed
+
+
 def trim_and_pad(src, dst, fps, head=0.06, tail=0.15):
     """Copy a 48 kHz mono wav cut to its voice (by loudness, keeping `head` and `tail` seconds of what is around it, so no
-    word is cut), padded with silence to a whole number of frames, so every time in the timeline is exact.
+    word is cut), padded with its own room tone to a whole number of frames, so every time in the timeline is exact; any
+    digital silence left in it (a voice that starts or ends on it) is room tone too (fill_silence).
     -> (frames, vs, ve, off): the clip's length, where the voice starts and ends in it, and where the clip starts in
     src (seconds)."""
     import audioop, warnings
     with wave.open(str(src)) as w:
         data, n = w.readframes(w.getnframes()), w.getnframes()
+    tone = clip_tone(array.array('h', data))
     hop = RATE // 100  # 10 ms
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', DeprecationWarning)
@@ -380,13 +573,14 @@ def trim_and_pad(src, dst, fps, head=0.06, tail=0.15):
     else:
         v0, v1 = 0, n
     a, b = max(0, v0 - round(head * RATE)), min(n, v1 + round(tail * RATE))
-    data = data[2 * a:2 * b]
+    pcm, _ = fill_silence(array.array('h', data[2 * a:2 * b]), tone)
     m = b - a
     spf = RATE // fps
     frames = max(1, math.ceil(m / spf))
-    data += b'\0\0' * (frames * spf - m)
+    if frames * spf > m:  # the padding: room tone, crossfaded in under the clip's last EDGE
+        xfade_append(pcm, tone_between(tone, frames * spf - m + min(EDGE, m), pcm[:max(0, m - EDGE)]), min(EDGE, m))
     with wave.open(str(dst), 'wb') as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(data)
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(pcm[:frames * spf].tobytes())
     return frames, round((v0 - a) / RATE, 4), round((v1 - a) / RATE, 4), round(a / RATE, 4)
 
 
@@ -1846,11 +2040,11 @@ def chunk_pauses(c, sents, lines):
 
 
 def put_pauses(todo, adir, args):
-    """Pause marks -> silence in the made voice. Each clip in todo has src (the voice as made from its text, marks left
+    """Pause marks -> pauses in the made voice, filled with its own room tone (clip_tone), never digital silence. Each clip in todo has src (the voice as made from its text, marks left
     out, so the voice says the paragraph in one go), text, pauses [(words before, seconds)] and raw (where the clip with
     its pauses goes). The words' times come from mlx-whisper on src (cached like align_all); a mark between word k-1 and
     word k tops the pause there up to its length: the quiet already between the two words counts (the voice's own comma
-    or sentence pause), and silence is put in at the quietest 10 ms of it. Without word times, where the letters say.
+    or sentence pause), and room tone is put in at the quietest 10 ms of it. Without word times, where the letters say.
     -> dict(marks, added (seconds), already (marks the voice's own pause already covered), letters (placed by letters))."""
     import difflib
     rep = dict(marks=0, added=0.0, already=0, letters=0)
@@ -1880,7 +2074,7 @@ def put_pauses(todo, adir, args):
         chars = [0]
         for wd in words:
             chars.append(chars[-1] + len(wd) + 1)
-        inserts = []  # (10 ms frame where silence goes in, seconds of silence)
+        inserts = []  # (10 ms frame where the pause goes in, its seconds)
         for k, sec in c['pauses']:
             rep['marks'] += 1
             before = [at[i][1] for i in range(k - 1, -1, -1) if i in at][:1]
@@ -1912,19 +2106,16 @@ def put_pauses(todo, adir, args):
             inserts.append((at_f, round(sec - have, 3)))
             rep['added'] += sec - have
         pcm = array.array('h', data)
+        tone = clip_tone(pcm)  # the pause is the clip's own room tone, not digital silence
         out, last = array.array('h'), 0
-        hop, fade = RATE // 100, RATE // 200  # 10 ms frames; 5 ms fades into and out of the silence
+        hop, hh = RATE // 100, EDGE // 2  # 10 ms frames; the voice crossfades into the room tone over EDGE, centred on the cut
         for f, sec in sorted(inserts):
-            cut = min(f * hop + hop // 2, len(pcm))  # the middle of the quietest 10 ms
-            piece = pcm[last:cut]
-            for j in range(min(fade, len(piece))):  # fade out into the silence
-                piece[len(piece) - 1 - j] = int(piece[len(piece) - 1 - j] * j / fade)
-            out += piece
-            out += array.array('h', bytes(2 * round(sec * RATE)))
-            last = cut
-            for j in range(min(fade, len(pcm) - cut)):  # fade back in after it
-                pcm[cut + j] = int(pcm[cut + j] * j / fade)
-        out += pcm[last:]
+            cut = min(max(f * hop + hop // 2, hh), len(pcm) - hh)  # the middle of the quietest 10 ms
+            xfade_append(out, pcm[last:cut + hh])
+            xfade_append(out, tone_between(tone, round(sec * RATE) + EDGE, pcm[max(0, cut - hh - RATE // 20):cut - hh],
+                                           pcm[cut + hh:cut + hh + RATE // 20]))  # adds exactly sec: EDGE of it under the crossfades
+            last = cut - hh
+        xfade_append(out, pcm[last:])
         tmp = Path(str(c['raw']) + '.part.wav')
         with wave.open(str(tmp), 'wb') as w:
             w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(out.tobytes())
@@ -1975,22 +2166,23 @@ def main():
                     f'(speak it with the default voice, {DEFAULT_VOICE}, to preview a partly recorded video), or any '
                     '--voice value but rec')
     ap.add_argument('--rate', type=int, help='say only: words per minute')
-    ap.add_argument('--ref', default=str(ROOT / '.claude/loops/voice/ref/ref-13s.wav'),
-                    help='tts only: reference voice wav; its words in the .txt next to it')
+    ap.add_argument('--ref', default=str(DEFAULT_REF),
+                    help='tts only: reference voice wav; its words in the .txt next to it (default: 12 s of the author\'s '
+                    'own natural talk)')
     ap.add_argument('--seed', type=int, default=1, help='tts only: seed passed to tts/say.py')
     ap.add_argument('--tts-python', help='tts only: python that runs tts/say.py (default: this one)')
     ap.add_argument('--jobs', type=int, help='say only: clips made at once (default 4)')
     R = timing.Rules()
-    ap.add_argument('--gap', type=float, default=R.gap, help='seconds of silence between two clips of one long paragraph '
+    ap.add_argument('--gap', type=float, default=R.gap, help='seconds of room tone between two clips of one long paragraph '
                     '(inside a clip the voice keeps its own pauses)')
-    ap.add_argument('--para-gap', type=float, default=R.para_gap, help='seconds of silence between paragraphs on the same picture')
+    ap.add_argument('--para-gap', type=float, default=R.para_gap, help='seconds of room tone between paragraphs on the same picture')
     ap.add_argument('--para-max', type=float, default=20.0, help='a paragraph longer than this many seconds of speech (at '
                     f'{CPS:.0f} letters a second) is spoken in runs of whole sentences of about equal length')
     ap.add_argument('--dwell', type=float, default=R.dwell, help='when the picture changes between paragraphs: seconds the '
                     'outgoing picture stays after the words end, before the next one fades in')
     ap.add_argument('--busy', type=float, default=R.busy, help='seconds added to --dwell when the outgoing picture is busy '
                     '(a screenshot, a list of 4+ items, a figure with many words)')
-    ap.add_argument('--scene-gap', type=float, default=R.scene_gap, help='seconds of silence between scenes (at least dwell + lead)')
+    ap.add_argument('--scene-gap', type=float, default=R.scene_gap, help='seconds of room tone between scenes (at least dwell + lead)')
     ap.add_argument('--lead', type=float, default=R.lead, help='a new picture starts fading in this many seconds before its first word')
     ap.add_argument('--min-hold', type=float, default=R.min_hold, help='a picture stays at least this many seconds before a '
                     'different picture; shorter beats are merged')
@@ -2240,7 +2432,7 @@ def main():
                     todo_p.append(c); seen_p.add(c['key'])
         if todo_p:
             pr = put_pauses(todo_p, adir, args)
-            print(f'pause marks: {pr["marks"]} in {len(todo_p)} clip(s), {pr["added"]:.1f} s of silence put in; '
+            print(f'pause marks: {pr["marks"]} in {len(todo_p)} clip(s), {pr["added"]:.1f} s of room tone put in; '
                   f'{pr["already"]} already as long in the voice'
                   + (f'; {pr["letters"]} placed by letter count (no word times)' if pr['letters'] else ''))
         todo += [c for c in todo_p if c not in todo]  # a clip made just now and given its pauses is listed once
@@ -2324,8 +2516,10 @@ def main():
         p['xfade'] = trans[j][0] if j else 0
 
     # 4. outputs, only when the timeline changed
-    clips = [dict(path=s['norm'], name=f'{i + 1:03d} {s["text"][:50]}', start=s['start'], dur=s['frames'])
-             for i, s in enumerate(sents)]
+    clips = []
+    for i, s in enumerate(sents):  # each clip faded at its ends, over the room tone under the timeline (room_bed)
+        path, tone = edge_faded(s['norm'])
+        clips.append(dict(path=path, name=f'{i + 1:03d} {s["text"][:50]}', start=s['start'], dur=s['frames'], tone=tone))
     frames = [dict(path=p['frame'], name=p['name'], start=p['start'], dur=p['dur'], xfade=p['xfade']) for p in shown]
     # subtitles: one cue per spoken line, from the word its line starts with to the next line's (the last one of a
     # sentence: to a moment after the words end); long lines split into cues in a row
@@ -2372,7 +2566,14 @@ def main():
     burn = captions[0][1] if captions and not args.no_burn else None
 
     tl = json.dumps([[(str(c['path']), c['start'], c['dur']) for c in clips],
-                     [(str(f['path']), f['start'], f['dur'], f['xfade']) for f in frames], title, fps, total])
+                     [(str(f['path']), f['start'], f['dur'], f['xfade']) for f in frames], title, fps, total, TONE_VERSION])
+    # the room tone under the whole timeline, a wav of its own (in Final Cut Pro too, on the lane under the voice)
+    bed_path = out / f'room-tone-{h(tl)}.wav'
+    if not bed_path.exists():
+        for f in out.glob('room-tone-*.wav'):
+            f.unlink()
+        write_pcm(bed_path, room_bed(clips, total, fps))
+    bed = read_pcm(bed_path)
     # the speaking avatar: one overlay video for the whole timeline, made again only when the audio, its times or the avatar change
     overlay, made_ov = None, []
     if avatar and not still_avatar:
@@ -2381,7 +2582,7 @@ def main():
         if not ov.exists() or not speaker.preview_path(ov).exists():
             t1 = time.time()
             try:
-                info = speaker.make(ov, track=mix(clips, total, fps), rate=RATE, fps=fps, total=total,
+                info = speaker.make(ov, track=mix(clips, total, fps, bed), rate=RATE, fps=fps, total=total,
                                     sentence_starts=[c['start'] + round(s['vs'] * fps) for c, s in zip(clips, sents)],
                                     avatar_path=avatar)
             except RuntimeError as e:
@@ -2397,11 +2598,11 @@ def main():
     if state.get('fcpxml') != sig or not fx.exists():
         fcpxml.write(fx, title=title, event=f'{args.video} (video pipeline)', fps=fps, width=render.W, height=render.H,
                      pictures=frames, clips=clips, total=total, version=args.fcpxml_version, captions=captions,
-                     overlay=overlay)
+                     overlay=overlay, bed=bed_path)
         state['fcpxml'] = sig; made_out.append(fx.name)
     made_segs = 0
     if not args.no_mp4 and (state.get('mp4') != sig_mp4 or not mp4.exists()):
-        made_segs = rough(mp4, frames, clips, total, fps, out, burn, overlay)
+        made_segs = rough(mp4, frames, clips, total, fps, out, burn, overlay, bed)
         state['mp4'] = sig_mp4; made_out.append(f'{mp4.name} ({made_segs} segments made)')
     state_path.write_text(json.dumps(state, indent=1))
 
@@ -2537,16 +2738,20 @@ def main():
         ), indent=1), encoding='utf-8')
 
 
-def mix(clips, total, fps):
-    """The whole timeline's audio: 16-bit mono PCM at RATE, each clip at its start."""
+def mix(clips, total, fps, bed=None):
+    """The whole timeline's audio: 16-bit mono PCM at RATE, each clip at its start, over the room tone `bed` (room_bed:
+    it is there only between clips and under their faded ends, so where they meet the two add up)."""
     spf = RATE // fps
-    track = bytearray(total * spf * 2)
+    track = array.array('h', bed) if bed is not None else array.array('h', bytes(2 * total * spf))
     for c in clips:
-        with wave.open(str(c['path'])) as w:
-            data = w.readframes(w.getnframes())
-        at = c['start'] * spf * 2
-        track[at:at + len(data)] = data
-    return bytes(track)
+        data = read_pcm(c['path'])
+        at = c['start'] * spf
+        n = min(EDGE, len(data) // 2)
+        for i in list(range(n)) + list(range(len(data) - n, len(data))):
+            if at + i < len(track):
+                data[i] = _sat(data[i] + track[at + i])
+        track[at:at + len(data)] = data[:max(0, len(track) - at)]
+    return track.tobytes()
 
 
 def segments(frames, total):
@@ -2588,11 +2793,11 @@ def segment(seg, dst, fps):
     tmp.replace(dst)
 
 
-def rough(mp4, frames, clips, total, fps, out, burn=None, overlay=None):
+def rough(mp4, frames, clips, total, fps, out, burn=None, overlay=None, bed=None):
     """Stills with cross-dissolves plus one audio track: a quick check that words and pictures line up.
     The picture track is made of small pieces (a still held, or a dissolve between two), each cached by what it shows
     and how long, then joined and laid under the avatar and the subtitles in one pass. -> pieces made."""
-    track = mix(clips, total, fps)
+    track = mix(clips, total, fps, bed)
     sdir = out / 'segments'
     sdir.mkdir(exist_ok=True)
     segs = segments(frames, total)

@@ -1,5 +1,6 @@
 # Writes a Final Cut Pro XML (1.10 by default: FCP 10.6 and later import it; 1.11 needs FCP 10.6.6 or later).
-# One event, one project: the frames as stills on the primary storyline, each sentence's audio connected below it (lane -1).
+# One event, one project: the frames as stills on the primary storyline, each sentence's audio connected below it (lane -1),
+# and the room tone under the whole timeline below that (lane -2): with it, the gaps between clips are never digital silence.
 # Between two stills, a Cross Dissolve transition on the primary storyline, centred on the edit point: the stills keep
 # their places (a still has endless handles), the transition overlaps both by half its length.
 # Every time is a whole number of frames, written as a rational number of seconds.
@@ -7,7 +8,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import quote
 
-VERSION = 'x2'  # bump when the output changes, so build.py writes it again
+VERSION = 'x3'  # bump when the output changes, so build.py writes it again
 CROSS_DISSOLVE = 'FxPlug:4731E73A-8DAC-4113-9A30-AE85B1761265'  # FCP's built-in Cross Dissolve (PAECrossDissolve)
 
 
@@ -15,7 +16,8 @@ def _url(path):
     return 'file://' + quote(str(Path(path).resolve()))
 
 
-def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10', captions=(), overlay=None):
+def write(out, *, title, event, fps, width, height, pictures, clips, total, version='1.10', captions=(), overlay=None,
+          bed=None):
     """pictures: [dict(path, name, start, dur, xfade)] in frames, contiguous from 0 to total; xfade: frames of the
     cross-dissolve into this picture (even, 0 = a cut), centred on its start.
     clips: [dict(path, name, start, dur)] in frames, absolute; each must fall inside one picture.
@@ -23,7 +25,8 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
     overlay: dict(path, size, centre): a square video with alpha (the speaking avatar), the whole length, on the lane above the
     caption lanes, above the
     stills, at its own pixel size (adjust-conform none) with its centre moved to `centre` (x, y in pixels from the top left).
-    adjust-transform's position is relative to the frame's centre, in per cent of the frame height, y up."""
+    adjust-transform's position is relative to the frame's centre, in per cent of the frame height, y up.
+    bed: a mono 48 kHz wav as long as the timeline, the room tone between and under the clips' faded ends (build.room_bed)."""
     unit = {25: (100, 2500), 30: (100, 3000), 50: (100, 5000), 60: (100, 6000)}[fps]
 
     def t(frames):
@@ -65,6 +68,8 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
         ET.SubElement(a, 'media-rep', kind='original-media', src=_url(overlay['path']))
     for c in clips:
         asset(c['path'], c['name'], c['dur'])
+    if bed:
+        asset(bed, 'room tone', total)
 
     lib = ET.SubElement(root, 'library')
     ev = ET.SubElement(lib, 'event', name=event)
@@ -93,6 +98,9 @@ def write(out, *, title, event, fps, width, height, pictures, clips, total, vers
             px = lambda d: f'{d / height * 100:.4f}'.rstrip('0').rstrip('.')
             ET.SubElement(oc, 'adjust-conform', type='none')
             ET.SubElement(oc, 'adjust-transform', position=f'{px(overlay["centre"][0] - width / 2)} {px(height / 2 - overlay["centre"][1])}')
+        if bed and p['start'] == 0:  # connected to the first still, running past it to the end, under the voice
+            ET.SubElement(v, 'asset-clip', ref=ids[str(bed)], lane='-2', offset=t(base), name='room tone', start='0s',
+                          duration=t(total), audioRole='dialogue')
         while ci < len(clips) and clips[ci]['start'] < end:
             c = clips[ci]
             assert c['start'] >= p['start'], 'an audio clip starts before its picture'
