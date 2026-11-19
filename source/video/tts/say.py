@@ -81,10 +81,11 @@ LIKE_LIMIT = (0.50, 0.16, 0.66, 0.88)  # limit = a + b * seconds of voice, kept 
 PITCH_UP_ST = 6.0         # median pitch more than this many semitones over the reference's (117 Hz -> 165 Hz)
 PITCH_DOWN_ST = 8.0       # or more than this many under it (117 Hz -> 74 Hz): creak all through
 DEMUCS_PY = TTS_HOME / "demucs" / ".venv" / "bin" / "python"
-# any env with torch, transformers and librosa; chatterbox was removed (README.md), seedvc has them too
+# any env with torch, transformers and librosa: the wavlm env (torch, transformers 4.46.3, librosa, soundfile) is
+# kept for this; chatterbox and seedvc, which had them too, are removed or going
 LIKENESS_PY = Path(os.environ.get("LIKENESS_PY") or next(
-    (p for p in (TTS_HOME / e / ".venv" / "bin" / "python" for e in ("chatterbox", "seedvc")) if p.exists()),
-    TTS_HOME / "chatterbox" / ".venv" / "bin" / "python"))
+    (p for p in (TTS_HOME / e / ".venv" / "bin" / "python" for e in ("wavlm", "chatterbox", "seedvc")) if p.exists()),
+    TTS_HOME / "wavlm" / ".venv" / "bin" / "python"))
 WHISPER_PY = TTS_HOME / "whisper" / "venv" / "bin" / "python"
 HEARD = {"sql": "sequel", "claude": "clawed"}  # how Whisper writes words that pronounce.tsv respells for the model
 NUM = dict(zip("0 1 2 3 4 5 6 7 8 9 10".split(), "zero one two three four five six seven eight nine ten".split()))
