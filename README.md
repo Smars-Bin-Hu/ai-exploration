@@ -24,7 +24,7 @@ python3 -m venv .venv && .venv/bin/pip install python-pptx pillow
 
 Every build needs Google Chrome and `playwright-core` from `~/Developer/smarshu.com`. Run from the repository root.
 
-- **0 MUST READ** (the folder's map): `python3 source/must-read/build.py`. The text is `source/must-read/page.html`; the build checks that the page is one A4 page and that every folder and file it names exists.
+- **0 MUST READ** (the folder's map): the PowerPoint `source/must-read/0 MUST READ.pptx` is the one to edit (text boxes and pictures; right-click a picture > Change Picture). Export its PDF from PowerPoint to `AI Exploration/0 MUST READ.pdf`. `.venv/bin/python source/must-read/build.py` writes both files from its own layout, so run it only to start over: it overwrites hand edits. It checks that the page is one A4 page and that every folder it names exists. The pictures are in `source/must-read/img/` (`thumbs.py` makes them).
 - **Harness Guide:** `python3 source/guide/build.py` (also needs pandoc). How it is written: `source/guide/RULES.md`. How to build the agent in M365 Copilot: `source/guide/AGENT.md`. The questions it is tested with, with their expected answers: `source/guide/questions.md`; never put this file where the agent can read it.
 - **Why AI-assisted development has not taken off** (the leader deck): the PowerPoint `source/start-here/Why AI-assisted development has not taken off.pptx` is the one to edit. Once it is edited by hand it is the newer one: export its PDF from PowerPoint to `AI Exploration/1 Showcase/Why AI-assisted development has not taken off.pdf`, and do not run `source/start-here/build.py` over it (that script writes both files from `slides.py`).
 - **Real Tasks template:** `.venv/bin/python source/showcase/build.py`.

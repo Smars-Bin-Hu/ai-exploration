@@ -12,7 +12,7 @@ def save(im, name):
 def crop(path, box): return Image.open(path).convert('RGB').crop(box)
 
 V = '.claude/loops/video-out/samples/'
-save(crop('source/start-here/_pages/p01.png', (100, 90, 1600, 1077)), 'showcase-cover')
+save(crop('source/start-here/_pages/p01.png', (60, 0, 1700, 1080)), 'showcase-cover')
 save(crop('source/showcase/_pages/sample/p02.png', (0, 0, 1920, 1080)), 'showcase-task')
 save(crop(V + '01-card-stop-using-ai-the-2024-way-kicker-b.png', (0, 0, 1700, 1080)), 'video-title')
 save(crop(V + '02-board-one-11-plan-crop-0-021-0-335-0-958.png', (0, 0, 1700, 1080)), 'video-plan')
