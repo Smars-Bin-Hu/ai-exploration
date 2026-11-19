@@ -3,30 +3,59 @@
 
     .venv/bin/python source/video/build.py basic-01
     .venv/bin/python source/video/build.py basic-01 --voice tts:qwen3 --ref .claude/loops/voice/ref/ref-13s.wav
+    .venv/bin/python source/video/build.py basic-01 --voice rec               # the author's own takes, see below
+    .venv/bin/python source/video/build.py basic-01 --rec-status              # which sentences are recorded
+    .venv/bin/python source/video/build.py basic-01 --list-sentences          # the sentences as JSON, for the recorder
+    .venv/bin/python source/video/build.py basic-01 --check-take <id>         # one take checked, JSON
 
 Reads source/courses/<video>/scenes.md (or scenes-draft.md; --scenes FILE overrides), see source/video/FORMAT.md.
 Writes .claude/loops/video-out/<video>/: audio/ (one wav per paragraph, and its sentences cut out of it), frames/ (one png
 per @ line), avatar-<hash>.mov (the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio
 (one clip per paragraph), its word times, frames and the mp4's pieces are cached by what made them, so a rerun makes only
 what changed. Timing rules: timing.py.
+
+Recorded voice (--voice rec): one take per sentence in .claude/loops/voice/rec/<video>/<id>.wav, id = the first 12 hex
+of the sha1 of the sentence's text (as --list-sentences prints it). Each take is polished (rec.py: fillers, repeats and
+a false start cut, DeepFilterNet denoise, high-pass, level, gentle compression, de-ess, long pauses shortened, cut to its
+voice); a paragraph's takes are joined --rec-gap apart over their room tone and go on like a spoken paragraph clip
+(loudness, word times, cut into sentences, timeline). A new take makes only its paragraph again. Missing takes stop the
+build, unless --rec-missing tts. --check-take <id> checks one take for the recording pane (JSON). See FORMAT.md,
+Recorded voice.
 """
-import argparse, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
+import argparse, array, hashlib, json, math, os, re, shlex, subprocess, sys, tempfile, time, wave
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(HERE))
-import render, fcpxml, subs, align, timing, avatar as speaker  # noqa: E402
+import render, fcpxml, subs, align, timing, rec, avatar as speaker  # noqa: E402
 
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
+DEFAULT_VOICE = 'tts:kokoro-seedvc'
 WHISPER_PY = ROOT / '.claude/loops/tts/whisper/venv/bin/python'
 TRIM_VERSION = 't1'   # bump when trim_and_pad changes, so every clip is cut again
 SEG_VERSION = 's1'    # bump when the rough mp4's segments change
 LOUDNESS, PEAK = -18.0, -1.5   # every paragraph clip is set to this integrated loudness (LUFS), true peak at most PEAK dBTP
 LOUD_VERSION = 'n1'   # bump when normalise changes, so every clip is normalised again (no voice made again)
 CPS = 16.0            # letters per second the voice speaks (Kokoro am_fenrir: 16 to 17), to keep a clip under --para-max
+# --voice rec: the author's own takes, one wav per sentence, in REC_DIR/<video>/<id>.wav (FORMAT.md, Recorded voice;
+# rec.py has the steps)
+REC_DIR = ROOT / '.claude/loops/voice/rec'
+DF_PY = ROOT / '.claude/loops/tts/deepfilter/venv/bin/python'   # DeepFilterNet, see denoise.py
+DF_ATTEN = 12         # dB DeepFilterNet takes off at most: gentle (the voice changed by 0.1 to 0.2 dB in each band)
+# the fallback (--rec-denoise afftdn, or no DeepFilterNet): nr=8 takes 4-5 dB off a -65 dBFS room tone, the voice
+# unchanged, the room tone left a steady hiss (nr=20 makes it warble)
+AFFTDN = 'afftdn=nr=8:nf=-55:tn=1'
+REC_LEVEL = -20.0     # each take is set to this loudness (LUFS) before compression, so takes made on other days match
+# after the denoise: rumble off, the level, a gentle compressor (2:1 above -18 dB, 6 dB knee: only the loud words), and
+# a de-esser to take back the s the compressor brings forward (measured on say-made takes, each band 80 Hz-16 kHz within
+# -0.1 to +1.1 dB of the take; 2.5:1 above -24 dB lifted 3-16 kHz by 2.5 to 4.5 dB, which a de-esser at 0.3 did not undo)
+REC_DYN = ('highpass=f=80,volume={gain}dB,acompressor=threshold=-18dB:ratio=2:attack=15:release=200:knee=6,'
+           'deesser=i=0.4')
+REC_HEAD, REC_TAIL = 0.08, 0.15   # seconds kept before and after the voice of each take
+REC_VERSION = 'r2'    # bump when the polish changes (here or in rec.py), so every take is polished again
 
 
 def die(msg):
@@ -194,7 +223,7 @@ class Voice:
                 if self.pron:
                     self.settings += ('pron', hashlib.sha1(pf.read_bytes()).hexdigest()[:12])
         else:
-            die(f'--voice must be say, say:<voice name> or tts:<model>, not {args.voice}')
+            die(f'--voice must be say, say:<voice name>, tts:<model> or rec, not {args.voice}')
 
     def around(self, sents, k, version=None):
         """-> (before, after): the neighbours a short sentence is spoken with, or ('', ''). Since check version c3 both
@@ -336,10 +365,11 @@ def ebur128(path):
     return float(i.group(1)), float(p.group(1))
 
 
-def normalise(src, dst):
-    """Copy a clip at LOUDNESS LUFS integrated, its true peak at most PEAK dBTP: one gain, and a lookahead limiter on
+def normalise(src, dst, target=LOUDNESS):
+    """Copy a clip at `target` LUFS integrated, its true peak at most PEAK dBTP: one gain, and a lookahead limiter on
     the few peaks a gain would push past PEAK (delay compensated, so the clip keeps its length and timing).
     -> dict(lufs, peak, gain, limited, lufs_out, peak_out)."""
+    LOUDNESS = target  # noqa: N806 (the loop below sets the clip to this)
     lufs, peak = ebur128(src)
     gain, out = LOUDNESS - lufs, None
     if lufs < -60:  # no voice to measure: leave it as it is
@@ -360,6 +390,252 @@ def normalise(src, dst):
             break
         gain += LOUDNESS - out[0]
     return dict(lufs=lufs, peak=peak, gain=round(gain, 2), limited=limited, lufs_out=out[0], peak_out=out[1])
+
+
+# ---------- recorded voice (--voice rec; the audio and text work is in rec.py) ----------
+
+def sentence_id(text):
+    """A sentence's recording id: the first 12 hex of the sha1 of its text (UTF-8, whitespace collapsed)."""
+    return hashlib.sha1(re.sub(r'\s+', ' ', text).strip().encode('utf-8')).hexdigest()[:12]
+
+
+def spoken_lines(scenes):
+    """The spoken lines of a parsed scenes file, in order: [dict(text, line, scene, brk)]."""
+    return [dict(text=it['text'], line=it['line'], scene=si, brk=it['brk'])
+            for si, sc in enumerate(scenes) for kind, it in sc['items'] if kind == 'say']
+
+
+def rec_paths(sents, rdir):
+    """Sets on each sentence its id and take (the current take's path, or None). -> the sentences with no take."""
+    for s in sents:
+        s['id'] = sentence_id(s['text'])
+        f = rdir / f'{s["id"]}.wav'
+        s['take'] = f if f.exists() else None
+    return [s for s in sents if s['take'] is None]
+
+
+def rec_settings(args):
+    """What a cleaned take depends on, besides the take itself (its key), and the denoiser to use."""
+    den = args.rec_denoise
+    if den == 'df' and not DF_PY.exists():
+        print(f'  note: no {DF_PY.relative_to(ROOT)}; denoising with ffmpeg afftdn instead (DeepFilterNet: see source/video/denoise.py)')
+        den = 'afftdn'
+    den_key = {'df': f'df3-{DF_ATTEN}', 'afftdn': AFFTDN, 'none': 'none'}[den]
+    return den, h(REC_VERSION, den_key, REC_LEVEL, REC_DYN, REC_HEAD, REC_TAIL, rec.PAUSE_MAX, rec.PAUSE_KEEP,
+                  rec.PROMPT_VERSION, args.whisper_model)[:8]
+
+
+def decode(src, dst):
+    """Any audio file -> 48 kHz mono 16-bit wav. -> its samples."""
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(src), '-af', 'aformat=sample_rates=48000:channel_layouts=mono',
+                        '-c:a', 'pcm_s16le', str(dst)], capture_output=True, text=True)
+    if r.returncode:
+        die(f'ffmpeg could not read {src}: {r.stderr.strip()[-300:]}')
+    return read_pcm(dst)
+
+
+def read_pcm(path):
+    with wave.open(str(path)) as w:
+        return array.array('h', w.readframes(w.getnframes()))
+
+
+def write_pcm(path, pcm):
+    tmp = Path(str(path) + '.part.wav')
+    with wave.open(str(tmp), 'wb') as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(pcm.tobytes())
+    tmp.replace(path)
+
+
+def take_words(ss, wdir, args):
+    """Whisper word times of each take, fillers and repeats kept (rec.verbatim), cached under the take's hash in wdir.
+    Sets s['words'] ([[word, start, end]] in the take's seconds, or None when there is no Whisper)."""
+    tag = h(args.whisper_model, rec.PROMPT_VERSION)[:6]
+    for s in ss:
+        s['take_hash'] = s.get('take_hash') or hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
+        s['words_file'] = wdir / f'{s["take_hash"]}-{tag}.json'
+    todo = [s for s in ss if not s['words_file'].exists()]
+    if todo and not Path(args.whisper_python).exists():
+        print(f'  note: no {args.whisper_python}; takes are not checked for fillers, repeats and restarts', file=sys.stderr)
+    elif todo:
+        wdir.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory() as td:
+            jobs = Path(td) / 'jobs.json'
+            jobs.write_text(json.dumps([dict(wav=str(s['take']), text=s['text'], prompt=rec.verbatim(s['text']),
+                                             out=str(s['words_file'])) for s in todo]), encoding='utf-8')
+            r = subprocess.run([args.whisper_python, str(HERE / 'align.py'), '--model', args.whisper_model, '--batch', str(jobs)],
+                               stdout=subprocess.DEVNULL if args.check_take else None)
+            if r.returncode:
+                print(f'  note: align.py failed (exit {r.returncode}); those takes are not checked', file=sys.stderr)
+    for s in ss:
+        s['words'] = json.loads(s['words_file'].read_text())['words'] if s['words_file'].exists() else None
+
+
+def take_plan(s, raw):
+    """A take's cuts and check (rec.plan), on its decoded samples."""
+    if not s.get('words'):
+        return dict(cuts=[], heard=None, missing=[], extra=[], ok=None)
+    return rec.plan(s['text'], s['words'], rec.db10(raw), len(raw) / RATE)
+
+
+def to_take_time(t, cuts):
+    """A time in a take after cuts -> the same moment in the take as recorded."""
+    for t0, t1, _ in sorted(cuts):
+        if t >= t0:
+            t += t1 - t0
+    return t
+
+
+def check_take(sents, scenes, rdir, adir, args):
+    """--check-take: one take checked as the recording pane needs it, JSON on stdout (see FORMAT.md, Recorded voice)."""
+    s = next((s for s in sents if s['id'] == args.check_take), None)
+    if s is None or not s['take']:
+        print(json.dumps(dict(id=args.check_take, ok=False, error='no such sentence in this video' if s is None
+                              else f'no take {rdir / (args.check_take + ".wav")}')))
+        sys.exit(1)
+    take_words([s], adir / 'rec' / 'words', args)
+    with tempfile.TemporaryDirectory() as td:
+        raw = decode(s['take'], Path(td) / 'raw.wav')
+    p = take_plan(s, raw)
+    cut = rec.apply_cuts(raw, p['cuts'])
+    short, pauses = rec.shorten_pauses(cut)
+    span = rec.voice_span(short)
+    cuts = [dict(start=t0, end=t1, why=w) for t0, t1, w in p['cuts']]
+    cuts += [dict(start=round(to_take_time(a, p['cuts']), 3), end=round(to_take_time(b, p['cuts']), 3), why='pause')
+             for a, b in pauses]
+    print(json.dumps(dict(id=s['id'], ok=p['ok'], heard=p['heard'], missing=p['missing'], extra=p['extra'],
+                          cut=sorted(cuts, key=lambda c: c['start']),
+                          seconds=round((span[1] - span[0]) / RATE, 2) if span else 0.0), ensure_ascii=False))
+
+
+def polish_takes(ss, rdir, args, den):
+    """Each take -> its piece (s['cut_take']) and room tone (…-tone.wav), as rec.py's header says: cuts (fillers,
+    repeats, a false start), denoise, high-pass, level, compression, de-ess, long pauses shortened, cut to the voice.
+    -> {piece name: meta}."""
+    out = {}
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+
+        def first(i):
+            s = ss[i]
+            raw = decode(s['take'], td / f'{i}-raw.wav')
+            s['plan'] = take_plan(s, raw)
+            write_pcm(td / f'{i}-cut.wav', rec.apply_cuts(raw, s['plan']['cuts']))
+        with ThreadPoolExecutor(6) as ex:
+            list(ex.map(first, range(len(ss))))
+        if den == 'df':
+            jobs = td / 'df.json'
+            jobs.write_text(json.dumps([dict(**{'in': str(td / f'{i}-cut.wav')}, out=str(td / f'{i}-dn.wav')) for i in range(len(ss))]))
+            r = subprocess.run([str(DF_PY), str(HERE / 'denoise.py'), '--atten', str(DF_ATTEN), '--batch', str(jobs)],
+                               capture_output=True, text=True)
+            if r.returncode:
+                die(f'denoise.py (DeepFilterNet) failed: {r.stderr.strip()[-500:]}\n(or --rec-denoise afftdn)')
+
+        def second(i):
+            s = ss[i]
+            src = td / f'{i}-{"dn" if den == "df" else "cut"}.wav'
+            pre = {'afftdn': f'apad=pad_dur=0.1,{AFFTDN},', 'df': '', 'none': ''}[den]  # afftdn drops its last 25 ms
+            lufs = ebur128(src)[0]
+            gain = 0.0 if lufs < -60 else REC_LEVEL - lufs
+            r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(src), '-af', pre + REC_DYN.format(gain=f'{gain:.2f}'),
+                                '-ar', str(RATE), '-ac', '1', '-c:a', 'pcm_s16le', str(td / f'{i}-dyn.wav')],
+                               capture_output=True, text=True)
+            if r.returncode:
+                die(f'ffmpeg could not clean the take {s["take"]}: {r.stderr.strip()[-300:]}')
+            pcm, pauses = rec.shorten_pauses(read_pcm(td / f'{i}-dyn.wav'))
+            db = rec.db10(pcm)
+            span = rec.voice_span(pcm, db)
+            if span is None:
+                die(f'no voice in the take {s["take"]} ({s["text"][:50]})')
+            tone = rec.room_tone(pcm, db)
+            v0, v1 = span
+            a, b = max(0, v0 - round(REC_HEAD * RATE)), min(len(pcm), v1 + round(REC_TAIL * RATE))
+            piece = pcm[a:b]
+            rec.fade(piece, rec.XFADE, rec.XFADE)
+            write_pcm(s['cut_take'], piece)
+            write_pcm(tone_of(s['cut_take']), tone)
+            p = s['plan']
+            out[s['cut_take'].name] = dict(dur=round((b - a) / RATE, 4), vs=round((v0 - a) / RATE, 4), ve=round((v1 - a) / RATE, 4),
+                                           lufs=ebur128(s['cut_take'])[0], gain=round(gain, 2), tone=round(len(tone) / RATE, 2),
+                                           cuts=p['cuts'], pauses=pauses, ok=p['ok'], missing=p['missing'], extra=p['extra'],
+                                           heard=p['heard'])
+        with ThreadPoolExecutor(6) as ex:
+            list(ex.map(second, range(len(ss))))
+    return out
+
+
+def tone_of(piece):
+    return piece.with_name(piece.stem + '-tone.wav')
+
+
+def rec_chunks(chunks, sents, args, adir):
+    """--voice rec: each chunk (a whole paragraph) joined from its sentences' polished takes, --rec-gap apart, room tone
+    between them; a sentence with no take is spoken by the --rec-missing voice (when it is not 'stop'), set to the
+    takes' level. Sets c['key'] (from the takes' hashes, so a new take makes only its paragraph again) and c['raw'].
+    -> (chunks made now, sentences filled in, takes polished now)."""
+    rdir = adir / 'rec'
+    rdir.mkdir(exist_ok=True)
+    meta_path = rdir / 'takes.json'
+    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    den, tag = rec_settings(args)
+    takes = [s for s in sents if s['take']]
+    for s in takes:
+        s['take_hash'] = hashlib.sha1(s['take'].read_bytes()).hexdigest()[:16]
+        s['cut_take'] = rdir / f'{s["take_hash"]}-{tag}.wav'
+    todo, seen = [], set()
+    for s in takes:
+        if (s['cut_take'].name not in meta or not s['cut_take'].exists()) and s['cut_take'] not in seen:
+            todo.append(s); seen.add(s['cut_take'])
+    if todo:
+        take_words(todo, rdir / 'words', args)
+        print(f'polishing {len(todo)} take(s) (denoise: {den}) ...', flush=True)
+        meta.update(polish_takes(todo, rdir, args, den))
+        meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
+    for s in takes:
+        s['rec'] = meta[s['cut_take'].name]
+    filled = [s for s in sents if not s['take']]
+    if filled:  # missing takes, spoken by a voice, cut to their voice and set to the takes' level (no other polish)
+        fargs = argparse.Namespace(**vars(args))
+        fargs.voice = DEFAULT_VOICE if args.rec_missing == 'tts' else args.rec_missing
+        fv = Voice(fargs)
+        items, seen = [], set()
+        for s in filled:
+            k = sents.index(s)
+            s['fill_key'] = fv.key(s['text'], fv.around(sents, k))
+            s['fill_raw'] = adir / f'{s["fill_key"]}.wav'
+            if not s['fill_raw'].exists() and s['fill_key'] not in seen:
+                items.append((s['text'], s['fill_raw'], fv.around(sents, k))); seen.add(s['fill_key'])
+        if items:
+            print(f'speaking {len(items)} missing sentence(s) with {fv.spec} ...', flush=True)
+            fv.make_all(items)
+        args.fill_spec = fv.spec
+        for s in filled:
+            name = f'fill-{s["fill_key"]}-{tag}.wav'
+            f = rdir / name
+            if name not in meta or not f.exists():
+                pcm = read_pcm(s['fill_raw'])
+                span = rec.voice_span(pcm) or (0, len(pcm))
+                a, b = max(0, span[0] - round(REC_HEAD * RATE)), min(len(pcm), span[1] + round(REC_TAIL * RATE))
+                piece = pcm[a:b]
+                rec.fade(piece, rec.XFADE, rec.XFADE)
+                write_pcm(rdir / f'fill-{s["fill_key"]}-cut.wav', piece)
+                normalise(rdir / f'fill-{s["fill_key"]}-cut.wav', f, REC_LEVEL)
+                meta[name] = dict(dur=round((b - a) / RATE, 4), vs=round((span[0] - a) / RATE, 4),
+                                  ve=round((span[1] - a) / RATE, 4), lufs=ebur128(f)[0])
+                meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
+            s['cut_take'], s['rec'] = f, meta[name]
+    made = []
+    for c in chunks:
+        ss = [sents[i] for i in c['sents']]
+        c['key'] = 'rec-' + h('rec', tag, args.rec_gap, *[s['cut_take'].name for s in ss])
+        c['raw'] = adir / f'{c["key"]}.wav'
+        c['wav'] = adir / f'{c["key"]}-{args.fps}p.wav'
+        c['around'] = ('', '')
+        if not c['raw'].exists():
+            pieces = [(read_pcm(s['cut_take']), s['rec'],
+                       read_pcm(tone_of(s['cut_take'])) if tone_of(s['cut_take']).exists() else array.array('h')) for s in ss]
+            write_pcm(c['raw'], rec.join(pieces, args.rec_gap))
+            made.append(c)
+    return made, filled, todo
 
 
 def join_sentences(lines):
@@ -621,7 +897,23 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('video', help='folder name under source/courses/, e.g. basic-01')
     ap.add_argument('--scenes', help='scenes file to read instead of source/courses/<video>/scenes.md')
-    ap.add_argument('--voice', default='tts:kokoro-seedvc', help='say (macOS, Samantha), say:<voice>, or tts:<model> (source/video/tts/say.py)')
+    ap.add_argument('--voice', default=DEFAULT_VOICE, help='say (macOS, Samantha), say:<voice>, tts:<model> '
+                    '(source/video/tts/say.py), or rec: the author\'s own takes, one per sentence (see --rec-dir)')
+    ap.add_argument('--list-sentences', action='store_true', help='print the sentences as JSON and stop: [{"id", "scene", '
+                    '"para", "n", "text"}]; id = first 12 hex of sha1(text), para and n count from 0 over the whole video')
+    ap.add_argument('--rec-status', action='store_true', help='print per scene how many sentences have a take, and the '
+                    'ones that do not, and stop')
+    ap.add_argument('--rec-dir', help='rec: the folder of takes, <id>.wav each (default .claude/loops/voice/rec/<video>/; '
+                    '<id>.take<N>.wav are older takes and are not used)')
+    ap.add_argument('--rec-gap', type=float, default=0.35, help='rec: seconds from the end of one sentence\'s voice to '
+                    'the start of the next one\'s, inside a paragraph')
+    ap.add_argument('--check-take', metavar='ID', help='rec: check one take (sentence id) and print JSON: {"id", "ok", '
+                    '"heard", "missing", "extra", "cut": [{"start", "end", "why"}], "seconds"}; one Whisper pass, no denoise')
+    ap.add_argument('--rec-denoise', default='df', choices=['df', 'afftdn', 'none'], help='rec: denoiser, DeepFilterNet '
+                    '(its venv .claude/loops/tts/deepfilter/venv; ffmpeg afftdn when it is missing), afftdn or none')
+    ap.add_argument('--rec-missing', default='stop', help='rec: a sentence with no take: stop (list them and stop), tts '
+                    f'(speak it with the default voice, {DEFAULT_VOICE}, to preview a partly recorded video), or any '
+                    '--voice value but rec')
     ap.add_argument('--rate', type=int, help='say only: words per minute')
     ap.add_argument('--ref', default=str(ROOT / '.claude/loops/voice/ref/ref-13s.wav'),
                     help='tts only: reference voice wav; its words in the .txt next to it')
@@ -680,6 +972,41 @@ def main():
     if not scenes_path.exists():
         die(f'scenes file not found: {scenes_path}')
     title, scenes = parse(scenes_path)
+    lines = spoken_lines(scenes)  # the spoken lines of the scenes file; they say where pictures change
+    sents = join_sentences(lines)
+
+    # the recorder's view: the sentences, and which have a take (nothing else on stdout, no audio work)
+    if args.list_sentences:
+        print('[' + ',\n'.join(json.dumps(dict(id=sentence_id(s['text']), scene=scenes[s['scene']]['title'], para=s['para'],
+                                               n=n, text=re.sub(r'\s+', ' ', s['text']).strip()), ensure_ascii=False)
+                                    for n, s in enumerate(sents)) + ']')
+        return
+    rdir = Path(args.rec_dir).resolve() if args.rec_dir else REC_DIR / args.video
+    if args.rec_status or args.voice == 'rec' or args.check_take:
+        missing_rec = rec_paths(sents, rdir)
+        if args.rec_status:
+            print(f'{rdir}')
+            for si, sc in enumerate(scenes):
+                ss = [s for s in sents if s['scene'] == si]
+                if ss:
+                    miss = [(n, s) for n, s in enumerate(sents) if s['scene'] == si and not s['take']]
+                    print(f'{sc["title"][:40]:<40} {len(ss) - len(miss):>3} / {len(ss):<3} recorded')
+                    for n, s in miss:
+                        print(f'    missing  #{n:<3} {s["text"][:70]}')
+            print(f'{"total":<40} {len(sents) - len(missing_rec):>3} / {len(sents):<3} recorded')
+            return
+        if args.check_take:
+            (Path(args.out) / args.video / 'audio').mkdir(parents=True, exist_ok=True)
+            check_take(sents, scenes, rdir, Path(args.out) / args.video / 'audio', args)
+            return
+        if missing_rec and args.rec_missing == 'stop':
+            die(f'{len(missing_rec)} of {len(sents)} sentences have no take in {rdir}:\n'
+                + '\n'.join(f'  {scenes[s["scene"]]["title"]}, sentence {sents.index(s)} ({s["id"]}): {s["text"][:70]}'
+                            for s in missing_rec)
+                + '\nrecord them, or add --rec-missing tts to speak them with the default voice for a preview')
+        if args.rec_missing.startswith('rec') or not (args.rec_missing in ('stop', 'tts', 'say')
+                                                      or args.rec_missing.startswith(('say:', 'tts:'))):
+            die(f'--rec-missing takes stop, tts, say, say:<voice> or tts:<model>, not {args.rec_missing}')
 
     out = Path(args.out) / args.video
     adir, fdir = out / 'audio', out / 'frames'
@@ -692,7 +1019,6 @@ def main():
     missing = []
     pics = []  # every @ line in order, with its scene index and the index of the sentence it starts at
     n_sent = 0
-    sentences = []
     for si, sc in enumerate(scenes):
         for kind, it in sc['items']:
             if kind == 'pic':
@@ -710,17 +1036,16 @@ def main():
                     it['src'] = src
                 pics.append(dict(spec=it, scene=si, at=n_sent))
             else:
-                sentences.append(dict(text=it['text'], line=it['line'], scene=si, brk=it['brk']))
                 n_sent += 1
     if missing:
         die('pictures not found:\n' + '\n'.join(missing))
-    if not sentences and not args.frames_only:
+    if not lines and not args.frames_only:
         die('the scenes file has no sentences')
 
     # a picture shows from the sentence after it; two @ lines with no sentence between: the earlier one never shows
     by_start = {}
     for p in pics:
-        if p['at'] >= len(sentences):
+        if p['at'] >= len(lines):
             print(f'  note: line {p["spec"]["line"]}: the @ line has no sentence after it, so it never shows')
             continue
         if p['at'] in by_start:
@@ -763,24 +1088,29 @@ def main():
 
     # 2. audio: one clip per paragraph (or per run of its sentences, when long), cached by (its text, voice settings);
     # then cut back into one piece per sentence at the quiet point between the words
-    lines = sentences  # the spoken lines of the scenes file; they say where pictures change
-    sents = join_sentences(lines)
-    chunks = make_chunks(sents, args.para_max, CPS)
-    voice = Voice(args)
-    for k, c in enumerate(chunks):
-        c['around'] = voice.around(chunks, k)
-        c['key'] = voice.key(c['text'], c['around'])
-        c['raw'] = adir / f'{c["key"]}.wav'
-        c['wav'] = adir / f'{c["key"]}-{fps}p.wav'
-    voice.fps = fps
-    kept_old, failed_old = voice.reuse_old(chunks, adir)
-    todo, seen = [], set()
-    for c in chunks:
-        if not c['raw'].exists() and c['key'] not in seen:
-            todo.append(c); seen.add(c['key'])
-    if todo:
-        print(f'making {len(todo)} paragraph clip(s) with {voice.spec} ...', flush=True)
-        voice.make_all([(c['text'], c['raw'], c['around']) for c in todo])
+    is_rec = args.voice == 'rec'
+    filled = []
+    if is_rec:  # the author's takes: one clip per paragraph, however long (--para-max is for a made voice)
+        chunks = make_chunks(sents, math.inf, CPS)
+        todo, filled, polished = rec_chunks(chunks, sents, args, adir)
+        kept_old, failed_old = [], []
+    else:
+        chunks = make_chunks(sents, args.para_max, CPS)
+        voice = Voice(args)
+        for k, c in enumerate(chunks):
+            c['around'] = voice.around(chunks, k)
+            c['key'] = voice.key(c['text'], c['around'])
+            c['raw'] = adir / f'{c["key"]}.wav'
+            c['wav'] = adir / f'{c["key"]}-{fps}p.wav'
+        voice.fps = fps
+        kept_old, failed_old = voice.reuse_old(chunks, adir)
+        todo, seen = [], set()
+        for c in chunks:
+            if not c['raw'].exists() and c['key'] not in seen:
+                todo.append(c); seen.add(c['key'])
+        if todo:
+            print(f'making {len(todo)} paragraph clip(s) with {voice.spec} ...', flush=True)
+            voice.make_all([(c['text'], c['raw'], c['around']) for c in todo])
     made_keys = {c['key'] for c in todo}
 
     meta_path = adir / 'durations.json'
@@ -788,7 +1118,7 @@ def main():
     for c in chunks:
         k = f'{c["key"]}-{fps}-{TRIM_VERSION}'
         if c['key'] in made_keys or k not in meta or not c['wav'].exists():
-            meta[k] = trim_and_pad(c['raw'], c['wav'], fps)
+            meta[k] = trim_and_pad(c['raw'], c['wav'], fps, head=REC_HEAD if is_rec else 0.06)
         c['frames'], c['vs'], c['ve'] = meta[k]
     meta_path.write_text(json.dumps(meta, indent=0, sort_keys=True))
 
@@ -931,6 +1261,29 @@ def main():
           f'{len(made_keys)} made, {n_audio - len(made_keys)} reused; cut into {len(sents)} sentence pieces '
           f'({sum(1 for s in sents if s["cut"] == "words")} cuts between matched words, '
           f'{sum(1 for s in sents if s["cut"] == "letters")} by letter count)')
+    if is_rec:
+        print(f'voice:  recorded, {len(sents) - len(filled)} of {len(sents)} sentences from takes in {rdir}'
+              + (f'; {len(filled)} filled in with {args.fill_spec} (not recorded yet):' if filled else ''))
+        for s in filled:
+            print(f'  filled  {scenes[s["scene"]]["title"][:24]}, sentence {sents.index(s)}: {s["text"][:60]}')
+        tk = [s for s in sents if s.get('take')]
+        whys = {}
+        for s in tk:
+            for c in s['rec']['cuts']:
+                whys[c[2]] = whys.get(c[2], 0) + 1
+        print(f'polish: {len(polished)} take(s) polished now, {len(tk) - len(polished)} reused; cut '
+              + (', '.join(f'{n} {w}' for w, n in sorted(whys.items())) or 'nothing')
+              + f'; {sum(len(s["rec"]["pauses"]) for s in tk)} long pause(s) shortened; takes set to {REC_LEVEL} LUFS by '
+              f'{min(s["rec"]["gain"] for s in tk):+.1f} to {max(s["rec"]["gain"] for s in tk):+.1f} dB, after polish '
+              f'{min(s["rec"]["lufs"] for s in tk):.1f} to {max(s["rec"]["lufs"] for s in tk):.1f} LUFS'
+              if tk else 'polish: no takes')
+        for s in tk:
+            r = s['rec']
+            if r['ok'] is False:
+                print(f'  check   sentence {sents.index(s)} ({s["id"]}): missing {r["missing"]}, extra {r["extra"]}; '
+                      f'heard "{r["heard"][:70]}"')
+        if tk and all(s['rec']['ok'] is None for s in tk):
+            print('  (no Whisper: takes not checked)')
     if kept_old or failed_old:
         print(f'voice gate: {len(kept_old)} clip(s) of an older check kept, {len(failed_old)} failed it and were made again')
         for s, flags in failed_old:
@@ -972,6 +1325,8 @@ def main():
             sentences=[dict(line=s['line'], text=s['text'], para=s['para'], chunk=s['chunk'], wav=str(s['norm']),
                             made=str(chunks[s['chunk']]['raw']), loudness=s['loud'], start=s['start'], frames=s['frames'],
                             vs=s['vs'], ve=s['ve'], cut=s['cut'], starts=s['starts'], how=s['how'],
+                            take=(str(s['take']) if s.get('take') else 'filled' if is_rec else None),
+                            polish=({k: v for k, v in s['rec'].items() if k != 'heard'} if s.get('rec') else None),
                             lines=[lines[g]['line'] for g in s['lines']]) for s in sents],
             pictures=[dict(line=p['spec']['line'], raw=p['spec']['raw'], fade_in=lay['F'][j], start=p['start'], dur=p['dur'],
                            hold=lay['hold'][j], xfade=p['xfade'], busy=p['busy']) for j, p in enumerate(shown)],

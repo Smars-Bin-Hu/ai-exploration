@@ -5,7 +5,8 @@ Two halves:
 - run in the whisper venv (`.claude/loops/tts/whisper/venv`, mlx-whisper, MIT) as a batch:
       python align.py --model <hf id or folder> --batch jobs.json
   jobs.json: [{"wav": ..., "text": ..., "out": ...}]; each out gets {"words": [[word, start, end], ...]} in seconds.
-  The model is loaded once. The script's own text goes in as the prompt, which keeps the words close to ours.
+  The model is loaded once. The script's own text goes in as the prompt, which keeps the words close to ours; a job's
+  "prompt", if it has one, goes in instead (a recorded take: rec.verbatim(), which keeps fillers and repeats).
 - imported by build.py (no mlx needed): line_times() matches those words to the known script words and returns where
   each line of the sentence starts; words it cannot match are placed by character count between matched neighbours,
   and a sentence with too few matches falls back to character-proportional timing.
@@ -104,7 +105,7 @@ def main():
     for i, j in enumerate(jobs, 1):
         try:
             r = mlx_whisper.transcribe(j['wav'], path_or_hf_repo=model, word_timestamps=True, language='en',
-                                       initial_prompt=j['text'], condition_on_previous_text=False, verbose=None)
+                                       initial_prompt=j.get('prompt', j['text']), condition_on_previous_text=False, verbose=None)
             words = [[w['word'].strip(), round(w['start'], 3), round(w['end'], 3)]
                      for s in r.get('segments', []) for w in s.get('words', [])]
         except Exception as e:  # one bad clip falls back to proportional timing in build.py, it does not stop the run
