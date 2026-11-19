@@ -4,6 +4,8 @@
     .venv/bin/python source/video/build.py basic-01                           # Qwen3-TTS cloning the author's talk-a.wav
     .venv/bin/python source/video/build.py basic-01 --ref .claude/loops/voice/ref/talk-b.wav   # another reference
     .venv/bin/python source/video/build.py basic-01 --voice rec               # the author's own takes, see below
+    .venv/bin/python source/video/build.py basic-01 --redo 195 --redo "GitHub Copilot can"   # say chunks again, 3 takes each
+    .venv/bin/python source/video/build.py basic-01 --keep-take 195:2         # put take 2 of line 195 in the timeline
     .venv/bin/python source/video/build.py basic-01 --rec-status              # which sentences are recorded
     .venv/bin/python source/video/build.py basic-01 --list-sentences          # the sentences as JSON, for the recorder
     .venv/bin/python source/video/build.py basic-01 --check-take <id>         # one take checked, JSON
@@ -19,6 +21,10 @@ Writes .claude/loops/video-out/<video>/: audio/ (one wav per paragraph, and its 
 per @ line), avatar-<hash>.mov (the speaking avatar overlay, see avatar.py), <video>.fcpxml and <video>-rough.mp4. Audio
 (one clip per paragraph), its word times, frames and the mp4's pieces are cached by what made them, so a rerun makes only
 what changed. Timing rules: timing.py.
+
+Say it again (a made voice): --redo <words|line> speaks that chunk --takes more times with new seeds, each take checked,
+none deleted; the best goes in the timeline, --keep-take <line>:<k> pins one (0: the first); the choices are kept in
+takes.json next to the scenes file, every take is in <out>/<video>/redo/ for Final Cut Pro. See FORMAT.md, The voice.
 
 Recorded voice (--voice rec): one take per sentence in .claude/loops/voice/rec/<video>/<id>.wav, id = the first 12 hex
 of the sha1 of the sentence's text (as --list-sentences prints it). Each take is polished (rec.py: fillers, repeats and
@@ -397,7 +403,8 @@ class Voice:
                 self.report = (None if not (self.checked or getattr(self, 'light', False)) else
                                Path(items[0][1]).parent / f'say-report-{time.strftime("%Y%m%d-%H%M%S")}.json')
                 report = ['--report', str(self.report)] if self.report else []
-                self.report_outs = {str(raws[i]): str(it[1]) for i, it in enumerate(items)}  # say.py's out -> clip
+                # say.py's out -> clip; say.py resolves its paths (/var/folders -> /private/var/folders on macOS)
+                self.report_outs = {str(raws[i].resolve()): str(it[1]) for i, it in enumerate(items)}
                 r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
                                     '--seed', str(self.seed), '--batch', str(batch)] + report
                                    + ([] if self.strict or not getattr(self, 'light', False) else ['--lenient']))
@@ -406,12 +413,41 @@ class Voice:
             for raw, (text, out_wav, *_) in zip(raws, items):
                 if not raw.exists():
                     die(f'the voice made no audio for "{text[:60]}"')
-                tmp = Path(str(out_wav) + '.part.wav')
-                ff = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(raw), '-ar', str(RATE), '-ac', '1',
-                                     '-c:a', 'pcm_s16le', str(tmp)], capture_output=True, text=True)
-                if ff.returncode:
-                    die(f'ffmpeg could not convert the voice output: {ff.stderr.strip()[-400:]}')
-                tmp.replace(out_wav)
+                to_rate(raw, out_wav)
+
+    def make_takes(self, chunks, seed, n, adir):
+        """--redo: each chunk spoken n times by say.py --every-take (seeds seed, seed + 101, ...), every take checked
+        (strict unless --lenient) and kept as audio/<take key>.wav (take_key). -> per chunk [dict(seed, flags, missing,
+        raw)], in the order spoken."""
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td).resolve()
+            batch, report = td / 'lines.tsv', td / 'report.json'
+            batch.write_text(''.join(f'{td / f"{i:04d}.wav"}\t{self.spoken(c["text"])}\n' for i, c in enumerate(chunks)),
+                             encoding='utf-8')
+            r = subprocess.run([self.python, str(self.script), '--model', self.model, '--ref', str(self.ref),
+                                '--seed', str(seed), '--batch', str(batch), '--report', str(report), '--every-take',
+                                '--retakes', str(n - 1)] + ([] if self.strict else ['--lenient']))
+            if r.returncode or not report.exists():
+                die(f'tts/say.py failed (exit {r.returncode})')
+            out = []
+            for c, it in zip(chunks, json.loads(report.read_text(encoding='utf-8'))):
+                ts = []
+                for t in it['takes']:
+                    dst = adir / f'{take_key(c["key0"], t["seed"])}.wav'
+                    to_rate(Path(t['wav']), dst)
+                    ts.append(dict(seed=t['seed'], flags=t['flags'], missing=t.get('missing') or [], raw=dst))
+                out.append(ts)
+        return out
+
+
+def to_rate(src, dst):
+    """Any audio the voice made -> dst, a 48 kHz mono 16-bit wav."""
+    tmp = Path(str(dst) + '.part.wav')
+    ff = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(src), '-ar', str(RATE), '-ac', '1',
+                         '-c:a', 'pcm_s16le', str(tmp)], capture_output=True, text=True)
+    if ff.returncode:
+        die(f'ffmpeg could not convert the voice output: {ff.stderr.strip()[-400:]}')
+    tmp.replace(dst)
 
 
 def probe_seconds(path):
@@ -2174,6 +2210,235 @@ def put_pauses(todo, adir, args):
     return rep
 
 
+# ---------- say it again (--redo, --keep-take; a made voice) ----------
+
+TAKE_ROUND = 10000  # a chunk's n-th --redo speaks with seeds from --seed + n * TAKE_ROUND (say.py adds 101 per take)
+ROOM_PAD = 0.3      # seconds of a take's own room tone before and after it in redo/, faded in and out over EDGE
+EXPORT_VERSION = 'x1'  # bump when export_takes changes, so every file in redo/ is made again
+
+
+def takes_file(scenes_path):
+    """The take choices, next to the scenes file (committed, no audio): takes.json for scenes.md, takes-<name>.json for
+    scenes-<name>.md."""
+    st = scenes_path.stem
+    return scenes_path.parent / ('takes.json' if st == 'scenes' else f'takes-{st.removeprefix("scenes-")}.json')
+
+
+def take_key(key0, seed):
+    """A said-again take's clip key: the chunk's own key (its text and voice settings) and the take's seed."""
+    return h(key0, 'take', seed)
+
+
+def _words(text):
+    return re.findall(r'[a-z0-9]+', text.lower())
+
+
+def _missing(flags):
+    return [w for f in flags if f.startswith('not heard: ') for w in f[len('not heard: '):].split(', ')]
+
+
+def _take_rank(t):
+    """The best take first: no runaway, length or long silence, or word-error flag; then the fewest content words not
+    heard; then the most like the reference voice."""
+    other = [f for f in t['flags'] if not f.startswith('not heard: ')]
+    return bool(other), len(t['missing']), len(other), -(t.get('like') or 0), t['take']
+
+
+def find_chunk(want, chunks):
+    """A --redo or --keep-take target -> its chunk: a scenes line number (any spoken line in the chunk), or words of
+    its text (case and punctuation ignored). Not found, or in two chunks of different text: say so and stop."""
+    if want.strip().isdigit():
+        n = int(want)
+        hits = [c for c in chunks if n in c['lines']]
+        if not hits:
+            die(f'line {n} of the scenes file is not a spoken line (give a spoken line\'s number, or words of it)')
+    else:
+        w = _words(want)
+        if not w:
+            die(f'--redo "{want}": no words to look for')
+        hits = [c for c in chunks if any(t[i:i + len(w)] == w for t in [_words(c['text'])]
+                                        for i in range(len(t) - len(w) + 1))]
+        if not hits:
+            die(f'--redo "{want}": no chunk of spoken text has these words (a chunk is a paragraph or a run of its '
+                f'sentences; words across two chunks are not found)')
+    by = {}
+    for c in hits:
+        by.setdefault(c['key0'], c)
+    if len(by) > 1:
+        die(f'"{want}" is in {len(by)} chunks; give more words, or the line number:\n'
+            + '\n'.join(f'  line {c["line"]}: {c["text"][:90]}' for c in by.values()))
+    return next(iter(by.values()))
+
+
+def take_choices(args, voice, chunks, sents, lines, adir, scenes_path):
+    """--redo: each named chunk spoken --takes more times with new seeds (say.py --every-take), each take through the
+    take check; no take is ever deleted. The choices file (takes_file) keeps, per chunk key, every take's seed and check
+    and which take is in the timeline: the best (_take_rank) after a --redo, or the one --keep-take <line>:<k> pins
+    (0: the clip the build made). Then every chunk with a take other than 0 in the timeline uses it: its key and raw
+    are the take's (made again from its seed if the audio is gone). -> (book, redone chunks, [(chunk, take)] in use)."""
+    path = takes_file(scenes_path)
+    book = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+    for c in chunks:
+        c['key0'] = c['key']
+        c['lines'] = [lines[g]['line'] for i in c['sents'] for g in sents[i]['lines']]
+    if (args.redo or args.keep_take) and voice.kind != 'tts':
+        die('--redo and --keep-take are for a made voice (tts:...), not say')
+    redo, seen = [], set()
+    for w in args.redo:
+        c = find_chunk(w, chunks)
+        if c['key0'] not in seen:
+            redo.append(c); seen.add(c['key0'])
+    keep = {}
+    for kt in args.keep_take:
+        m = re.fullmatch(r'\s*(\d+)\s*:\s*(\d+)\s*', kt)
+        if not m:
+            die(f'--keep-take takes <line>:<take>, e.g. 195:2, not {kt}')
+        keep[find_chunk(m[1], chunks)['key0']] = int(m[2])
+    changed = False
+    if redo:
+        check_path = adir / 'take-check.json'
+        check = json.loads(check_path.read_text()) if check_path.exists() else {}
+        for c in redo:
+            if c['key0'] not in book:  # take 0: the clip the build made, with its take check
+                fl = check.get(c['key0'], {}).get('flags', [])
+                book[c['key0']] = dict(takes=[dict(take=0, seed=None, flags=fl, missing=_missing(fl))])
+            book[c['key0']].update(line=c['line'], text=c['text'])
+        rnd = 1 + max([(t['seed'] - args.seed) // TAKE_ROUND for c in redo for t in book[c['key0']]['takes'] if t['take']],
+                      default=0)
+        print(f'saying again: {len(redo)} chunk(s), {args.takes} new take(s) each (seeds from {args.seed + rnd * TAKE_ROUND}) ...',
+              flush=True)
+        made = voice.make_takes(redo, args.seed + rnd * TAKE_ROUND, args.takes, adir)
+        for c, ts in zip(redo, made):
+            e = book[c['key0']]
+            n0 = max(t['take'] for t in e['takes']) + 1
+            e['takes'] += [dict(take=n0 + j, seed=t['seed'], flags=t['flags'], missing=t['missing']) for j, t in enumerate(ts)]
+        if voice.say.LIKENESS_PY.exists():  # the voice gate's WavLM likeness to the reference, to break a tie
+            need = [(c, t) for c in redo for t in book[c['key0']]['takes'] if 'like' not in t]
+            raw = lambda c, t: adir / f'{c["key0"] if not t["take"] else take_key(c["key0"], t["seed"])}.wav'  # noqa: E731
+            res = voice.say.likeness([raw(c, t) for c, t in need], voice.ref)
+            for c, t in need:
+                t['like'] = round(res[str(raw(c, t))]['sim'], 3)
+        for c in redo:  # a new --redo picks again: the best take, unless --keep-take names one now
+            e = book[c['key0']]
+            e['in_timeline'], e['pinned'] = min(e['takes'], key=_take_rank)['take'], False
+        changed = True
+    for key0, k in keep.items():
+        c = next(c for c in chunks if c['key0'] == key0)
+        e = book.get(key0)
+        if not e:
+            if k:
+                die(f'line {c["line"]} has no takes said again (only take 0); --redo {c["line"]} first')
+            continue
+        if k not in [t['take'] for t in e['takes']]:
+            die(f'line {c["line"]} has takes {", ".join(str(t["take"]) for t in e["takes"])}, not {k}')
+        e['in_timeline'], e['pinned'] = k, True
+        changed = True
+    if changed:
+        body = json.dumps(dict(sorted(book.items(), key=lambda kv: kv[1].get('line', 0))), indent=1, ensure_ascii=False)
+        path.write_text(body + '\n', encoding='utf-8')
+    # every chunk with a said-again take in the timeline uses it
+    use, gone = [], {}
+    for c in chunks:
+        e = book.get(c['key0'])
+        if not e or not e.get('in_timeline'):
+            continue
+        t = next(t for t in e['takes'] if t['take'] == e['in_timeline'])
+        c['said_take'], c['key'] = t['take'], take_key(c['key0'], t['seed'])
+        c['raw'] = adir / f'{c["key"]}.wav'
+        c['wav'] = adir / f'{c["key"]}-{args.fps}p.wav'
+        use.append((c, t))
+        if not c['raw'].exists():
+            gone.setdefault(t['seed'], {})[c['key0']] = c
+    for seed, cs in gone.items():  # a take whose audio is gone (a new --out): spoken again from its seed
+        print(f'saying again: {len(cs)} take(s) in the timeline whose audio is gone, from seed {seed} ...', flush=True)
+        voice.make_takes(list(cs.values()), seed, 1, adir)
+    return book, redo, use
+
+
+def export_takes(book, chunks, sents, lines, adir, out, args, scenes_path):
+    """Every take of a chunk said again, a file of its own for Final Cut Pro: <out>/redo/L<line>-<first words>-take<k>.wav,
+    its pause marks put in, cut and set to the timeline's loudness as a timeline clip is (trim_and_pad, normalise), with
+    ROOM_PAD of its own room tone faded in before it and out after it; and redo/README.md, the list. -> files made now."""
+    rdir = out / 'redo'
+    by = {}
+    for c in chunks:
+        by.setdefault(c['key0'], c)
+    want = {}  # file name -> (chunk, take, its raw)
+    for key0, e in book.items():
+        c = by.get(key0)
+        if c is None or len(e['takes']) < 2:
+            continue
+        stem = f'L{c["line"]}-{"-".join(_words(c["text"])[:5])}'
+        for t in e['takes']:
+            want[f'{stem}-take{t["take"]}.wav'] = (c, t, adir / f'{key0 if not t["take"] else take_key(key0, t["seed"])}.wav')
+    if not want and not rdir.exists():
+        return []
+    rdir.mkdir(exist_ok=True)
+    for f in rdir.glob('*.wav'):
+        if f.name not in want:
+            f.unlink()
+    made_path = rdir / '.made.json'
+    made = json.loads(made_path.read_text()) if made_path.exists() else {}
+    todo, todo_p = {}, {}
+    for name, (c, t, raw) in want.items():
+        if not raw.exists():
+            continue
+        pauses = chunk_pauses(c, sents, lines)
+        src = raw
+        if pauses:  # the same name the timeline gives the clip with its pauses (main), so it is made once
+            src = adir / f'{h(raw.stem, "pauses", json.dumps(pauses), PAUSE_VERSION)}.wav'
+            if not src.exists():
+                todo_p[str(src)] = dict(src=raw, text=c['text'], pauses=pauses, raw=src)
+        sig = h(hashlib.sha1(raw.read_bytes()).hexdigest(), json.dumps(pauses), args.fps, TRIM_VERSION, LOUD_VERSION,
+                LOUDNESS, PEAK, TONE_VERSION, PAUSE_VERSION, EXPORT_VERSION)
+        if made.get(name) != sig or not (rdir / name).exists():
+            todo[name] = (src, sig)
+    if todo_p:
+        put_pauses(list(todo_p.values()), adir, args)
+    with tempfile.TemporaryDirectory() as td:
+        for name, (src, sig) in todo.items():
+            trim, norm = Path(td) / 'trim.wav', Path(td) / 'norm.wav'
+            trim_and_pad(src, trim, args.fps)
+            normalise(trim, norm)
+            pcm = read_pcm(norm)
+            tone, w, pad = clip_tone(pcm), RATE // 20, round(ROOM_PAD * RATE)
+            o = tone_between(tone, pad + EDGE, after=pcm[:w])
+            xfade_append(o, pcm)
+            xfade_append(o, tone_between(tone, pad + EDGE, before=pcm[-w:]))
+            for i in range(min(EDGE, len(o) // 2)):  # the file's own ends: a short fade, no click
+                g = math.sin((i + 0.5) / EDGE * math.pi / 2)
+                o[i] = _sat(o[i] * g); o[-1 - i] = _sat(o[-1 - i] * g)
+            write_pcm(rdir / name, o)
+            made[name] = sig
+    made_path.write_text(json.dumps({k: v for k, v in made.items() if k in want}, indent=0, sort_keys=True))
+    # the list
+    tf = takes_file(scenes_path)
+    tf = tf.relative_to(ROOT) if tf.is_relative_to(ROOT) else tf
+    md = ['# Takes said again', '',
+          f'Made by `build.py --redo`. Each file is one take of one chunk (a paragraph, or a run of its sentences), its '
+          f'pause marks in, set to the timeline\'s loudness ({LOUDNESS} LUFS), {ROOM_PAD} s of its own room tone at each '
+          f'end. Take 0 is the clip the build made first. No take is ever deleted.', '',
+          f'Listen, then either pick one for the timeline with `--keep-take <line>:<take>` and build again (the choice '
+          f'is kept in `{tf}`), or drag the file into Final Cut Pro over the clips of that line.', '']
+    for key0, e in sorted(book.items(), key=lambda kv: kv[1].get('line', 0)):
+        c = by.get(key0)
+        if c is None or len(e['takes']) < 2:
+            continue
+        md += [f'## Line {c["line"]}', '', f'> {c["text"]}', '',
+               '| Take | File | Seed | Check | Likeness | In the timeline |', '|---|---|---|---|---|---|']
+        stem = f'L{c["line"]}-{"-".join(_words(c["text"])[:5])}'
+        for t in e['takes']:
+            inn = ('yes, pinned' if e.get('pinned') else 'yes, the best') if t['take'] == e.get('in_timeline', 0) else ''
+            md.append(f'| {t["take"]} | `{stem}-take{t["take"]}.wav` | {t["seed"] if t["seed"] is not None else "(build)"} | '
+                      f'{"; ".join(t["flags"]) or "passed"} | {t.get("like", "")} | {inn} |')
+        md.append('')
+    body = '\n'.join(md)
+    readme = rdir / 'README.md'
+    if not readme.exists() or readme.read_text(encoding='utf-8') != body:
+        readme.write_text(body, encoding='utf-8')
+    return list(todo)
+
+
 # ---------- build ----------
 
 def main():
@@ -2232,6 +2497,14 @@ def main():
                     '2026-11-19)')
     ap.add_argument('--chunk-target', type=float, default=10.0, help='a paragraph over --para-max is cut into runs of '
                     'about this many seconds (2 or 3 sentences), at sentence ends only; 0: the fewest runs under --para-max')
+    ap.add_argument('--redo', action='append', default=[], metavar='WORDS|LINE', help='tts: say a chunk again: the chunk '
+                    'whose text has these words (case and punctuation ignored), or that has this scenes line; spoken '
+                    '--takes more times with new seeds, each take checked, none deleted; the best goes in the timeline; '
+                    'every take is written to <out>/<video>/redo/ (repeatable)')
+    ap.add_argument('--takes', type=int, default=3, help='--redo: new takes per chunk (default 3)')
+    ap.add_argument('--keep-take', action='append', default=[], metavar='LINE:TAKE', help='tts: put this take of the '
+                    'chunk at this scenes line in the timeline (0: the clip the build made first), kept in takes.json '
+                    'next to the scenes file (repeatable)')
     ap.add_argument('--lenient', action='store_true', help='tts qwen3: the take check without the content-word rule '
                     '(the check before 2026-11-19)')
     ap.add_argument('--dwell', type=float, default=R.dwell, help='when the picture changes between paragraphs: seconds the '
@@ -2449,6 +2722,11 @@ def main():
     # then cut back into one piece per sentence at the quiet point between the words
     is_rec = args.voice == 'rec'
     filled, talk_notes = [], []
+    book, redone, said, exported = {}, [], [], []
+    if (args.redo or args.keep_take) and is_rec:
+        die('--redo and --keep-take are for a made voice (tts:...); a recorded line is recorded again')
+    if args.takes < 1:
+        die('--takes must be 1 or more')
     if is_talk:  # the author talked each scene (and maybe punched in paragraphs): one unit per paragraph
         sents = [dict(scene=p['scene'], para=p['para'], lines=p['lines'], text=p['text'], line=p['line']) for p in paras]
         chunks, filled, polished, talk_notes, todo = talk_chunks(paras, sents, lines, args, adir, rdir)
@@ -2481,9 +2759,14 @@ def main():
             voice.make_all([(c['text'], c['raw'], c['around']) for c in todo])
             if voice.light:
                 _, never = voice.check_made(chunks, adir, voice.report)
-        for c, flags in never:
-            print(f'  take check: line {c["line"]} never passed ({", ".join(flags)}): "{c["text"][:60]}"', flush=True)
         remade = {c['raw'] for c in todo}  # a clip made again: its copy with pauses is made again too
+        # said again (--redo, --keep-take, takes.json): a chunk with a take other than 0 in the timeline uses it
+        book, redone, said = take_choices(args, voice, chunks, sents, lines, adir, scenes_path)
+        for c, flags in never:
+            if not c.get('said_take'):
+                print(f'  take check: line {c["line"]} never passed ({", ".join(flags)}): "{c["text"][:60]}"'
+                      + (f'; say it again: --redo {c["line"]}' if c['key0'] not in book else ''), flush=True)
+        exported = export_takes(book, chunks, sents, lines, adir, out, args, scenes_path)
         # pause marks ([.3]): the voice speaks the paragraph without them (the clip above, shared with the same text
         # unmarked), then silence goes in at the marked word boundaries; the clip with its pauses has its own key
         todo_p, seen_p = [], set()
@@ -2762,6 +3045,19 @@ def main():
         print(f'  made  line {s["line"]}: {s["text"][:70]}')
     if len(todo) > 10:
         print(f'  ... and {len(todo) - 10} more')
+    if said or redone:
+        rows = {c['key0']: c for c in redone}
+        rows.update({c['key0']: c for c, _ in said})
+        print(f'said again: {len(said)} chunk(s) use a take said again' + (f', {len(redone)} redone now' if redone else '')
+              + f'; every take in {out / "redo"} ({len(exported)} file(s) made now); choices in {takes_file(scenes_path).name}')
+        for key0, c in sorted(rows.items(), key=lambda kv: kv[1]['line']):
+            e = book[key0]
+            print(f'  line {c["line"]}: "{c["text"][:60]}"')
+            for t in e['takes']:
+                mark = (' <- in the timeline' + (' (pinned)' if e.get('pinned') else ''))if t['take'] == e.get('in_timeline', 0) else ''
+                print(f'    take {t["take"]:<2} seed {t["seed"] if t["seed"] is not None else "-":<6} '
+                      f'{"; ".join(t["flags"]) or "passed":<40}'
+                      + (f' likeness {t["like"]:.3f}' if t.get('like') is not None else '') + mark)
     li = [c['loud']['lufs'] for c in chunks]; lo = [c['loud']['lufs_out'] for c in chunks]
     print(f'loudness: clips {min(li):.1f} to {max(li):.1f} LUFS as made, {min(lo):.1f} to {max(lo):.1f} after setting them to '
           f'{LOUDNESS} (peaks at most {max(c["loud"]["peak_out"] for c in chunks):.1f} dBTP; '

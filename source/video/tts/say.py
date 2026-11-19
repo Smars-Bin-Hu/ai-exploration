@@ -13,7 +13,8 @@ and cut out again.
 
 qwen3: every take is heard by Whisper and measured (length against its words, word errors, stretches without words,
 and every content word heard: content_missing); a take that fails is retaken with another seed, up to --retakes times
-(LIGHT_CHECKED below).
+(LIGHT_CHECKED below). With --every-take each line is spoken --retakes + 1 times whatever the check says, and every
+take is kept (build.py --redo).
 
 Checked models (vibevoice): every take goes through Demucs (vocals kept: removes the background music VibeVoice
 sometimes adds), Whisper and the voice gate (likeness.py: WavLM likeness to the reference and median pitch); a take
@@ -101,7 +102,7 @@ VOICE_RATIO = (0.6, 1.6)  # seconds from the first heard word to the last, again
 LEN_CAP = (2.0, 2.0)      # the whole take at most a * expected + b seconds
 MAX_WER = 0.15            # word errors (Whisper against the text) as a share of the text's words
 MAX_GAP = 2.0             # seconds without a heard word, inside the take or at either end
-HEARD = {"sql": "sequel", "claude": "clawed"}  # how Whisper writes words that pronounce.tsv respells for the model
+HEARD = {"sql": "sequel", "claude": "clawed", "cloud": "clawed"}  # Whisper hears the respelled Clawed as Cloud  # how Whisper writes words that pronounce.tsv respells for the model
 NUM = dict(zip("0 1 2 3 4 5 6 7 8 9 10".split(), "zero one two three four five six seven eight nine ten".split()))
 
 
@@ -323,6 +324,7 @@ def light_checked(a, items, job, python, backend, env_vars, tmp):
     pending = list(range(len(items)))
     if a.retakes is None:
         a.retakes = 3 if a.lenient else 4
+    every = getattr(a, "every_take", False)  # build.py --redo: every line spoken retakes + 1 times, each take kept
     for k in range(a.retakes + 1):
         seed = a.seed + 101 * k
         outs = {i: str(tmp / f"{i:04d}-t{k}.wav") for i in pending}
@@ -336,14 +338,24 @@ def light_checked(a, items, job, python, backend, env_vars, tmp):
         still = []
         for i in pending:
             flags, m = take_flags(items[i]["text"], wav_seconds(outs[i]), heard[outs[i]]["words"], strict=not a.lenient)
+            if every:  # kept next to the line's out, as <out>-take<k>.wav
+                keep = str(Path(items[i]["out"]).with_suffix("")) + f"-take{k}.wav"
+                shutil.copyfile(outs[i], keep)
+                outs[i] = keep
             takes[i].append(dict(m, take=k, seed=seed, flags=flags, wav=outs[i]))
-            if flags:
+            if flags or every:
                 still.append(i)
+            if flags:
                 print(f'[check] {Path(items[i]["out"]).name} take {k} seed {seed}: {", ".join(flags)}',
                       file=sys.stderr)
         pending = still
         if not pending:
             break
+    if every:
+        if a.report:
+            Path(a.report).write_text(json.dumps([dict(out=it["out"], text=it["text"], takes=tk)
+                                                  for it, tk in zip(items, takes)], indent=1), encoding="utf-8")
+        return
     report = []
     for it, tk in zip(items, takes):
         best = min(tk, key=lambda t: (bool(t["flags"]), len(t.get("missing") or []), t["wer"], len(t["flags"]),
@@ -497,6 +509,9 @@ def main():
     p.add_argument("--retakes", type=int, help="checked models (and qwen3): retakes of a flagged clip (default 3; qwen3 "
                    "with the content-word rule: 4)")
     p.add_argument("--lenient", action="store_true", help="qwen3: no content-word rule in the take check")
+    p.add_argument("--every-take", action="store_true", help="qwen3: speak each line --retakes + 1 times (seeds "
+                   "seed + 101 * k) whether or not a take passes, and keep every take as <out>-take<k>.wav, each "
+                   "checked, in --report; no <out> itself (build.py --redo)")
     p.add_argument("--keep-takes", metavar="DIR", help="checked models: keep every raw and cleaned take here")
     p.add_argument("--report", metavar="FILE", help="checked models (and qwen3): write every take's measures here (JSON)")
     a = p.parse_args()

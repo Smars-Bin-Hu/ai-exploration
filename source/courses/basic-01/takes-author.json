@@ -1,0 +1,108 @@
+{
+ "63bcccb4e93a04d4": {
+  "takes": [
+   {
+    "take": 0,
+    "seed": null,
+    "flags": [
+     "not heard: code"
+    ],
+    "missing": [
+     "code"
+    ],
+    "like": 0.976
+   },
+   {
+    "take": 1,
+    "seed": 10001,
+    "flags": [
+     "not heard: clawed"
+    ],
+    "missing": [
+     "clawed"
+    ],
+    "like": 0.967
+   },
+   {
+    "take": 2,
+    "seed": 10102,
+    "flags": [
+     "not heard: code"
+    ],
+    "missing": [
+     "code"
+    ],
+    "like": 0.977
+   },
+   {
+    "take": 3,
+    "seed": 10203,
+    "flags": [
+     "not heard: clawed, code"
+    ],
+    "missing": [
+     "clawed",
+     "code"
+    ],
+    "like": 0.971
+   }
+  ],
+  "line": 10,
+  "text": "And, I know a lot of companies have already paid for AI chat or coding agents for their people, like, Claude Code, Codex, or GitHub Copilot, but here's the thing, what we keep seeing is, a lot of teams are still only using AI for a tiny slice of their work.",
+  "in_timeline": 2,
+  "pinned": false
+ },
+ "88cb10d1071ab46b": {
+  "takes": [
+   {
+    "take": 0,
+    "seed": null,
+    "flags": [
+     "not heard: clawed"
+    ],
+    "missing": [
+     "clawed"
+    ],
+    "like": 0.976
+   },
+   {
+    "take": 1,
+    "seed": 10001,
+    "flags": [
+     "not heard: clawed"
+    ],
+    "missing": [
+     "clawed"
+    ],
+    "like": 0.987
+   },
+   {
+    "take": 2,
+    "seed": 10102,
+    "flags": [
+     "not heard: clawed"
+    ],
+    "missing": [
+     "clawed"
+    ],
+    "like": 0.966
+   },
+   {
+    "take": 3,
+    "seed": 10203,
+    "flags": [
+     "not heard: clawed, code"
+    ],
+    "missing": [
+     "clawed",
+     "code"
+    ],
+    "like": 0.973
+   }
+  ],
+  "line": 195,
+  "text": "And by 2026, coding agents like Claude Code, Codex, and GitHub Copilot can really do the work for you, and being able to do the work also means new problems, right?",
+  "in_timeline": 1,
+  "pinned": true
+ }
+}
