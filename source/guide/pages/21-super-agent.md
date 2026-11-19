@@ -26,7 +26,7 @@ The super agent chat is one Copilot chat a local day, made and owned by the boar
 
 1. **The person asks**: types a question (at most 1,000 characters), presses **What's next?** or **Sum up today**, or double-clicks the robot. The first time the view is opened in a day, when something waits and nobody has talked to the agent yet, the view asks for the summary by itself {src:.harness/engine/modules/task/web/super.js#L902-L908}. Only the paired browser may send a turn {src:.harness/engine/modules/task/boardserve.py#L2082-L2088}.
 2. **Code checks** that VS Code is linked to the board, that today's spend is under the limit and that no turn runs; otherwise the turn is refused {src:.harness/engine/modules/task/superbrain.py#L415-L433}.
-3. **Code writes the digest**: a head line (open tasks, how many wait, work, idle), one line per open task (name, kind, state, what it waits for and how long, the waiting ones first), and the closed tasks the board still shows; at most 2,000 characters (the rest is cut), no file content {src:.harness/engine/modules/task/superbrain.py#L124-L145}.
+3. **Code writes the digest**: a head line (open tasks, how many wait, work, idle), one line per open task (name, kind, state, what it waits for and how long, the waiting ones first), and the closed tasks the board still shows; at most 2,000 characters (the rest is cut), built from the board's rows and holding no file content; the agent's own read and search tools are not limited to it by code (see "Super agent: limits") {src:.harness/engine/modules/task/superbrain.py#L124-L145}.
 4. **The board sends** `/harness-super`, the digest and the person's words to the day's chat, made on the first turn with the agent file `.github/agents/super.agent.md`, Claude Haiku 5.5 and Allow all (Copilot's own confirmations do not show) {src:.harness/engine/modules/task/superbrain.py#L415-L474}.
 5. **The gate marks the session** from the `/harness-super` and keeps it to reading (see "Super agent: what is enforced by code, and what is only asked by text").
 6. **The board reads the answer back**, cuts out the proposal block, checks each proposal against the board, and shows the answer with a ◇ whose tip says it is the agent's judgment, not a fact read by the board {src:.harness/engine/modules/task/superbrain.py#L295-L327} {src:.harness/engine/core/messages.en.json#L1787}.
@@ -39,7 +39,7 @@ The super agent chat spends at most `super.daily_credits` Credits a local day, s
 
 ## Super agent: history and the pop-out
 
-**History per day.** When a new day starts, the conversation of the day before (what was said, the questions asked to tasks, what the day spent) is kept in `.harness/runtime/super-history/<day>.json` and today's record starts again. The clock button in the header lists earlier days to read, archive or delete for good; only the paired browser may archive or delete. Today cannot be deleted, because its record holds the day's spend and a delete would undo the limit {src:.harness/engine/modules/task/superbrain.py#L1-L14} {src:.harness/engine/modules/task/boardserve.py#L2100-L2119}.
+**History per day.** When a new day starts, the conversation of the day before (what was said, the questions asked to tasks, what the day spent) is kept as one file per day, named `<day>.json` (for example `2026-11-18.json`), in the folder `.harness/runtime/super-history/`, and today's record starts again. The clock button in the header lists earlier days to read, archive or delete for good; only the paired browser may archive or delete. Today cannot be deleted, because its record holds the day's spend and a delete would undo the limit {src:.harness/engine/modules/task/superbrain.py#L1-L14} {src:.harness/engine/modules/task/boardserve.py#L2100-L2119}.
 
 **The pop-out.** The ⇱ button opens a small window that stays on top of other windows, so the person can work in VS Code and still answer what waits: Chrome and Edge only (Document Picture-in-Picture). Its buttons are the view's own; a window that needs a code (an approval, a new task) opens in the board page, and the pop-out says so {src:.harness/engine/modules/task/web/companion.js#L1-L7}.
 
@@ -109,7 +109,7 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/superbrain.py#L1-L14}
 
 **Q: When I ask a task a question from the view, can it change files while it answers?** No. That turn is read only until the next normal message, and the task keeps what it waited for {src:.harness/engine/modules/gate/askturn.py#L1-L53}.
 
-**Q: What does the super agent know about my tasks?** A digest of at most 2,000 characters written by code: names, kinds, states, what each waits for and how long, and closed tasks not yet archived; no file content {src:.harness/engine/modules/task/superbrain.py#L124-L145}.
+**Q: What does the super agent know about my tasks?** A digest of at most 2,000 characters written by code: names, kinds, states, what each waits for and how long, and closed tasks not yet archived; the digest holds no file content, but the agent's read and search tools are not held to it by code {src:.harness/engine/modules/task/superbrain.py#L124-L145}.
 
 **Q: Does the view work with VS Code closed?** In a board tab already past the Enter screen, the messages and buttons do; the chat sleeps, and questions to tasks are refused until VS Code is linked. A new board tab cannot pass Enter while VS Code is closed {src:.harness/engine/modules/task/web/enter.js#L5} {src:.harness/engine/modules/task/superroute.py#L75-L128}.
 
@@ -125,4 +125,5 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/superbrain.py#L1-L14}
 ## Super agent: related files
 
 - The harness: the file 00 Harness at a glance. "Waiting for you" and the question turn: the file 11 Task. Approvals and previews: the file 14 Plans and approvals. The read-only turns among the gate's checks: the file 15 The gate and guardrails. Autorun: the file 20 Autorun. Versions: the file 34 Version history.
+- The code level of this file (the marker, the digest lines, the order of the limit checks, the proposal checks, the question turn, the previews): the file 21b Super agent internals.
 - No harness tutorial shows this view yet: the tour "2 A tour of the harness", in the OneDrive folder `3 Courses/Harness tutorials/`, is for 1.7.45 and has no Super agent view; "1 A day with the harness" and "3 When the agent is stopped" show the same waits and buttons on the task page {src:docs/07-release-notes.md#L13-L19}.
