@@ -63,7 +63,7 @@ Setup keeps the person's identities (accounts, passwords, tokens of the connecti
 
 ## Setup: common questions
 
-**Q: Where does the harness run, and what does our team bring?** On each person's computer, as a copy opened in VS Code; the model is Copilot's. The team brings the knowledge base, company skills, tool packs and target repositories, all optional at setup {src:.harness/engine/core/readyitems.py#L1-L19}.
+**Q: Where does the harness run, and what does our team bring?** On each person's computer, as a copy opened in VS Code; the model is Copilot's. The person brings the decisions: confirming the requirement, approving the plan and the write-back with a code, and committing (see 00 Harness at a glance). The team brings the knowledge base, company skills, tool packs and target repositories, all optional at setup {src:.harness/engine/core/readyitems.py#L1-L19}.
 
 **Q: What does `harness doctor` check, and what happens when we upgrade?** That the parts agree, plus Python, PATH, hook activity, repositories, knowledge base, packs and guardrail files. After an upgrade the agent's commands and writes are refused until the board starts once {src:.harness/engine/integrity.py#L171-L210}.
 
