@@ -4,7 +4,7 @@
 # pictures: every picture exists and has a caption that says what it shows; no picture failed to load
 # links: every course link answers; no footnotes (a footnote is cut away from its claim when the text is split)
 # words: no press-release words
-# totals: at most 50 knowledge files (the M365 OneDrive limit) and 600 pages (M365 recommends 300; not yet confirmed by the person; raised for the code-level internals files, to be checked against retrieval in the company test)
+# totals: at most 50 knowledge files (the M365 OneDrive limit) and 600 pages (M365 recommends 300; the person decided on 2026-11-19 to keep 577 pages for now; raised for the code-level internals files, to be checked against retrieval in the company test)
 import os, re, subprocess, urllib.request
 
 HARNESS = os.path.expanduser('~/Developer/DE-agentic-harness')
