@@ -1,6 +1,7 @@
 #!/bin/bash
-# Stage 1 of 2: fine-tune SoVITS (v2ProPlus) on the slices. CPU (the repo trains on CPU on Macs: MPS-trained models came
-# out worse, README "macOS"). Settings: batch 4, EPOCHS (default 12), text_low_lr_rate 0.4, weights saved every 4 epochs.
+# Step 4 of README.md, round 7. Stage 1 of 2: fine-tune SoVITS (v2ProPlus) on the slices, on CPU (GPT-SoVITS trains
+# on CPU on Macs: its README says MPS-trained models came out worse). Batch 4, EPOCHS (default 12), text_low_lr_rate
+# 0.4, weights saved every 4 epochs to $GSV/src/SoVITS_weights_v2ProPlus.
 set -e
 G=${GSV:-$(cd "$(dirname "$0")/../../../.." && pwd)/.claude/loops/tts/gptsovits}  # the env: .venv, src, data
 cd "$G/src"

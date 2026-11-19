@@ -1,6 +1,7 @@
 #!/bin/bash
-# GPT-SoVITS dataset steps 1a-1c (text/BERT, HuBERT + 32k wav, speaker vector, semantic tokens) for v2ProPlus, CPU.
-# Same as the webui's one-click "1abc", without the webui. Output: src/logs/$EXP.
+# Step 3 of README.md, round 7. GPT-SoVITS dataset steps 1a-1c for v2ProPlus on CPU: text and BERT features, HuBERT
+# features and 32 kHz wavs, speaker vectors, semantic tokens. The webui's one-click "1abc" without the webui.
+# Reads $GSV/data/train.list and $GSV/data/slices; writes $GSV/src/logs/$EXP.
 set -e
 G=${GSV:-$(cd "$(dirname "$0")/../../../.." && pwd)/.claude/loops/tts/gptsovits}  # the env: .venv, src, data
 cd "$G/src"

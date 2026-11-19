@@ -47,7 +47,7 @@ import render, fcpxml, subs, align, timing, rec, talk, avatar as speaker  # noqa
 
 RATE = 48000
 DEFAULT_SAY_VOICE = 'Samantha'
-DEFAULT_VOICE = 'tts:kokoro-seedvc'
+DEFAULT_VOICE = 'tts:qwen3'   # Kokoro + Seed-VC rejected by the author (2026-11-18: too distorted) and removed
 WHISPER_PY = ROOT / '.claude/loops/tts/whisper/venv/bin/python'
 TRIM_VERSION = 't1'   # bump when trim_and_pad changes, so every clip is cut again
 SEG_VERSION = 's1'    # bump when the rough mp4's segments change

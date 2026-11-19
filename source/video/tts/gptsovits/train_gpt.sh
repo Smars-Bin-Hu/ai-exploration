@@ -1,6 +1,7 @@
 #!/bin/bash
-# Stage 2 of 2: fine-tune the GPT (text -> semantic tokens) from s1v3.ckpt, the base the v2Pro series uses. CPU, fp32.
-# Settings: batch 4, EPOCHS (default 15), weights saved every 5 epochs, no DPO.
+# Step 5 of README.md, round 7. Stage 2 of 2: fine-tune the GPT (text -> semantic tokens) from s1v3.ckpt, the base the
+# v2Pro series uses, on CPU in fp32. Batch 4, EPOCHS (default 15), weights saved every 5 epochs to
+# $GSV/src/GPT_weights_v2ProPlus, no DPO.
 set -e
 G=${GSV:-$(cd "$(dirname "$0")/../../../.." && pwd)/.claude/loops/tts/gptsovits}  # the env: .venv, src, data
 cd "$G/src"

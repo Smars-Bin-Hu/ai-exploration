@@ -10,9 +10,9 @@ The source of the company OneDrive folder "AI Exploration". Two parts:
 | Folder | What is in it | Built from |
 |---|---|---|
 | `0 MUST READ.pdf` | the one page map of the folder, one colour per group: what to read, what to ask M365 Copilot, what not to open. Sorts first. Other files do not draw their own map; they point here | `source/must-read/` |
-| `1 Showcase/` | `Why AI-assisted development has not taken off.pdf` (the entry for a leader), `Real Tasks/` (one folder per real task: a deck and the task page saved as HTML), `Lessons/` | That deck: `source/start-here/`. The Real Tasks template: `source/showcase/`. Real tasks are company only, never committed |
+| `1 Showcase/` | `Why AI-assisted development has not taken off.pdf` (the entry for a leader), `Real Tasks/` (one folder per real task: a picture book and the task page saved as HTML) | That deck: `source/start-here/`. The Real Tasks template: `source/showcase/`. Real tasks are company only, never committed |
 | `2 Ask the Harness Guide/` | `Knowledge/pdf/`: the knowledge of the M365 Copilot agent that helps people understand the harness, PDF only (the agent reads this folder only) | `source/guide/` |
-| `3 Courses/` | slidedoc PDFs: `Basic/` (and `Advanced/` when added) on AI harness engineering in general; `Harness tutorials/` on using the harness day to day, with its own `0 MUST READ.pdf` | `Basic/`, `Advanced/`: exported from the smarshu.com repository (`npm run export:team`). `Harness tutorials/`: `source/tutorials/` |
+| `3 Courses/` | animated videos, one or two a week, in four series: `Harness tutorials/` (using the harness day to day), `Basic/` and `Advanced/` (AI harness engineering), `Lessons/` (wrong turns while building the harness). Until a video exists, its picture-book PDF is there instead; `Harness tutorials/` also has its own `0 MUST READ.pdf` | Videos: `source/courses/` and `source/video/`, never committed. `Basic/` PDFs: exported from the smarshu.com repository (`npm run export:team`). `Harness tutorials/` PDFs: `source/tutorials/` |
 | `4 Install the harness/` | the harness install package, the knowledge base, `programs/`, the guides | zips and installers are company only, never committed |
 | `_Archive/` | earlier material kept for reference (the Deep Dive Task sample) | `source/deep-dive/` |
 
