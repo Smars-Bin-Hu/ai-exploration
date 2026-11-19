@@ -3,7 +3,7 @@
 # Needs pandoc, Google Chrome, and playwright-core from ~/Developer/smarshu.com.
 # Input:  source/guide/pages/<name>.md (format: see RULES.md), pictures in source/guide/img/ and fig/.
 # Output: AI Exploration/2 Ask the Harness Guide/Knowledge/pdf/<file>.pdf; previews in source/guide/_pages/<name>/.
-# Not knowledge: the pages in NOT_KNOWLEDGE stay in source/guide/pages/ for the harness tutorials and are never built into Knowledge/.
+# Not knowledge: the pages in NOT_KNOWLEDGE stay in source/guide/pages/ as a reference and are never built into Knowledge/.
 # Exit 1 when a check fails (check.py).
 import os, re, sys, json, glob, subprocess, html
 import check
@@ -11,7 +11,7 @@ import check
 H = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(os.path.dirname(H))
 KNOWLEDGE = os.path.join(ROOT, 'AI Exploration', '2 Ask the Harness Guide', 'Knowledge')
 OUT = {'pdf': os.path.join(KNOWLEDGE, 'pdf')}
-# How-to pages: the Guide answers "how do I" with a short answer and the name of a harness tutorial (AI Exploration/3 Courses/Harness tutorials/).
+# How-to pages: the Guide answers "how do I" with the steps its concept and overview files give (RULES.md); it names no harness tutorial.
 NOT_KNOWLEDGE = {'21-start-a-task'}
 HARNESS_REPO = 'https://github.com/Smars-Bin-Hu/copilot-agentic-harness'
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -102,7 +102,7 @@ def build(name):
 
 def main(names):
     if set(names) & NOT_KNOWLEDGE:
-        raise SystemExit(f'not Guide knowledge (kept for the harness tutorials): {", ".join(sorted(set(names) & NOT_KNOWLEDGE))}')
+        raise SystemExit(f'not Guide knowledge (kept as a reference): {", ".join(sorted(set(names) & NOT_KNOWLEDGE))}')
     names = names or sorted(n for n in (os.path.splitext(os.path.basename(p))[0] for p in glob.glob(os.path.join(H, 'pages', '*.md'))) if n not in NOT_KNOWLEDGE)
     total_pages, bad = 0, []
     for n in names:

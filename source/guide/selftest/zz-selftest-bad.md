@@ -16,6 +16,6 @@ A seamless and powerful guard[^1] {src:no/such/file.py} {src:.github/hooks/harne
 
 ## Gate: how it works
 
-No code is cited here.
+No code is cited here. Step by step: the harness tutorial "1 A day with the harness" in `3 Courses/Harness tutorials/`.
 
 [^1]: a footnote

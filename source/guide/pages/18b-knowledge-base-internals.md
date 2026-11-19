@@ -173,4 +173,4 @@ The line has three limits. The script side is partly model-authored: the extract
 
 - What the knowledge base is, how it is built, kept true and written back: the file 18 Knowledge base. The write-back: the file 16 Write-back and the file 16b Write-back internals.
 - Tasks and the `kb` kind: the file 11 Task. Skills of domains and the company: the file 23 Skills. Get ready and `doctor`: the file 24 Setup, doctor and upgrade. The ideas: the file 41 Ideas behind the harness.
-- To import or build a knowledge base step by step, see the harness tutorial "6 Knowledge base" in `3 Courses/Harness tutorials/`.
+- To import or build a knowledge base, the steps in order: the file 18 Knowledge base (the **Get ready** form, and the section "Knowledge base: how it is built from the code"); in VS Code Copilot chat, `/harness-rookie-new-knowledgebase` leads a beginner through them.

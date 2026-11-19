@@ -1,6 +1,6 @@
 # Writing a Harness Guide file
 
-The Harness Guide is the knowledge of an agent in Microsoft 365 Copilot. Leaders, architects and curious engineers ask it to understand the harness, in four layers: what it is and what problem it solves; its common features; how it is designed and built, and where in the code; the harness engineering ideas behind it. It is not a tutorial: "how do I" questions get a short answer and the name of a harness tutorial in `AI Exploration/3 Courses/Harness tutorials/`. The agent searches these files, finds passages, and answers from them with the code locations and course links it finds there. A person who clicks the citation opens the file and reads it.
+The Harness Guide is the knowledge of an agent in Microsoft 365 Copilot. Leaders, architects and curious engineers ask it to understand the harness, in four layers: what it is and what problem it solves; its common features; how it is designed and built, and where in the code; the harness engineering ideas behind it. It does not point to harness tutorials (the tutorial PDFs were removed; step-by-step tutorials are planned as videos): a "how do I" question gets the steps, in order, from what these files say. So where a file speaks of something a person does, it gives the steps in order, or names the section or Guide file that does. No file names a harness tutorial or the `Harness tutorials/` folder (checked). The agent searches these files, finds passages, and answers from them with the code locations and course links it finds there. A person who clicks the citation opens the file and reads it.
 
 So every file has two readers. **The agent** sees text only, in passages cut out of the file. **The person** sees the whole page, pictures included. Write for both.
 
@@ -15,7 +15,7 @@ So every file has two readers. **The agent** sees text only, in passages cut out
 
 - `overview`: the whole harness, for broad questions ("what is it", "how do I use it", "is it safe"). Answers them directly, then points to the files that go deeper.
 - `concept`: one thing of the harness (a task, the gate, approvals, the knowledge base…): what it is, how it works, how it differs from its neighbours, its limits.
-- `how-to`: one thing a person does, step by step, with a screenshot for every step that shows something on screen. How-to pages are no longer Guide knowledge: the build skips the pages in `NOT_KNOWLEDGE` (`build.py`), which stay in `pages/` for the harness tutorials.
+- `how-to`: one thing a person does, step by step, with a screenshot for every step that shows something on screen. How-to pages are no longer Guide knowledge: the build skips the pages in `NOT_KNOWLEDGE` (`build.py`), which stay in `pages/` as a reference and are never built into the knowledge.
 
 ## Every passage stands alone
 

@@ -369,4 +369,4 @@ The costs, as the code shows them: every event starts a fresh Python process (th
 ## Gate internals: related files
 
 - The feature file for the gate: the file 15 The gate and guardrails. Tool packs and outside systems: the file 19 Tool packs, connections and MCP. Tasks, the task module's own rules: the file 11 Task. Architecture and the code map: the files 31 How it is built and 32 Code map. The tests that guard the gate: the file 33 Test map and evals. Known limits: the file 35 Known limits. The design decisions: the file 36 Design decisions.
-- What a refused or held call looks like on the board: the harness tutorial "3 When the agent is stopped", in `3 Courses/Harness tutorials/`.
+- How a person approves a held call or a git write, with its code: the file 14 Plans and approvals.

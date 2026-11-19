@@ -126,6 +126,6 @@ Under `.harness/` {src:.harness/engine/modules/gate/handler.py#L1-L14}: `policie
 - The whole harness and its guarantees: the file 00 Harness at a glance. The task folder and the plan approval that opens `DEV/`: the file 11 Task.
 - Calls to databases, ticket boards and pipelines: the file 19 Tool packs, connections and MCP. Autorun: the file 20 Autorun. The super agent: the file 21 Super agent.
 - The code-level detail behind this file (hook events and modules, the path of one call, merging, failure answers, how command lines are read): the file 15b The gate and guardrails internals.
-- What a refused or held call looks like on the board: the harness tutorial "3 When the agent is stopped", in `3 Courses/Harness tutorials/`.
+- How a person approves a held call or a git write, with its code: the file 14 Plans and approvals.
 
 The gate's entry in the registry lists its files {src:.harness/registry.json#L222-L285}.

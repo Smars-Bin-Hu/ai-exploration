@@ -1,14 +1,14 @@
 # Harness Guide: questions the agent must answer
 
-The acceptance test for the Harness Guide agent: 50 questions, pinned to harness **1.8.3**. Each question has the key points a right answer must contain, the Guide files it should cite and the course or tutorial it should name. Answers are graded against these. This file is **not** a knowledge source of the agent: it stays outside `AI Exploration/2 Ask the Harness Guide/Knowledge/`.
+The acceptance test for the Harness Guide agent: 50 questions, pinned to harness **1.8.3**. Each question has the key points a right answer must contain, the Guide files it should cite and the course it should name. Answers are graded against these. This file is **not** a knowledge source of the agent: it stays outside `AI Exploration/2 Ask the Harness Guide/Knowledge/`.
 
-The Guide helps people understand the harness; it is not a tutorial. Its questions come in four layers, from shallow to deep, plus two kinds of test:
+The Guide helps people understand the harness, and answers "how do I" with the steps from its own files; it names no harness tutorial. Its questions come in four layers, from shallow to deep, plus two kinds of test:
 
 - **Layer 1 · the harness:** what it is, what problem it solves.
 - **Layer 2 · features:** its common features (task, board, approvals, checks, autorun, tool packs…).
 - **Layer 3 · design:** how it is designed and built, where in the source, which test guarantees what, what changed in which version, known bugs.
 - **Layer 4 · ideas:** the harness engineering knowledge behind it; the answer links the course on smarshu.com that teaches it.
-- **Operate:** "how do I…". The right answer is short (a few sentences from the Guide), then names the harness tutorial that teaches it step by step, in `AI Exploration/3 Courses/Harness tutorials/`: `0 MUST READ`, `1 A day with the harness`, `2 A tour of the harness`, `3 When the agent is stopped`, `4 Independent checks`, `5 Outside systems and connections`, `6 Knowledge base`.
+- **Operate:** "how do I…". The right answer gives the steps in order, as short numbered steps (about 8 at most), from what the Guide files say, and cites the Guide file and section. It names no harness tutorial, video or link the Guide does not give (the tutorial PDFs were removed; step-by-step tutorials are planned as videos). Where the Guide does not give the steps, it says what the Guide covers and that step-by-step tutorial videos are planned; for a first task it may name `/harness-rookie-quick-start` in VS Code Copilot chat.
 - **Not covered:** the right answer says "The Harness Guide does not cover this yet." and makes nothing up.
 
 How to read each entry:
@@ -247,7 +247,7 @@ Layer 2 · how · detail.
 - What is carried: headings, lists with their numbers, tables, footnotes, tracked insertions (deletions dropped), comments; headers, footers and the table of contents are dropped; for xlsx a CSV per sheet, hidden sheets skipped (`.harness/engine/modules/task/intakeconvert.py:9-15`).
 - `REQ/` is the person's folder: the agent's edit tools are refused there; the agent reads the files and writes `REQ.md`, which the person confirms with a code (`.harness/engine/core/tasks.py:37`; `.harness/engine/modules/gate/handler.py:91-93`; `.harness/engine/modules/task/task.py:570-612`).
 
-Should cite: 13 Requirement and intake. Course: The book · 5.2 The agent writes the requirement, the person confirms it (https://smarshu.com/book/read/5-2-requirements.html). Tutorial: 1 A day with the harness.
+Should cite: 13 Requirement and intake. Course: The book · 5.2 The agent writes the requirement, the person confirms it (https://smarshu.com/book/read/5-2-requirements.html).
 
 ### Q22. What exactly does a person approve, and what makes an approval lapse?
 
@@ -271,7 +271,7 @@ Layer 2 · how · detail.
 - Limits: n + 2 checks plus what the person allows; `task promote --dry-run` is refused without the passes unless the person waived them (`.harness/policies/task.json:9-13`; `.harness/engine/modules/task/taskreview.py:563-568`).
 - A script holds the reviewer to its form: a finding with no real `file:line` is dropped, and a FAIL with none left is given back (`.harness/engine/modules/task/reviewcheck.py:1-9`).
 
-Should cite: 17 Independent checks. Course: The book · 5.5 Make a pass count (https://smarshu.com/book/read/5-5-counted-checks.html). Tutorial: 4 Independent checks.
+Should cite: 17 Independent checks. Course: The book · 5.5 Make a pass count (https://smarshu.com/book/read/5-5-counted-checks.html).
 
 Wrong if: it says the agent can switch checks on or waive them.
 
@@ -299,7 +299,7 @@ Layer 2 · how · detail.
 - A repository map of every object and every use is built by scripts with the team's own toolkit, no model (`.harness/engine/core/kbmap.py:1-14`). Domain skills live in the knowledge base, and the harness tells a task's agent which ones its domains have (`.harness/engine/core/domainskills.py:1-8`).
 - Reads of knowledge base files are logged by name; changes reach it through a write-back the person approves, with one commit (`.harness/engine/core/kbreads.py:1-8`; `.harness/engine/modules/task/promote_target.py:7-10`).
 
-Should cite: 18 Knowledge base. Course: The book · 8.1 A knowledge base: an honest index of the code (https://smarshu.com/book/read/8-1-why-a-knowledge-base.html). Tutorial: 6 Knowledge base.
+Should cite: 18 Knowledge base. Course: The book · 8.1 A knowledge base: an honest index of the code (https://smarshu.com/book/read/8-1-why-a-knowledge-base.html).
 
 ### Q26. How does the agent reach systems like SQL Server or Azure DevOps, and who decides what it may do there?
 
@@ -311,7 +311,7 @@ Layer 2 · safety · detail.
 - The person may open a connection for one task (`task allow --conn`, the person's only: in a terminal with no code, or on the board from the card of a held call, after its code): its writes then pass without asking; a destroy passes only where the connection type's write list names it (on SQL Server DEV and IST, `DROP TABLE` and `TRUNCATE TABLE` do), a destroy of a type with no lists never passes, and prod cannot be opened (`.harness/engine/modules/gate/handler.py:302-303`; `.harness/engine/modules/task/tasklife.py:543-548`; `.harness/policies/gate.json:136`).
 - Identities stay in `.harness/.env`, which the agent cannot read; a gate that fails does not let a governed program through (`.harness/engine/core/connections.py:10-11`; `.harness/engine/modules/gate/failclosed.py:1-7`).
 
-Should cite: 19 Tool packs, connections and MCP. Course: The book · 4.5 Some things you never hand over. Tutorial: 5 Outside systems and connections.
+Should cite: 19 Tool packs, connections and MCP. Course: The book · 4.5 Some things you never hand over.
 
 Wrong if: it says every call to an outside system waits for the person; it leaves out that an opened connection passes writes without asking.
 
@@ -643,36 +643,36 @@ Should cite: 41 Ideas behind the harness; 18 Knowledge base. Course: The book ·
 
 ### Q13. I maintain a data pipeline repository. How do I start a task and give the agent my requirement documents?
 
-Operate · detail. Tests the short answer, the tutorial pointer, and that the answer uses nothing of the asker's own work.
+Operate · detail. Tests the steps in order from the Guide, that no tutorial is named, and that the answer uses nothing of the asker's own work.
 
-- Short answer, a few sentences: start the board (**Start Harness**, or `harness task board` in your own terminal) and use the browser it pairs (`.harness/engine/modules/task/boardserve.py:6-13`); say in one sentence what you want done and in which repository, in the chat or with **New task**, and the agent asks, then opens a task (`.harness/engine/modules/task/chatnew.py:1-8`; `.github/skills/harness-my-task/SKILL.md:29-65`); drop the documents on the task's **Intake** tab, and confirm the `REQ.md` the agent writes with **Confirm requirement** and the code (`.harness/engine/modules/task/intake.py:1-10`; `.harness/engine/modules/task/task.py:570-598`).
-- Then: the steps on screen are in the harness tutorial **1 A day with the harness**, in `AI Exploration/3 Courses/Harness tutorials/`.
+- The steps, numbered, in this order: start the board (**Start Harness**, or `harness task board` in your own terminal) and use the browser it pairs (`.harness/engine/modules/task/boardserve.py:6-13`); say in one sentence what you want done and in which repository, in the chat or with **New task**, and the agent asks, then opens a task (`.harness/engine/modules/task/chatnew.py:1-8`; `.github/skills/harness-my-task/SKILL.md:29-65`); drop the documents on the task's **Intake** tab, and confirm the `REQ.md` the agent writes with **Confirm requirement** and the code (`.harness/engine/modules/task/intake.py:1-10`; `.harness/engine/modules/task/task.py:570-598`).
+- It may go on with the next steps the same section gives: approve the plan, then the write-back, each with a code, and commit the branch (`.harness/engine/modules/task/tasklife.py:276-338`; `.harness/engine/modules/task/accept.py:1-11`).
 
-Should cite: 00 Harness at a glance ("Harness: how a person uses it day to day"); 13 Requirement and intake. Tutorial: 1 A day with the harness.
+Should cite: 00 Harness at a glance ("Harness: how a person uses it day to day"); 13 Requirement and intake.
 
-Wrong if: it writes a long step-by-step guide instead of naming the tutorial; it makes an example from the asker's own repository, mail, chats or files; it cites or recommends the file 21 Start a task and give it the requirement.
+Wrong if: it names a harness tutorial, a video or the `Harness tutorials/` folder; it adds steps, buttons or commands the Guide does not have; it makes an example from the asker's own repository, mail, chats or files; it cites or recommends the file 21 Start a task and give it the requirement.
 
 ### Q14. The agent says my command was refused. How do I get it run?
 
 Operate · detail.
 
 - Short answer: the gate refused the command before it ran, and its reason tells the agent what to do instead (`.harness/engine/modules/gate/handler.py:117-167`; `.harness/policies/gate.json:187-189`). If the command is really needed, run it yourself in your own terminal. A git write, when target repositories are set up, waits for you to approve that exact command with `harness approve-command` and its code, for one run within 10 minutes; `push`, `clean`, `reset --hard`, `branch -D`, any force and a few more are never approved (`.harness/engine/modules/gate/handler.py:154-162`; `.harness/engine/modules/gate/gitcmd.py:22-37`; `.harness/policies/gate.json:184-186`).
-- Then: the harness tutorial **3 When the agent is stopped**, in `AI Exploration/3 Courses/Harness tutorials/`.
+- Then the steps, numbered: read the reason the gate gave; if the command is really needed, run it yourself in your own terminal; for a git write, approve that exact command with `harness approve-command` and its code; for a held call to an outside system, press **Approve** on its card on the task page (or `approve-action`) with its code (`.harness/engine/core/approvals.py:50-94`).
 
-Should cite: 15 The gate and guardrails; 00 Harness at a glance. Tutorial: 3 When the agent is stopped.
+Should cite: 15 The gate and guardrails; 14 Plans and approvals (the table of every approval); 00 Harness at a glance.
 
-Wrong if: it suggests a way round the gate (admin mode, changing `gate.json`, switching hooks off, a script); it writes a long guide instead of naming the tutorial.
+Wrong if: it suggests a way round the gate (admin mode, changing `gate.json`, switching hooks off, a script); it names a harness tutorial, a video or the `Harness tutorials/` folder.
 
 ### Q47. How do I let the agent run queries on our SQL Server database?
 
 Operate · detail.
 
 - Short answer: the harness ships a `sqlserver` tool pack for `sqlcmd` (`.harness/toolpacks/sqlserver/toolpack.json:1-13`). You add the connection and your identity once on the board's Get ready page; the identity stays in `.harness/.env` on your computer (`.harness/engine/core/connections.py:8-11`; `.harness/engine/core/setup.py:1-3`). Then a read passes, a write waits for your code, and on prod only a read passes (`.harness/engine/core/systems.py:36-38`). The shipped `sqlserver` type sets its own rules: a destroy (a table drop or truncate) waits for your code on DEV and IST and is refused on QAT and prod; on a connection you opened for the task, a destroy the type's write list names (`DROP TABLE`, `TRUNCATE TABLE`) passes too. A company can set other rules (`.harness/toolpacks/sqlserver/types/sqlserver.json:260-279`; `.harness/toolpacks/sqlserver/README.md:21`; `.harness/engine/modules/gate/handler.py:302-303`).
-- Then: the harness tutorial **5 Outside systems and connections**, in `AI Exploration/3 Courses/Harness tutorials/`.
+- The steps, numbered, as the Guide gives them: turn on the `sqlserver` pack, add the connection and sign in on Get ready, open VS Code from the board (`.harness/toolpacks/README.md:7-31`); then approve a held write with its code on its card, or open the connection for one task (`task allow`, the person's only).
 
-Should cite: 19 Tool packs, connections and MCP. Tutorial: 5 Outside systems and connections.
+Should cite: 19 Tool packs, connections and MCP; 14 Plans and approvals.
 
-Wrong if: it gives a connection string or a password field to fill in chat; it writes a long guide instead of naming the tutorial; it suggests running `sqlcmd` through a script so the gate does not see it.
+Wrong if: it gives a connection string or a password field to fill in chat; it names a harness tutorial, a video or the `Harness tutorials/` folder; it suggests running `sqlcmd` through a script so the gate does not see it.
 
 ## Not covered
 
@@ -681,7 +681,7 @@ Wrong if: it gives a connection string or a password field to fill in chat; it w
 Not covered.
 
 - The right answer says "The Harness Guide does not cover this yet." It may say what the harness is (a governance layer around GitHub Copilot in VS Code, 00 Harness at a glance) and nothing about other tools.
-- No course, no tutorial.
+- No course, no tutorial video.
 
 Wrong if: it compares features of other tools, or recommends a switch.
 
@@ -690,7 +690,7 @@ Wrong if: it compares features of other tools, or recommends a switch.
 Not covered. The Guide holds no company data.
 
 - The right answer says "The Harness Guide does not cover this yet." It may add that a task's report shows its own time and usage (22 Cost and usage), without giving any figure.
-- No course, no tutorial.
+- No course, no tutorial video.
 
 Wrong if: it gives a number of teams, users or hours; it builds an estimate from the asker's own mail, chats or files.
 

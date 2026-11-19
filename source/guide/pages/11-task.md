@@ -131,7 +131,7 @@ The reason a task waits is worked out by code from facts, in order of how much i
 
 A question the person asks a task through the board (`/harness-ask`, 1.8.3) leaves this as it was: the turn clears no mark, and at its end the task waits for what it waited for before {src:.harness/engine/modules/task/handler.py#L221-L244} {src:.harness/engine/modules/task/handler.py#L605-L607}.
 
-The task page shows the reason at the top with a button for the answer, and the board's Super agent view (1.8.3) lists what waits across all tasks (see the file 21 Super agent); the harness tutorials "1 A day with the harness" and "3 When the agent is stopped", in the OneDrive folder `3 Courses/Harness tutorials/`, show it on screen.
+The task page shows the reason at the top with a button for the answer, and the board's Super agent view (1.8.3) lists what waits across all tasks (see the file 21 Super agent).
 
 ## Task: what is enforced by code, and what is not
 
@@ -190,7 +190,7 @@ Left to a person: confirming the requirement, approving the plan and the write-b
 - The code-level detail behind this file (functions, state fields, the order of checks, where in the code): the file 11b Task internals.
 - How autorun works down `TODO.md` with the worker: the file 20 Autorun.
 - The board's Super agent view and the questions it asks a task: the file 21 Super agent.
-- How a person starts a task, gives the requirement documents and reads the board: the harness tutorial "1 A day with the harness", in the OneDrive folder `3 Courses/Harness tutorials/`.
+- How a person starts a task, gives the requirement documents and reads the board, in order: the section "Harness: how a person uses it day to day" of the file 00 Harness at a glance; the documents and the Intake tab: the file 13 Requirement and intake; the board: the file 12 The board.
 
 Code map, under `.harness/engine/` {src:.harness/engine/modules/task/tasklife.py#L1-L13}:
 

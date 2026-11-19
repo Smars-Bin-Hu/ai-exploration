@@ -114,7 +114,7 @@ Under `.harness/engine/` {src:.harness/engine/core/approval.py#L1-L25}: `core/ap
 
 **Q: Why did the agent not start after I approved the plan?** The code was typed in a terminal, which does not wake the agent; or the box "I will switch autorun on next" was ticked; or the board could not reach the chat. Send the "go on" message from the task page, or start autorun {src:.harness/engine/modules/task/boardserve.py#L842-L852}.
 
-**Q: What is the difference between a held call and Copilot's ask?** A held call is refused by the gate and waits for the person's code; Copilot's ask is VS Code's own box, answered without a code and not shown under Allow all. The harness tutorial "3 When the agent is stopped" shows both.
+**Q: What is the difference between a held call and Copilot's ask?** A held call is refused by the gate and waits for the person's code; Copilot's ask is VS Code's own box, answered without a code and not shown under Allow all. The section "Plans and approvals: held calls and Copilot's own asks" says how the person answers each.
 
 ## Plans and approvals: limits
 
@@ -131,6 +131,6 @@ Under `.harness/engine/` {src:.harness/engine/core/approval.py#L1-L25}: `core/ap
 - The code level of this file (the digest of each approval, the board's two steps, the stored approvals, the never-approved git commands): the file 14b Plans and approvals internals.
 - The task and its stages: the file 11 Task. The whole harness: the file 00 Harness at a glance. The requirement: the file 13 Requirement and intake. The write-back: the file 16 Write-back.
 - Held calls and connections: the file 19 Tool packs, connections and MCP. Git writes and person-only commands: the file 15 The gate and guardrails. Checks: the file 17 Independent checks. Autorun: the file 20 Autorun. The Super agent view: the file 21 Super agent.
-- To do it step by step, see the harness tutorials in `3 Courses/Harness tutorials/`: "1 A day with the harness", "3 When the agent is stopped", "4 Independent checks", "5 Outside systems and connections".
+- Each approval with its terminal command, its board button and what its code is made from: the table in the section "Plans and approvals: everything a person approves" of this file. The order of a task from start to commit: the section "Harness: how a person uses it day to day" of the file 00 Harness at a glance.
 
 The gate's person-only rules name every terminal command of the table {src:.harness/policies/gate.json#L131-L144}.

@@ -119,4 +119,4 @@ The board is Python's standard `http.server` in one process: Python computes eve
 ## Board: related files
 
 - The task and its waits: 11 Task. Approvals and codes: 14 Plans and approvals. The gate: 15 The gate and guardrails. Checks: 17 Independent checks. Autorun and the run card: 20 Autorun. The Super agent view: 21 Super agent. Credits and the cost rule: 22 Cost and usage. Every code location: 32 Code map. The code-level detail behind this file (pairing and headers, the gate's refusal, the Enter screen, the VS Code link, chat binding, the chat actions, stages, safe drawing, health records): 12b The board internals {src:.harness/engine/modules/task/boardserve.py#L1-L33}.
-- To do this step by step, see the tutorials "1 A day with the harness" and "2 A tour of the harness" in `3 Courses/Harness tutorials/`; they show the board of 1.7.45, before the Super agent view and the autorun Start form.
+- What a person does on the board, in order, day to day: the section "Harness: how a person uses it day to day" of the file 00 Harness at a glance; every button: the section "Board: what a person can do there" of this file.

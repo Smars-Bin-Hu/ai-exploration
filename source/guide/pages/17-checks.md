@@ -114,4 +114,4 @@ Under `.harness/engine/modules/task/` {src:.harness/engine/modules/task/taskrevi
 
 - The typed codes behind extend, waive and dismiss, and every other approval: the file 14 Plans and approvals. The dry run and the write-back: the file 16 Write-back. Autorun: the file 20 Autorun. The task folder and its rounds: the file 11 Task. The idea of a second checker: the file 41 Ideas behind the harness.
 - The code-level detail (the review state in `task.json`, the order of checks of the subagent rule, the package and its quotes, which hook saves the verdict, how passes are counted): the file 17b Independent checks internals.
-- To do it step by step (switch checks on, read a verdict, extend, waive or dismiss), see the harness tutorial "4 Independent checks" in `3 Courses/Harness tutorials/` {src:AGENTS.md#L52-L53}.
+- The steps in order: switching checks on, in the section "Independent checks: how they are switched on, and who sets the number" of this file; one check and its verdict, in "Independent checks: how one check runs, step by step"; more checks, waive and dismiss with their codes, in the file 14 Plans and approvals {src:AGENTS.md#L52-L53}.

@@ -126,4 +126,4 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/superbrain.py#L1-L14}
 
 - The harness: the file 00 Harness at a glance. "Waiting for you" and the question turn: the file 11 Task. Approvals and previews: the file 14 Plans and approvals. The read-only turns among the gate's checks: the file 15 The gate and guardrails. Autorun: the file 20 Autorun. Versions: the file 34 Version history.
 - The code level of this file (the marker, the digest lines, the order of the limit checks, the proposal checks, the question turn, the previews): the file 21b Super agent internals.
-- No harness tutorial shows this view yet: the tour "2 A tour of the harness", in the OneDrive folder `3 Courses/Harness tutorials/`, is for 1.7.45 and has no Super agent view; "1 A day with the harness" and "3 When the agent is stopped" show the same waits and buttons on the task page {src:docs/07-release-notes.md#L13-L19}.
+- What a person does in this view: the sections "Super agent: working with a task from the view" and "Super agent: proposal cards" of this file; the same waits and buttons on one task page: the file 11 Task {src:docs/07-release-notes.md#L13-L19}.

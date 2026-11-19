@@ -156,4 +156,4 @@ What was tried before: until 1.1.0 work was split into levels L1 to L3 with a mu
 - The subagents in code (the order of the subagent rule, the mapper grant, the worker's checks, the refused question tool, how the core links a subagent session to its parent): the file 31b Subagents internals.
 - Every file: the file 32 Code map. Every test: the file 33 Test map and evals. Changes by version: the file 34 Version history.
 - The gate: the file 15 The gate and guardrails. Tasks: the file 11 Task. The board: the file 12 The board. Setup and `doctor`: the file 24 Setup, doctor and upgrade. The ideas: the file 41 Ideas behind the harness; the decisions: the file 36 Design decisions.
-- Extending the harness is guided by the skill `harness-admin`, used in admin mode {src:.harness/INDEX.md#L23-L56}; there is no harness tutorial for it in `3 Courses/Harness tutorials/`.
+- Extending the harness is guided by the skill `harness-admin`, used in admin mode {src:.harness/INDEX.md#L23-L56}; the Guide gives no steps for it.

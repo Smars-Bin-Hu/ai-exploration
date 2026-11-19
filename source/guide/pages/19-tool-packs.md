@@ -98,7 +98,7 @@ Many companies switch MCP off by policy, and a SQL Server sign-in can follow the
 
 **Can the agent read our passwords?** Not by the read and edit tools or a terminal command that names `.harness/.env`, nor by printing a sign-in variable: the gate refuses these {src:.harness/engine/modules/gate/handler.py#L624-L672}. A sign-in carried by variables, such as a SQL account's password, is plain text in that file and in the VS Code process's environment, so the real limit is the account's rights.
 
-**How do I let the agent query our SQL Server?** Turn on the `sqlserver` pack, add the connection and sign in on Get ready, open VS Code from the board {src:.harness/toolpacks/README.md#L7-L31}. Step by step: tutorial 5 Outside systems and connections.
+**How do I let the agent query our SQL Server?** Turn on the `sqlserver` pack, add the connection and sign in on Get ready, open VS Code from the board {src:.harness/toolpacks/README.md#L7-L31}.
 
 **Does an approved plan approve database writes?** Only calls the rules mark `task`; the sample packs mark none, so each held write needs its code or an opened connection {src:.harness/toolpacks/sqlserver/types/sqlserver.json#L254-L279}.
 
@@ -114,4 +114,4 @@ Many companies switch MCP off by policy, and a SQL Server sign-in can follow the
 
 ## Tool packs: related files
 
-15 The gate and guardrails; 14 Plans and approvals (approving a held call); 11 Task (where openings and links are kept); 20 Autorun; 23 Skills; 24 Setup, doctor and upgrade; 35 Known limits; 34 Version history; 19b Tool packs, connections and MCP internals (the code-level detail: statements, pin, approvals, evidence). To do this step by step, see tutorial 5 Outside systems and connections in 3 Courses/Harness tutorials/ {src:.harness/toolpacks/README.md#L7-L31}.
+15 The gate and guardrails; 14 Plans and approvals (approving a held call); 11 Task (where openings and links are kept); 20 Autorun; 23 Skills; 24 Setup, doctor and upgrade; 35 Known limits; 34 Version history; 19b Tool packs, connections and MCP internals (the code-level detail: statements, pin, approvals, evidence). Opening a connection for one task, in order: the section "Tool packs: opening a connection for one task (`task allow`)" of this file; approving a held call with its code: the file 14 Plans and approvals {src:.harness/toolpacks/README.md#L7-L31}.

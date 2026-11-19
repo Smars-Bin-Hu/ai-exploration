@@ -4,6 +4,7 @@
 # pictures: every picture exists and has a caption that says what it shows; no picture failed to load
 # links: every course link answers; no footnotes (a footnote is cut away from its claim when the text is split)
 # words: no press-release words
+# no tutorial pointers: no file names a harness tutorial or the Harness tutorials/ folder; the Guide gives the steps itself (RULES.md)
 # totals: at most 50 knowledge files (the M365 OneDrive limit) and 600 pages (M365 recommends 300; the person decided on 2026-11-19 to keep 577 pages for now; raised for the code-level internals files, to be checked against retrieval in the company test)
 import os, re, subprocess, urllib.request
 
@@ -13,6 +14,8 @@ BANNED = ['seamless', 'seamlessly', 'powerful', 'revolutionary', 'game-changer',
           'effortless', 'effortlessly', 'magic', 'magical', 'state-of-the-art', 'best-in-class', 'next-generation', 'empower',
           'transformative', 'incredible', 'amazing', 'world-class', 'ai-powered', '10x', 'simply', 'just works', 'under the hood']
 LAYERS = ('overview', 'concept', 'how-to', 'reference', 'idea')
+# The removed harness tutorial PDFs (now planned as videos): the word, the folder and the titles that are not also Guide file names.
+TUTORIAL = re.compile(r'tutorial|a day with the harness|a tour of the harness|when the agent is stopped', re.I)
 _lines = {}
 
 def file_lines(tag, path):
@@ -67,6 +70,8 @@ def run(name, meta, body, refs, layout, base):
     low = ' ' + re.sub(r'\s+', ' ', re.sub(r'\{src:[^}]+\}|`[^`]*`', ' ', body).lower()) + ' '
     for b in BANNED:
         if re.search(r'(?<![a-z0-9-])' + re.escape(b) + r'(?![a-z0-9-])', low): p.append(f'banned word "{b}"')
+    for m in sorted({m.group(0).lower() for m in TUTORIAL.finditer(re.sub(r'\{src:[^}]+\}', ' ', body))}):
+        p.append(f'names a harness tutorial ("{m}"): give the steps from the Guide, or name the Guide file that has them')
     return p
 
 def totals(files, pages):

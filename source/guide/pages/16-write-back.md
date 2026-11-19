@@ -112,6 +112,6 @@ Under `.harness/engine/` {src:.harness/engine/modules/task/promote_target.py#L1-
 ## Write-back: related files
 
 - Approvals and their codes: 14 Plans and approvals. The gate, `approve-command` and the ask list: 15 The gate and guardrails. The passes: 17 Independent checks. The task and its rounds: 11 Task. The knowledge base: 18 Knowledge base. Get ready: 24 Setup, doctor and upgrade. The code-level detail of fetch, the dry run, the write, recovery, the queue and the commit message: 16b Write-back internals.
-- To do it step by step (approve the write-back, commit the branch), see the harness tutorial "1 A day with the harness" in `3 Courses/Harness tutorials/`.
+- The steps in order (the dry run, approving the write-back with its code, the write, the commit): the sections of this file from "Write-back: the dry run and what it checks" to "Write-back: what happens after". The order of a whole task: the section "Harness: how a person uses it day to day" of the file 00 Harness at a glance.
 
 The rule that a target repository is written only by an approved promote is in `AGENTS.md` {src:AGENTS.md#L48-L49}.

@@ -83,7 +83,7 @@ The templates in `.harness/contracts/templates/task/en/`; under `.harness/engine
 
 **Q: Our requirements come as Word and Excel files. How does the agent get them, and is AI used to read them?** You drop them on the task's Intake tab: the original stays in `REQ/originals/`, a program writes Markdown or CSV beside it with a report of what it left out, and the agent reads those. No AI is used, so no tokens and no number changed {src:.harness/engine/modules/task/intakeconvert.py#L1-L15}.
 
-**Q: How do I start a task and give the agent my requirement documents?** Start the board, say in one sentence what you want and where, let the agent ask and open the task, drop the documents on Intake, and confirm the `REQ.md` it writes with **Confirm requirement**. On screen: the harness tutorial "1 A day with the harness".
+**Q: How do I start a task and give the agent my requirement documents?** Start the board, say in one sentence what you want and where, let the agent ask and open the task, drop the documents on Intake, and confirm the `REQ.md` it writes with **Confirm requirement** and the code the page shows. The section "Harness: how a person uses it day to day" of the file 00 Harness at a glance gives these steps in order.
 
 **Q: Can the agent confirm its own requirement?** Not with the command: the gate refuses it, and it asks a person for a code. But the code reads a text line of `REQ.md`, which the agent can write {src:.harness/engine/modules/task/taskreview.py#L88-L116}.
 
@@ -101,4 +101,4 @@ The templates in `.harness/contracts/templates/task/en/`; under `.harness/engine
 
 ## Requirement and intake: related files
 
-The task, its tiers and folders: 11 Task. Approval codes and `--with-req`: 14 Plans and approvals. The gate: 15 The gate and guardrails. Checks against `REQ.md`: 17 Independent checks. The knowledge base: 18 Knowledge base. Tickets and connections: 19 Tool packs, connections and MCP. The code-level detail (the digest, `req_state`, the steps of `confirm-req` and `approve-plan --with-req`, the converter and its report, the "Done when" items and `RUNS/`): 13b Requirement and intake internals. To do it step by step, see the harness tutorial "1 A day with the harness" in `3 Courses/Harness tutorials/` {src:.harness/engine/modules/task/intake.py#L1-L11}.
+The task, its tiers and folders: 11 Task. Approval codes and `--with-req`: 14 Plans and approvals. The gate: 15 The gate and guardrails. Checks against `REQ.md`: 17 Independent checks. The knowledge base: 18 Knowledge base. Tickets and connections: 19 Tool packs, connections and MCP. The code-level detail (the digest, `req_state`, the steps of `confirm-req` and `approve-plan --with-req`, the converter and its report, the "Done when" items and `RUNS/`): 13b Requirement and intake internals. The steps a person takes, in order: the section "Harness: how a person uses it day to day" of the file 00 Harness at a glance {src:.harness/engine/modules/task/intake.py#L1-L11}.
