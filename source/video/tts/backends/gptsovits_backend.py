@@ -3,11 +3,14 @@ Env: tts/gptsovits (its own venv; the repo is cloned to tts/gptsovits/src, the f
 src/SoVITS_weights_v2ProPlus and src/GPT_weights_v2ProPlus).
 
 The reference should be a 3-10 s slice the model was trained on, with its exact words (--ref-text or <ref>.txt):
-GPT-SoVITS continues the reference's semantic tokens, so the reference sets the tone of each line.
+GPT-SoVITS continues the reference's semantic tokens, so the reference sets the tone of each line. The one used in
+round 7 is tts/gptsovits/ref/ref.wav (5 s, "And you paste this code back in, ...").
 
 Options (--set KEY=VALUE):
-  sovits, gpt    weights files (default: the newest of each in the folders above)
-  device         cpu (default) or mps
+  sovits, gpt    weights files, absolute or relative to tts/gptsovits/src (default: the newest of each in the folders
+                 above); the base models: gpt=GPT_SoVITS/pretrained_models/s1v3.ckpt,
+                 sovits=GPT_SoVITS/pretrained_models/v2Pro/s2Gv2ProPlus.pth
+  device         cpu (default) or mps; cpu was the faster here (1.1 s of compute per second of audio, mps 1.5)
   top_k, top_p, temperature, repetition_penalty   GPT sampling (defaults 15, 1.0, 1.0, 1.35, the repo's)
   speed          speed factor (1.0)
 """

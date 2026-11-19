@@ -2,9 +2,54 @@
 
 Each spoken paragraph of a video becomes one audio file (cut into its sentences afterwards, see `../FORMAT.md`), in the presenter's own voice, made on an Apple Silicon Mac with no paid API. This folder holds a small wrapper, `say.py`, that calls one of several open models, each installed in its own environment outside git.
 
-Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. Round 5 keeps Kokoro's native English and swaps OpenVoice for a stronger voice converter, Seed-VC, because `kokoro-openvoice` did not sound like the presenter. Round 6 makes questions sound like questions and lets Kokoro speak a whole paragraph at a time. The newest round comes first.
+Round 1 (below) chose for likeness to the presenter. Round 2 chose for natural English first and likeness second, because the round-1 winner sounded like the presenter but put odd melodies on some phrases. Round 3 makes the round-2 pick, `vibevoice`, clean and reliable: no background music, no runaway or wrong takes on short lines. Round 5 keeps Kokoro's native English and swaps OpenVoice for a stronger voice converter, Seed-VC, because `kokoro-openvoice` did not sound like the presenter. Round 6 makes questions sound like questions and lets Kokoro speak a whole paragraph at a time. Round 7 trains a model on the presenter's own recordings (GPT-SoVITS) instead of cloning from one clip. The newest round comes first.
 
-Tested November 2026 on an M1 Pro with 32 GB, macOS, Python 3.12.
+Tested November 2026 on an M1 Pro with 32 GB, macOS, Python 3.12 (GPT-SoVITS: 3.10).
+
+## Round 7: a model fine-tuned on the presenter's recordings (GPT-SoVITS)
+
+Every model so far clones from a 10 to 15 s clip. GPT-SoVITS (RVC-Boss, `github.com/RVC-Boss/GPT-SoVITS`, MIT code and weights) is built to be fine-tuned on a few minutes of one speaker, so this round asked whether 4 minutes of the presenter's polished module recordings make a voice that is closer than the cloners, and at what cost. It has two models, both fine-tuned: a GPT that turns phonemes into semantic tokens, continuing the tokens of a short reference clip (this decides words, rhythm and melody), and SoVITS, a VITS decoder that turns the tokens into sound in the trained voice. Version v2ProPlus was used, the one its authors recommend for average-quality data at v2's cost; v3 and v4 lean more on the reference clip and need cleaner data; the new v5 was not tried.
+
+**Result: it trains on this Mac in about 45 minutes, and its likeness reaches the cloners', but it gets about one word in eight wrong, so it is not a candidate for narration.** Details below.
+
+### Data and training
+
+The two polished takes of `basic-01` (Hook, 152 s, and pain points, 107 s, as the build uses them) were cut at pauses into 3 to 12 s pieces with their words, by `gptsovits/slices.py`: Whisper large-v3-turbo with word times on each whole take, a cut at a gap of at least 0.18 s (a sentence end preferred), then each piece transcribed again on its own and dropped when the two transcripts differ by more than a word. Of 32 pieces 27 passed; comparing the two transcripts by hand kept 3 more and dropped 2, one (11 s) was held out for scoring, and "Cloud Code" was written "Claude Code": 29 pieces, 208 s (`gptsovits/make_list.py`). The 62 s Bloor recording that the round-2 measure compares against was not trained on, so that measure stays a fair held-out test.
+
+Training runs on the CPU, as GPT-SoVITS does on every Mac (its README: models trained on the Mac GPU came out clearly worse), in fp32:
+
+| Step | Script | Settings | Time |
+| --- | --- | --- | --- |
+| Features: phonemes and BERT, HuBERT, speaker vector, semantic tokens | `gptsovits/features.sh` | defaults | 1 min |
+| SoVITS, from `v2Pro/s2Gv2ProPlus.pth` | `gptsovits/train_sovits.sh` | batch 4, 12 epochs (the repo repeats a small set 3 times: 23 steps an epoch), text learning rate × 0.4 | 26 min |
+| GPT, from `s1v3.ckpt` | `gptsovits/train_gpt.sh` | batch 4, 15 epochs, no DPO | 15 min |
+
+Install and the 1.3 GB of base models took about 7 minutes. Logs and weights stay in `.claude/loops/tts/gptsovits/` (`logs-*.txt`, `src/SoVITS_weights_v2ProPlus/me-v2pp_e12_s276.pth`, `src/GPT_weights_v2ProPlus/me-v2pp-e15.ckpt`; personal data, out of git).
+
+### Measured
+
+The six round-2 sentences, one call each, measured with `.claude/loops/voice/measure7.py`: measure2's likeness (WavLM against the Bloor recording outside `ref-13s`) and word count, plus likeness against 33 s of the module recordings that were not trained on (`tts/gptsovits/ref/heldout.wav`). All rows were re-scored in one run. The two likeness columns disagree because WavLM hears the recording as well as the voice: each model scores higher against the recording its reference came from (the round-2 to round-5 models used `ref-13s`, a Bloor clip; GPT-SoVITS uses a 5 s module piece). `qwen3` given the same module clip shows the size of that effect. Word errors are measure2's count, in which "Cloud" for "Claude" and "2." for "Two" each count one; that is all of the errors of the other models, while GPT-SoVITS's are mostly real.
+
+| Model | Reference clip | Likeness, Bloor | Likeness, module held-out | Word errors in 84 | Seconds of compute per second of audio |
+| --- | --- | --- | --- | --- | --- |
+| **`gptsovits`**, fine-tuned, seed 1 | module piece, 5 s | 0.932 | 0.912 | 11 | 1.1 (0.94 after the first line); loading 18 s |
+| same, seeds 2 and 3 | same | 0.943, 0.920 | 0.906, 0.898 | 11, 11 | about the same |
+| same, another module piece (4.6 s) | | 0.873 | 0.897 | 7 | |
+| GPT-SoVITS base models, not fine-tuned | module piece, 5 s | 0.915 | 0.927 | 12 | 0.85 |
+| `qwen3` (round 2) | `ref-13s` | 0.946 | 0.864 | 3 | 1.0 |
+| `qwen3` | a module piece, 6.5 s | 0.901 | 0.885 | 2 | 1.25 (busy machine) |
+| `vibevoice`, cleaned and checked (round 3) | `ref-13s` | 0.948 | 0.858 | 2 | 1.3, plus 0.7 for the check |
+| `kokoro-seedvc` with `am_fenrir` (round 5, removed) | `ref-13s` | 0.867 | 0.930 | 0 | 2.1 to 2.4 |
+
+What the numbers say:
+
+- **Likeness.** Fine-tuned GPT-SoVITS is about as like the presenter as `qwen3` and `vibevoice` on the Bloor measure (0.92 to 0.94 over three seeds, against 0.946 and 0.948 with a reference from that very recording), and ahead of them against the module recordings, which is partly the recording effect: `qwen3` given a module clip scores 0.901 and 0.885. Fine-tuning itself added little: the base models with the same clip score 0.915 and 0.927. 3.5 minutes is at the low end of what GPT-SoVITS asks for, and the choice of reference clip moved likeness more (0.873 to 0.932) than training did.
+- **Words.** This is where it fails. In every run, fine-tuned or not, with any of three reference clips, three seeds, calmer sampling (top_k 5, temperature 0.6) or the GPT after 5 or 10 epochs instead of 15 (all in `.claude/loops/voice/test7/`), 7 to 14 of the 84 words come out wrong: "an AI chat tool or a coding agent" became "any iChat to Laura coding agent", "Two: it forgets." became "to it for gas", "dies" became "eyes" or "died", "harness" became "hardness". Sentences 3 to 6 are mostly right. The fine-tuned GPT learned the presenter's quick, run-together delivery from 29 short pieces, and its English front end (g2p_en) and base model are weaker in English than in Chinese; a 13 % word error rate needs a check and retakes on every line, and some lines failed on all three seeds.
+- **Speed** is no obstacle: about one second of compute per second of audio on the CPU, slower on the Mac GPU (1.5).
+
+Not tried, in the time box: more training data (the raw takes and other modules), training SoVITS longer, and a Whisper check with retakes in `say.py` as `vibevoice` has. The first is the one most likely to change the picture.
+
+To listen to, in `.claude/loops/voice/test7/` (personal data, out of git): `gptsovits.mp3` (the six sentences, fine-tuned, 0.6 s between), `gptsovits-zeroshot.mp3` (base models, the first reference tried), `gsv-ref-pain000.mp3` (fine-tuned, that reference); single clips in the folders of the same names and the other runs above in `gsv-*/`, their scores in `measure-*.jsonl`.
 
 ## Round 6: questions that rise, and a paragraph per call
 
@@ -295,7 +340,30 @@ uv pip install -p $T/seedvc/.venv/bin/python "torch==2.6.0" "torchaudio==2.6.0" 
   "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
 # Only what its offline inference needs from requirements-mac.txt (no gradio, funasr, modelscope or GUI); the
 # backend imports Seed-VC's modules from $T/seedvc/src.
+
+# GPT-SoVITS (round 7), MIT; Python 3.10 as its README asks. Base models (1.3 GB) go into its own folder.
+G=$T/gptsovits && mkdir -p $G && git clone --depth 1 https://github.com/RVC-Boss/GPT-SoVITS.git $G/src
+uv venv --python 3.10 $G/.venv
+uv pip install -p $G/.venv/bin/python torch torchaudio torchcodec
+uv pip install -p $G/.venv/bin/python --no-deps -r $G/src/extra-req.txt
+uv pip install -p $G/.venv/bin/python -r $G/src/requirements.txt "gradio==4.44.1" resampy
+# gradio<5 alone resolves to 3.36 with a newer gradio-client that it cannot import; resampy is needed by inference.
+uvx --from huggingface_hub hf download lj1995/GPT-SoVITS --local-dir $G/src/GPT_SoVITS/pretrained_models \
+  --include 'chinese-hubert-base/*' 'chinese-roberta-wwm-ext-large/*' s1v3.ckpt v2Pro/s2Gv2ProPlus.pth \
+  v2Pro/s2Dv2ProPlus.pth sv/pretrained_eres2netv2w24s4ep4.ckpt
+uvx --from huggingface_hub hf download XXXXRT/GPT-SoVITS-Pretrained nltk_data.zip --local-dir $G/dl
+unzip -q $G/dl/nltk_data.zip -d $G/.venv   # NLTK data for the English front end, where install.sh puts it
 ```
+
+GPT-SoVITS must also be trained before `say.py --model gptsovits` works. From the repository root, with the recordings in `$G/data/raw/`:
+
+```bash
+$T/whisper/venv/bin/python source/video/tts/gptsovits/slices.py $G/data/raw/*.wav --out $G/data/slices
+python3 source/video/tts/gptsovits/make_list.py $G/data/slices/slices.json $G/data/train.list --hold <piece> ...
+source/video/tts/gptsovits/features.sh && source/video/tts/gptsovits/train_sovits.sh && source/video/tts/gptsovits/train_gpt.sh
+```
+
+Read `slices.json` before `make_list.py`: its options keep, drop or hold out pieces by name (round 7 used `--hold pain_011 --drop hook_008 hook_011 --force hook_003 hook_009 hook_016 --heard hook_001`). `EPOCHS=` and `BS=` change the training scripts' epochs and batch size. The weights land in `$G/src/SoVITS_weights_v2ProPlus/` and `$G/src/GPT_weights_v2ProPlus/`, and the backend takes the newest of each.
 
 The model weights download the first time each model runs. Set `TTS_HOME` to use another folder than `.claude/loops/tts`.
 
@@ -326,7 +394,13 @@ python3 source/video/tts/say.py --model qwen3 --ref ref.wav --batch lines.tsv
 
 A batch line may also name the sentences around it, `output<TAB>sentence<TAB>before<TAB>after` (either may be empty); `vibevoice` speaks a line under 5 words together with one of them and cuts it out (round 3). `vibevoice` takes are always cleaned with Demucs, checked and retaken when flagged; `--retakes N` (default 3), `--keep-takes DIR` (every take, raw and cleaned), `--report FILE` (every measure, JSON), `--no-merge` and `--no-check` change that.
 
-Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 44 kHz for `kokoro-seedvc`, 22 kHz for `kokoro-openvoice` and `kokoro-seedvc-v1`, 24 kHz for the rest).
+Names with a suffix (`chatterbox-calm`, `chatterbox-turbo-calm`) are presets: the same model with other settings. `--set KEY=VALUE` (repeatable) changes one setting, for example `--set cfg_weight=0.3` or `--set voice=bm_george`; each backend's docstring lists its keys. Output wavs keep the model's own rate (48 kHz for `voxcpm2`, 44 kHz for `kokoro-seedvc`, 32 kHz for `gptsovits`, 22 kHz for `kokoro-openvoice` and `kokoro-seedvc-v1`, 24 kHz for the rest).
+
+`gptsovits` (round 7) wants a 3 to 10 s piece it was trained on as `--ref`, with its words next to it:
+
+```bash
+python3 source/video/tts/say.py --model gptsovits --ref .claude/loops/tts/gptsovits/ref/ref.wav --batch lines.tsv
+```
 
 `--ref-text "..."` overrides `ref.txt`. `--out` ending in `.mp3` or `.m4a` is converted with ffmpeg. `--seed` (default 1) makes a run repeatable; change it to get another take of a sentence. Timings go to stderr.
 
