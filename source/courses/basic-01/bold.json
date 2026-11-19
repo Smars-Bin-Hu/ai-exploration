@@ -622,5 +622,561 @@
   "next video",
   "installing this harness",
   "starting your first task"
+ ],
+ "You know, it's 2026, and a lot of teams want AI to really stick in their dev work.": [
+  "2026",
+  "really stick in their dev work"
+ ],
+ "Lots of companies have already paid for AI chat or coding agents for their people,": [
+  "already paid",
+  "AI chat",
+  "coding agents"
+ ],
+ "like Claude Code, Codex, or GitHub Copilot.": [
+  "Claude Code",
+  "Codex",
+  "GitHub Copilot"
+ ],
+ "But here's the thing: what we keep seeing is, a lot of teams still only use AI for a tiny slice of their work.": [
+  "tiny slice of their work"
+ ],
+ "And plenty of people are even still using it": [
+  "even still using it"
+ ],
+ "like a Q&A chat.": [
+  "Q&A chat"
+ ],
+ "So, say you're a software engineer, and you've got this huge legacy system on your hands.": [
+  "software engineer",
+  "huge legacy system"
+ ],
+ "A request comes in from the business side,": [
+  "request",
+  "business side"
+ ],
+ "and you've built a bunch of features like it before.": [
+  "built a bunch of features like it"
+ ],
+ "You know exactly what the best fix is:": [
+  "best fix"
+ ],
+ "which code to change, how to test it, what it depends on and what depends on it, and what else it could break.": [
+  "which code to change",
+  "how to test it",
+  "what else it could break"
+ ],
+ "You've done all of it before.": [
+  "done all of it before"
+ ],
+ "Now you're told you have to use AI for it.": [
+  "use AI for it"
+ ],
+ "Pretty much this:": [
+  "Pretty much this"
+ ],
+ "first, you dig up the code files you think matter, one by one, and drop them into the chat box.": [
+  "dig up the code files",
+  "chat box"
+ ],
+ "Then you write this long explanation of what the code does and how it all fits together.": [
+  "long explanation",
+  "how it all fits together"
+ ],
+ "Then you paste in the request.": [
+  "paste in the request"
+ ],
+ "And finally, you write a whole screen of \"do this\", \"add that\", \"never touch that\".": [
+  "whole screen",
+  "never touch that"
+ ],
+ "The AI hasn't written a single line of code yet, and you've already spent half an hour.": [
+  "single line of code",
+  "half an hour"
+ ],
+ "But what usually happens?": [
+  "usually happens"
+ ],
+ "The AI gives you something you're, like, 80 to 90% happy with.": [
+  "80 to 90%",
+  "happy"
+ ],
+ "You paste its code back in, run the tests yourself, check the results yourself...": [
+  "paste its code back",
+  "run the tests yourself",
+  "check the results yourself"
+ ],
+ "and some of it's still wrong.": [
+  "still wrong"
+ ],
+ "So now you're spending even more time reviewing the code...": [
+  "even more time",
+  "reviewing the code"
+ ],
+ "And in the end you're thinking, using AI is slower than just writing it myself.": [
+  "slower",
+  "writing it myself"
+ ],
+ "Because it can't understand your complex system, and it can't see the traps you already know about.": [
+  "can't understand your complex system",
+  "traps"
+ ],
+ "So in this video I want to make three things clear:": [
+  "three things"
+ ],
+ "where this way of using AI goes wrong,": [
+  "goes wrong"
+ ],
+ "why it's so hard for dev teams to really put AI to work,": [
+  "so hard",
+  "dev teams",
+  "put AI to work"
+ ],
+ "If you've used AI like this, you've probably hit every one of the things I'm about to list.": [
+  "every one of the things"
+ ],
+ "Open a new chat, and everything you told it is gone.": [
+  "new chat",
+  "gone"
+ ],
+ "You have to say it all again from scratch.": [
+  "again from scratch"
+ ],
+ "And you'll notice, the longer you chat in the same conversation, the worse it seems to get.": [
+  "longer you chat",
+  "worse"
+ ],
+ "Stuff you agreed on earlier, it forgets later.": [
+  "agreed on earlier",
+  "forgets later"
+ ],
+ "Three: you give it a bunch of dos and don'ts, but it doesn't always follow them.": [
+  "Three",
+  "dos and don'ts",
+  "doesn't always follow"
+ ],
+ "but every now and then it skips exactly the step you care about most.": [
+  "skips",
+  "care about most"
+ ],
+ "And it gets worse the longer the chat goes: the more history there is, the more its attention drifts, and the less it remembers the older stuff.": [
+  "gets worse",
+  "attention drifts",
+  "older stuff"
+ ],
+ "Four: it's always super confident when it checks its own work.": [
+  "Four",
+  "super confident",
+  "checks its own work"
+ ],
+ "\"Done, all tests pass.\"": [
+  "all tests pass"
+ ],
+ "Then you look, and there are still tons of errors.": [
+  "tons of errors"
+ ],
+ "Which files it changed,": [
+  "files it changed"
+ ],
+ "which commands it ran,": [
+  "commands it ran"
+ ],
+ "why it made those changes...": [
+  "why it made those changes"
+ ],
+ "it's hard to explain any of that afterwards.": [
+  "hard to explain"
+ ],
+ "So, is this how you use AI right now?": [
+  "how you use AI right now"
+ ],
+ "Well, this is how people used AI back in 2024: treating it like a chatbot.": [
+  "2024",
+  "chatbot"
+ ],
+ "In 2024, most people were still figuring out how to write a good prompt so the AI would do better.": [
+  "2024",
+  "good prompt"
+ ],
+ "So that's what people called Prompt Engineering.": [
+  "Prompt Engineering"
+ ],
+ "But the problem is,": [
+  "the problem"
+ ],
+ "even if the model is smart enough, you're still treating it as someone who just answers questions.": [
+  "smart enough",
+  "just answers questions"
+ ],
+ "You haven't let it actually do the work.": [
+  "actually do the work"
+ ],
+ "Apart from answering you, everything else is still on you:": [
+  "Apart from answering",
+  "on you"
+ ],
+ "finding the code, sorting out the request, running the tests,": [
+  "finding the code",
+  "sorting out the request",
+  "running the tests"
+ ],
+ "remembering the context, watching it to make sure it sticks to the process, checking its results.": [
+  "remembering the context",
+  "sticks to the process",
+  "checking its results"
+ ],
+ "All of that, you do by hand.": [
+  "by hand"
+ ],
+ "And so in the end, you hear the same thing everywhere:": [
+  "same thing everywhere"
+ ],
+ "AI can only help with part of my work...": [
+  "only help with part of my work"
+ ],
+ "So here we've got to explain what an AI agent is.": [
+  "AI agent"
+ ],
+ "When you normally chat with AI, you're really talking straight to the large model, the LLM.": [
+  "large model",
+  "LLM"
+ ],
+ "It thinks, then writes some text back to answer you.": [
+  "thinks",
+  "writes some text back"
+ ],
+ "An agent adds tool calling on top of the LLM, basically, the ability to use tools.": [
+  "tool calling",
+  "use tools"
+ ],
+ "once it's thought things through, it can change code files on your machine by itself, run commands, search the web, open a browser.": [
+  "change code files",
+  "run commands",
+  "search the web",
+  "open a browser"
+ ],
+ "But having hands isn't enough.": [
+  "hands isn't enough"
+ ],
+ "Here's the key: it loops.": [
+  "loops"
+ ],
+ "then decides what to do next.": [
+  "decides what to do next"
+ ],
+ "Hands, plus the ability to loop on its own, and that's when you get an agent.": [
+  "Hands",
+  "loop on its own",
+  "agent"
+ ],
+ "It doesn't just answer you anymore.": [
+  "doesn't just answer you"
+ ],
+ "It can finish a task by itself.": [
+  "finish a task by itself"
+ ],
+ "OK, so now agents can do work on their own.": [
+  "do work on their own"
+ ],
+ "But that brings new problems.": [
+  "new problems"
+ ],
+ "Look back at the last few years.": [
+  "last few years"
+ ],
+ "In 2024, people were working on how to write good prompts.": [
+  "2024",
+  "good prompts"
+ ],
+ "In 2025, people figured out they needed to get context engineering right, you know, managing what's in the AI's context, so it'd perform consistently.": [
+  "2025",
+  "context engineering",
+  "perform consistently"
+ ],
+ "And by 2026, coding agents like Claude Code, Codex, and GitHub Copilot can really do work for you.": [
+  "2026",
+  "Claude Code",
+  "Codex",
+  "GitHub Copilot"
+ ],
+ "And being able to do work brings new problems too.": [
+  "new problems too"
+ ],
+ "Companies found that to really put agents to work, they have to solve these problems:": [
+  "Companies",
+  "put agents to work",
+  "these problems"
+ ],
+ "It doesn't know your systems and projects, so someone still has to walk it through them every time.": [
+  "doesn't know your systems and projects",
+  "walk it through them"
+ ],
+ "How do you keep memory across sessions?": [
+  "memory across sessions"
+ ],
+ "If one session breaks, how does another one pick up the task?": [
+  "session breaks",
+  "pick up the task"
+ ],
+ "People only use the agent to change code.": [
+  "only use the agent to change code"
+ ],
+ "Everything else, like running tests, the CI/CD pipeline, updating tickets, people still do themselves.": [
+  "running tests",
+  "CI/CD pipeline",
+  "updating tickets"
+ ],
+ "It doesn't always follow the rules you agreed on.": [
+  "doesn't always follow the rules"
+ ],
+ "People don't dare give it access to servers, because it might do something dangerous, like dropping a table.": [
+  "access to servers",
+  "dangerous",
+  "dropping a table"
+ ],
+ "When it finishes a task, it tends to be totally sure its result is right.": [
+  "totally sure",
+  "result is right"
+ ],
+ "Where did the money and time go, and how do you cut them down?": [
+  "money and time",
+  "cut them down"
+ ],
+ "The plan, the logs, the traces of how the task went... none of it gets recorded.": [
+  "plan",
+  "logs",
+  "none of it gets recorded"
+ ],
+ "One person can keep an eye on five sessions, tops.": [
+  "One person",
+  "five sessions"
+ ],
+ "So human attention becomes the bottleneck for the agent's work.": [
+  "human attention",
+  "bottleneck"
+ ],
+ "On a long or complex task, the agent always stops partway through.": [
+  "long or complex task",
+  "stops partway through"
+ ],
+ "That's way too many problems.": [
+  "too many problems"
+ ],
+ "And the skill of getting an agent to work both steadily and well,": [
+  "steadily and well"
+ ],
+ "that's called harness engineering.": [
+  "harness engineering"
+ ],
+ "There's a formula: Agent = Model + Harness.": [
+  "Agent = Model + Harness"
+ ],
+ "Before, all of this depended on you reminding it in the prompt.": [
+  "reminding it in the prompt"
+ ],
+ "Now it's handed over to programs.": [
+  "handed over to programs"
+ ],
+ "Because a program does the same thing every time,": [
+  "program",
+  "same thing every time"
+ ],
+ "it doesn't cost tokens, and it doesn't depend on the model behaving itself.": [
+  "doesn't cost tokens",
+  "behaving itself"
+ ],
+ "So the fixed, predictable stuff goes to programs,": [
+  "fixed, predictable stuff",
+  "programs"
+ ],
+ "and the stuff that needs judgment and thinking goes to the agent.": [
+  "judgment and thinking",
+  "agent"
+ ],
+ "So I built a harness framework myself,": [
+  "harness framework",
+  "myself"
+ ],
+ "and it runs on GitHub Copilot in VS Code.": [
+  "GitHub Copilot",
+  "VS Code"
+ ],
+ "If your team's a Microsoft customer, you're most likely using two Copilots at once: M365 Copilot and GitHub Copilot.": [
+  "Microsoft customer",
+  "two Copilots",
+  "M365 Copilot",
+  "GitHub Copilot"
+ ],
+ "GitHub Copilot is the one we call a coding agent,": [
+  "GitHub Copilot",
+  "coding agent"
+ ],
+ "and my harness helps you drive GitHub Copilot better.": [
+  "my harness",
+  "drive GitHub Copilot better"
+ ],
+ "So let's go back to the gaps on that list and see what each one looks like in my harness.": [
+  "gaps on that list",
+  "my harness"
+ ],
+ "It uses a set of tools to learn your codebase,": [
+  "set of tools",
+  "learn your codebase"
+ ],
+ "find the hidden dependencies between files,": [
+  "hidden dependencies"
+ ],
+ "and write what it finds into cards.": [
+  "cards"
+ ],
+ "Once it's done learning, it generates a summary file and an index, kind of like a table of contents.": [
+  "summary file",
+  "index",
+  "table of contents"
+ ],
+ "So the agent doesn't have to re-read the code every time.": [
+  "doesn't have to re-read the code"
+ ],
+ "It just loads the summary file and a few of the cards,": [
+  "summary file",
+  "cards"
+ ],
+ "And if it needs to, it can jump straight to the right files through the index.": [
+  "jump straight to the right files",
+  "index"
+ ],
+ "Each task is a folder.": [
+  "task",
+  "folder"
+ ],
+ "It holds the files for the task's whole life:": [
+  "files",
+  "whole life"
+ ],
+ "the task plan, history logs, status,": [
+  "task plan",
+  "history logs",
+  "status"
+ ],
+ "requirement docs, test scripts, the changed code,": [
+  "requirement docs",
+  "test scripts",
+  "changed code"
+ ],
+ "and anything the agent produces while it works.": [
+  "anything the agent produces"
+ ],
+ "It all gets saved in there.": [
+  "saved in there"
+ ],
+ "So even if one session dies, another session just scans that task folder and picks right up.": [
+  "session dies",
+  "task folder",
+  "picks right up"
+ ],
+ "And people don't dare give it access to servers, because it might do something dangerous, like dropping a table.": [
+  "access to servers",
+  "dangerous",
+  "dropping a table"
+ ],
+ "So I give the agent access to the dev and test environments,": [
+  "dev and test environments"
+ ],
+ "so it can develop on its own, write test scripts on its own, run them on its own, and fix things on its own.": [
+  "develop on its own",
+  "write test scripts",
+  "fix things on its own"
+ ],
+ "For safety, here's how I did it:": [
+  "For safety"
+ ],
+ "through a standard Toolpack, the agent gets read-only access to the non-prod environments,": [
+  "Toolpack",
+  "read-only",
+  "non-prod environments"
+ ],
+ "and anything that writes or executes needs a person to approve it.": [
+  "writes or executes",
+  "person to approve"
+ ],
+ "For example, with Microsoft's SQL Server,": [
+  "Microsoft's SQL Server"
+ ],
+ "I've tested my harness against thousands of attempts to sneak in dangerous commands.": [
+  "thousands of attempts",
+  "dangerous commands"
+ ],
+ "And between a blacklist, a whitelist,": [
+  "blacklist",
+  "whitelist"
+ ],
+ "a person making the call, and the account's own permissions,": [
+  "person making the call",
+  "account's own permissions"
+ ],
+ "The subagent reviews everything the main agent did": [
+  "subagent reviews everything",
+  "main agent"
+ ],
+ "And in practice, the reviewer catches a lot of cases the main agent didn't think of.": [
+  "reviewer catches",
+  "didn't think of"
+ ],
+ "I built a task report dashboard just for looking at the stats of a whole task:": [
+  "task report dashboard",
+  "whole task"
+ ],
+ "All the conclusions, right there at a glance.": [
+  "conclusions",
+  "at a glance"
+ ],
+ "And there's a lot more, but to save time, I won't list it all here.": [
+  "lot more",
+  "save time"
+ ],
+ "So, AI hasn't gotten dumber.": [
+  "hasn't gotten dumber"
+ ],
+ "It's that the way we use it is still stuck in 2024:": [
+  "stuck in 2024"
+ ],
+ "treating it like a chatbot, with people doing all the legwork in between, watching the process, and doing the checks.": [
+  "chatbot",
+  "legwork",
+  "watching the process",
+  "doing the checks"
+ ],
+ "The agent hands that legwork over to programs,": [
+  "agent",
+  "legwork",
+  "programs"
+ ],
+ "and the harness hands the process, the checks, and the boundaries over to programs too.": [
+  "harness",
+  "process",
+  "checks",
+  "boundaries"
+ ],
+ "So people can finally step back,": [
+  "step back"
+ ],
+ "and just make the calls and be the gatekeepers.": [
+  "make the calls",
+  "gatekeepers"
+ ],
+ "If you're trying to get your team using AI, don't rush to ask \"which stronger model should we switch to?\"": [
+  "don't rush",
+  "stronger model"
+ ],
+ "First ask: \"What's missing around our AI?\"": [
+  "First ask",
+  "What's missing around our AI?"
+ ],
+ "And if you want to try it yourself,": [
+  "try it yourself"
+ ],
+ "in the next video I'll help you install this harness and kick off your first task.": [
+  "next video",
+  "install this harness",
+  "first task"
  ]
 }
