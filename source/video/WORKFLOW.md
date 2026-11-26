@@ -9,8 +9,8 @@
 ## 一图看全流程
 
 ```
- ① 提纲      人 + AI brainstorm                  outline.md
- ② 中文稿    人写                                zh.md
+ ① 提纲      不在这边做：从内容源复制过来        outline.md
+ ② 中文稿    不在这边做：人写的定稿，复制过来    zh.md
  ③ 英文稿    AI：直译 → 母语口语化 → 对照中文    en.md
  ④ 你的风格  AI：按“说话风格规则”改写，加停顿   scenes-author.md
  ⑤ 分镜      AI 出分镜 → 人批 → AI 画图           storyboard.md · figs/
@@ -21,17 +21,11 @@
 
 ---
 
-## ① 提纲 · 人 + AI
+## ①② 提纲和中文稿 · 不在这边做
 
-- 人先说要讲什么；AI 按“痛点 → harness 管的事 → 真实场景”的结构挑战一轮，指出逻辑不通、少了一步的地方。
-- 不纠结小细节（年份、措辞）；只改会改变观众理解的地方。
-- 产出：`source/courses/<video>/outline.md`
-
-## ② 中文稿 · 人写
-
-- 写法：像跟同事讲话，一段一个意思；〔画面：…〕写给自己看，不念。
-- 用写稿台改：在 Claude Code 里输入 `/script-desk`，左边 AI 初稿、右边你的稿，自动保存、按段估时长、长句标黄。
-- 产出：`zh.md`
+- 选方向、提纲、讲稿、定稿都在内容源仓库做，照 `~/Developer/copilot-harness-engineering/studio/skills/content-flow/SKILL.md`。同一份讲稿也是文章和帖子的源，所以它不归视频流程管。
+- 人说“定稿”之后，把话题文件夹里的 `outline.md`、`zh.md` 复制到 `source/courses/<video>/`，从第 ③ 步开始。
+- 这边不改这两个文件。稿要变，先改那边的源，再复制一次，然后重做受影响的步骤。
 
 ## ③ 英文稿 · AI，四步，每步换一个 agent
 
