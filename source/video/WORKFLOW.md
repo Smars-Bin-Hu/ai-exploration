@@ -64,7 +64,7 @@
 - 音量统一到 −18 LUFS。
 
 **B. 你自己录**
-1. `/script-desk rec`：一屏一个模块，关键短语加粗，①② 标出换图的地方；R 录、S 停、P 听；数字键选一段单独补录。
+1. 录：每个模块一段录音，文件放哪、叫什么名见 `FORMAT.md` 的 “Recorded voice”；`build.py <video> --rec-status` 看哪些录了、哪些还缺。
 2. 录完自动检查：每个要点讲到没有、顺序对不对。
 3. 修音预览：`build.py <video> --polish-preview <sid>` → 降噪、剪 um/uh/结巴/重说、缩长停顿、统一音量。
 4. AI 剪辑：`--edit-draft <sid>` → agent 读原话，整句重讲取最好的一遍、剪口误、恢复剪过头的；每一刀列清单，可撤回。
